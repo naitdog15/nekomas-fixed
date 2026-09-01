@@ -26,7 +26,6 @@ import net.minecraft.world.level.block.entity.LidBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +70,7 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
     }
 
     @Override
-    protected void saveAdditional(@NonNull ValueOutput view) {
+    protected void saveAdditional(ValueOutput view) {
         super.saveAdditional(view);
 
         view.putBoolean("HasStirred", hasStirred);
@@ -79,7 +78,7 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
     }
 
     @Override
-    protected void loadAdditional(@NonNull ValueInput view) {
+    protected void loadAdditional(ValueInput view) {
         super.loadAdditional(view);
         hasStirred = view.getBooleanOr("HasStirred", false);
         inputs.clear();
@@ -87,7 +86,7 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
     }
 
     @Override
-    public @NonNull CompoundTag getUpdateTag(HolderLookup.@NonNull Provider registries) {
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         return saveWithoutMetadata(registries);
     }
 

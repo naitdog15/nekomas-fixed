@@ -15,7 +15,6 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.block.state.properties.RotationSegment;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jspecify.annotations.NonNull;
 
 public class FloorEndermanHeadHead extends AbstractEndermanHeadBlock {
 	public static final MapCodec<FloorEndermanHeadHead> CODEC = RecordCodecBuilder.mapCodec(
@@ -30,7 +29,7 @@ public class FloorEndermanHeadHead extends AbstractEndermanHeadBlock {
 	private static final VoxelShape SHAPE_POWERED = Block.column(8.0, 0.0, 13.0);
 
 	@Override
-	public @NonNull MapCodec<? extends FloorEndermanHeadHead> codec() {
+	public MapCodec<? extends FloorEndermanHeadHead> codec() {
 		return CODEC;
 	}
 
@@ -40,22 +39,22 @@ public class FloorEndermanHeadHead extends AbstractEndermanHeadBlock {
 	}
 
 	@Override
-	protected @NonNull VoxelShape getShape(BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull CollisionContext context) {
+	protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		return state.getValue(POWER)>0?SHAPE_POWERED:SHAPE;
 	}
 
 	@Override
-	public BlockState getStateForPlacement(@NonNull BlockPlaceContext ctx) {
+	public BlockState getStateForPlacement(BlockPlaceContext ctx) {
 		return super.getStateForPlacement(ctx).setValue(ROTATION, RotationSegment.convertToSegment(ctx.getRotation()));
 	}
 
 	@Override
-	protected @NonNull BlockState rotate(BlockState state, Rotation rotation) {
+	protected BlockState rotate(BlockState state, Rotation rotation) {
 		return state.setValue(ROTATION, rotation.rotate(state.getValue(ROTATION), MAX_ROTATIONS));
 	}
 
 	@Override
-	protected @NonNull BlockState mirror(BlockState state, Mirror mirror) {
+	protected BlockState mirror(BlockState state, Mirror mirror) {
 		return state.setValue(ROTATION, mirror.mirror(state.getValue(ROTATION), MAX_ROTATIONS));
 	}
 

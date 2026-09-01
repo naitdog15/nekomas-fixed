@@ -11,7 +11,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.FuelValues;
 import net.minecraft.world.level.block.state.BlockState;
-import org.jspecify.annotations.NonNull;
 
 public class KilnBlockEntity extends AbstractFurnaceBlockEntity {
     private static final Component CONTAINER_NAME_TEXT = Component.translatable("container.nekomasfixed.kiln");
@@ -21,17 +20,17 @@ public class KilnBlockEntity extends AbstractFurnaceBlockEntity {
     }
 
     @Override
-    protected @NonNull Component getDefaultName() {
+    protected Component getDefaultName() {
         return CONTAINER_NAME_TEXT;
     }
 
     @Override
-    protected int getBurnDuration(@NonNull FuelValues fuelRegistry, @NonNull ItemStack stack) {
+    protected int getBurnDuration(FuelValues fuelRegistry, ItemStack stack) {
         return super.getBurnDuration(fuelRegistry, stack) / 2;
     }
 
     @Override
-    protected @NonNull AbstractContainerMenu createMenu(int syncId, @NonNull Inventory playerInventory) {
+    protected AbstractContainerMenu createMenu(int syncId, Inventory playerInventory) {
         return new KilnMenu(syncId, playerInventory, this, this.dataAccess);
     }
 }

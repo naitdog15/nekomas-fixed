@@ -1,0 +1,36 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mixins]]
+    config="nekomasfixed.mixins.json"
+[[mixins]]
+    config="nekomasfixed.client.mixins.json"
+
+[[mods]]
+    modId="nekomasfixed"
+    version="${mod_version}"
+    displayName="${mod_name}"
+    description='''${mod_description}'''
+    authors="${mod_authors}"
+    logoFile="assets/nekomasfixed/icon.png"
+    credits="Ported to Forge 1.20.1 by Green_Jab. See readme.md for the full Nekoma, developer and texture credits."
+
+[[dependencies.nekomasfixed]]
+    modId="forge"
+    mandatory=true
+    versionRange="${forge_version_range}"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.nekomasfixed]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.nekomasfixed]]
+    modId="cloth_config"
+    mandatory=false
+    versionRange="[11,)"
+    ordering="AFTER"
+    side="CLIENT"

@@ -18,8 +18,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -34,14 +34,13 @@ import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.level.redstone.ExperimentalRedstoneUtils;
 import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 
 public abstract class AbstractClockBlock extends BaseEntityBlock {
 	public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
 	@Override
-	public abstract @NonNull MapCodec<? extends AbstractClockBlock> codec();
+	public abstract MapCodec<? extends AbstractClockBlock> codec();
 
 	public AbstractClockBlock(Properties settings) {
 		super(settings);
@@ -59,7 +58,7 @@ public abstract class AbstractClockBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	protected @NonNull InteractionResult useItemOn(@NonNull ItemStack stack, @NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull Player player, @NonNull InteractionHand hand, @NonNull BlockHitResult hit) {
+	protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
 		if (level.getBlockEntity(pos) instanceof ClockBlockEntity clockBlockEntity && !hand.equals(InteractionHand.OFF_HAND)) {
 			clockBlockEntity.setChanged();
 			if (state.is(BlockRegistry.CLOCK)){
@@ -101,28 +100,28 @@ public abstract class AbstractClockBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	public BlockEntity newBlockEntity(@NonNull BlockPos pos, @NonNull BlockState state) {
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
 		return new ClockBlockEntity(pos, state);
 	}
 
 	@Nullable
 	@Override
-	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, @NonNull BlockState state, @NonNull BlockEntityType<T> type) {
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
 		return createTickerHelper(type, BlockEntityTypeRegistry.CLOCK_BLOCK_ENTITY, level.isClientSide()?ClockBlockEntity::clientTick:ClockBlockEntity::tick);
 	}
 
 	@Override
-	protected int getSignal(BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull Direction direction) {
+	protected int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
 		return state.getValue(POWERED) ? 15 : 0;
 	}
 
 	@Override
-	protected int getDirectSignal(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull Direction direction) {
+	protected int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
 		return direction == Direction.UP ? state.getSignal(level, pos, direction) : 0;
 	}
 
 	@Override
-	protected boolean isSignalSource(@NonNull BlockState state) {
+	protected boolean isSignalSource(BlockState state) {
 		return true;
 	}
 
@@ -141,14 +140,14 @@ public abstract class AbstractClockBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	protected void affectNeighborsAfterRemoval(BlockState state, @NonNull ServerLevel level, @NonNull BlockPos pos, boolean moved) {
+	protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean moved) {
 		if (state.getValue(POWERED)) {
 			this.updateNeighbors(state.setValue(POWERED, false), level, pos);
 		}
 	}
 
 	@Override
-	public void animateTick(BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull RandomSource random) {
+	public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
 		if (state.getValue(POWERED)) {
 			addParticle(state, level, pos, random);
 			addParticle(state, level, pos, random);
@@ -164,38 +163,32 @@ public abstract class AbstractClockBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	protected boolean hasAnalogOutputSignal(@NonNull BlockState state) {
+	protected boolean hasAnalogOutputSignal(BlockState state) {
 		return true;
 	}
 
 	@Override
-	protected int getAnalogOutputSignal(@NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull Direction direction) {
+	protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
 		return (int)(((level.getOverworldClockTime()+5000)%12000)/1000)+1;
 	}
 
 	@Override
-	protected boolean isPathfindable(@NonNull BlockState state, @NonNull PathComputationType type) {
+	protected boolean isPathfindable(BlockState state, PathComputationType type) {
 		return false;
 	}
 
 	@Override
-	protected @NonNull BlockState updateShape(
-            @NonNull BlockState state,
-            @NonNull LevelReader level,
-            @NonNull ScheduledTickAccess tickView,
-            @NonNull BlockPos pos,
-            @NonNull Direction direction,
-            @NonNull BlockPos neighborPos,
-            @NonNull BlockState neighborState,
-            @NonNull RandomSource random
-	) {
+	protected BlockState updateShape(
+            BlockState state, Direction direction, BlockState neighborState,
+            LevelAccessor level, BlockPos pos, BlockPos neighborPos
+    ) {
 		return direction == Direction.DOWN && !this.canSurvive(state, level, pos)
 				? Blocks.AIR.defaultBlockState()
-				: super.updateShape(state, level, tickView, pos, direction, neighborPos, neighborState, random);
+				: super.updateShape(state, direction, neighborState, level, pos, neighborPos);
 	}
 
 	@Override
-	protected boolean canSurvive(@NonNull BlockState state, @NonNull LevelReader level, BlockPos pos) {
+	protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
 		return canSupportCenter(level, pos.below(), Direction.UP);
 	}
 }

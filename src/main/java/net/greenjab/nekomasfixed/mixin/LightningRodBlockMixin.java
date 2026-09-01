@@ -4,7 +4,7 @@ import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LightningRodBlock;
 import net.minecraft.world.level.block.entity.BrewingStandBlockEntity;
@@ -23,7 +23,7 @@ public class LightningRodBlockMixin {
             if (level.getBlockEntity(pos.below()) instanceof BrewingStandBlockEntity brewingStand) {
                 for (int i = 0; i <3;i++) {
                     if (brewingStand.items.get(i).getItem() == Items.GLASS_BOTTLE) {
-                        brewingStand.items.set(i, PotionContents.createItemStack(Items.POTION, ItemRegistry.LIGHTNING));
+                        brewingStand.items.set(i, PotionUtils.setPotion(new net.minecraft.world.item.ItemStack(Items.POTION), ItemRegistry.LIGHTNING.get()));
                     }
                 }
                 brewingStand.setChanged();

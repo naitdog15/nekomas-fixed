@@ -6,7 +6,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.dispenser.BlockSource;
 import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -18,6 +17,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+// NAMED GAP, not a feature cut: ItemTags.SPEARS does not exist on 1.20.1 (see boat.PillagerMixin's
+// matching note) — with no vanilla or mod spear ITEM to carry it, dispensed.is(ItemTags.SPEARS) can
+// never be true, so this behaviour is permanently unreachable until a spear item exists. Kept
+// structurally: EntityTypeRegistry.SPEAR.get()/SpearEntity (this mod's own projectile) are untouched, and
+// EntityType#create has no 2-arg (Level, MobSpawnType) convenience overload on 1.20.1 (only bare
+// create(Level) and a 7-arg full-context one — see boat.PatrolSpawnerMixin's header) so the create
+// call drops the spawn-reason argument, matching every other retarget of this pattern in the port.
 @Mixin(DefaultDispenseItemBehavior.class)
 public abstract class DefaultDispenseItemBehaviorMixin {
 
@@ -38,7 +44,7 @@ public abstract class DefaultDispenseItemBehaviorMixin {
         }
 
         if (dispensed.is(ItemTags.SPEARS)) {
-            SpearEntity entity = EntityTypeRegistry.SPEAR.create(level, EntitySpawnReason.DISPENSER);
+            SpearEntity entity = EntityTypeRegistry.SPEAR.get().create(level);
             if (entity != null) {
                 entity.absSnapTo(pos.getX()+0.5, pos.getY()+0.2, pos.getZ()+0.5, 0, 0);
                 entity.setStack(dispensed);

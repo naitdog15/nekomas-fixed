@@ -20,7 +20,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
 
 public class TargetDummyItem extends Item {
     public TargetDummyItem(Item.Properties settings) {
@@ -28,7 +27,7 @@ public class TargetDummyItem extends Item {
     }
 
     @Override
-    public @NonNull InteractionResult useOn(UseOnContext context) {
+    public InteractionResult useOn(UseOnContext context) {
         Direction direction = context.getClickedFace();
         if (direction == Direction.DOWN) return InteractionResult.FAIL;
         Level level = context.getLevel();

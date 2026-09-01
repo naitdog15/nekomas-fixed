@@ -17,7 +17,7 @@ import net.minecraft.world.entity.EntityEvent;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile;
+import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -27,7 +27,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
 
 public class SlingshotProjectile extends ThrowableItemProjectile {
 
@@ -35,8 +34,11 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
     private int ticksStuck = 0;
     private ItemStack weapon = ItemStack.EMPTY;
 
+    // PORT: 1.20.1's ThrowableItemProjectile(EntityType, LivingEntity, Level) is 3-arg (verified
+    // against vanilla Snowball.java) - the carried stack is set separately via setItem(ItemStack).
     public SlingshotProjectile(Level level, LivingEntity owner, ItemStack stack, ItemStack weapon, boolean shatter) {
-        super(EntityTypeRegistry.SLINGSHOT_PROJECTILE, owner, level, stack);
+        super(EntityTypeRegistry.SLINGSHOT_PROJECTILE.get(), owner, level);
+        this.setItem(stack);
         this.weapon = weapon.copy();
         this.shatter = shatter;
     }
@@ -46,7 +48,7 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
     }
 
     @Override
-    protected @NonNull Item getDefaultItem() {
+    protected Item getDefaultItem() {
         return Items.AIR;
     }
 
@@ -76,11 +78,11 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
 
 
     @Override
-    protected void onHitEntity(@NonNull EntityHitResult entityHitResult) {
+    protected void onHitEntity(EntityHitResult entityHitResult) {
         super.onHitEntity(entityHitResult);
         Entity entity = entityHitResult.getEntity();
         DamageSource damageSource = this.damageSources().thrown(this, this.getOwner());
-        if (entity.hurtOrSimulate(damageSource, getDamage(this.getItem().getItem()))) {
+        if (entity.hurt(damageSource, getDamage(this.getItem().getItem()))) {
             if (entity instanceof LivingEntity livingEntity2) {
                 this.knockback(livingEntity2, damageSource);
             }
@@ -110,7 +112,7 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
     }
 
     @Override
-    protected void onHit(@NonNull HitResult hitResult) {
+    protected void onHit(HitResult hitResult) {
         if (shatter && getOwner() instanceof LivingEntity entity) {
             shatter = false;
             for (int i = 0;i<5;i++) {

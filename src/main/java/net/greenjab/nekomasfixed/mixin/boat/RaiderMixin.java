@@ -6,7 +6,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.monster.PatrollingMonster;
 import net.minecraft.world.entity.raid.Raider;
-import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
+import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -24,13 +24,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 import java.util.Optional;
 
+// AbstractBoat -> Boat (see boat.AbstractBoatMixin's header). Raider#aiStep() is declared directly
+// on Raider itself (VERIFIED forge-1.20.1-mapped-src Raider.java:83), unchanged.
 @Mixin(Raider.class)
 public class RaiderMixin {
 
     @Inject(method = "aiStep", at = @At("RETURN"))
     private void moveBoat(CallbackInfo ci) {
         Raider RE = (Raider)(Object)this;
-        if (RE.isPassenger() && RE.getVehicle() instanceof AbstractBoat boatEntity && RE == boatEntity.getFirstPassenger()) {
+        if (RE.isPassenger() && RE.getVehicle() instanceof Boat boatEntity && RE == boatEntity.getFirstPassenger()) {
             boatEntity.setInput(false, false, false, false);
             Vec3 target = null;
             if (RE.getTarget()!=null) target = RE.getTarget().position();
@@ -62,7 +64,7 @@ public class RaiderMixin {
     }
 
     @Unique
-    private void updatePatrol(Raider RE, AbstractBoat boatEntity) {
+    private void updatePatrol(Raider RE, Boat boatEntity) {
         if (boatEntity instanceof BigBoat bigBoat && RE == bigBoat.getFirstPassenger()) {
             Level level = RE.level();
             if (level.getGameTime() % 20 == 0 && level.getRandom().nextInt(10) == 0) {

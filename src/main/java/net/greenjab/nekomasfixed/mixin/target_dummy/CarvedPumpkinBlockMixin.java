@@ -4,7 +4,7 @@ import net.greenjab.nekomasfixed.registry.entity.TargetDummy;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CarvedPumpkinBlock;
@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.level.block.state.pattern.BlockPattern;
 import net.minecraft.world.level.block.state.pattern.BlockPatternBuilder;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -54,7 +54,7 @@ public abstract class CarvedPumpkinBlockMixin {
         BlockState block = level.getBlockState(topPos);
         BlockPattern.BlockPatternMatch result3 = this.getTargetDummyPattern().find(level, topPos);
         if (result3 != null) {
-            TargetDummy targetDummy = EntityTypeRegistry.TARGET_DUMMY.create(level, EntitySpawnReason.TRIGGERED);
+            TargetDummy targetDummy = EntityTypeRegistry.TARGET_DUMMY.get().create(level);
             if (targetDummy != null) {
                 spawnGolemInWorld(level, result3, targetDummy, result3.getBlock(0, 1, 0).getPos());
                 if (block.is(Blocks.CARVED_PUMPKIN)) {

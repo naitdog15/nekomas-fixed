@@ -1,33 +1,23 @@
 package net.greenjab.nekomasfixed.mixin.target_dummy;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.sugar.Local;
-import net.greenjab.nekomasfixed.registry.entity.TargetDummy;
-import net.minecraft.world.entity.monster.zombie.Zombie;
-import net.minecraft.world.item.enchantment.ConditionalEffect;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.level.storage.loot.LootContext;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import static net.minecraft.world.item.enchantment.Enchantment.damageContext;
 
+/**
+ * Left empty rather than deleted (nekomasfixed.mixins.json still names {@code
+ * target_dummy.EnchantmentMixin}).
+ * <p>
+ * {@code Enchantment.applyEffects(List, LootContext, GenericAction)} — this mixin's original
+ * target — has zero 1.20.1 counterpart and must be re-expressed as an override on the new
+ * subclasses instead: a rewrite, not a retarget. {@code ConditionalEffect} — the data-driven
+ * per-effect predicate type this mixin's whole mechanism (make Smite treat a zombie-flagged
+ * TargetDummy as undead) depends on — does not exist at all on 1.20.1: enchantment damage bonuses
+ * there are computed by {@code Enchantment} subclasses overriding {@code getDamageBonus(int,
+ * MobType)} directly (VERIFIED: 1.20.1 has no {@code ConditionalEffect} class anywhere). The
+ * faithful 1.20.1 shape is a mixin on the Smite-carrying {@code DamageEnchantment} class overriding
+ * that method to special-case a zombie-flagged {@code TargetDummy} — new logic against a different
+ * class, not a retarget of this one, and out of scope here.
+ */
 @Mixin(Enchantment.class)
 public class EnchantmentMixin {
-
-    @ModifyExpressionValue(method="applyEffects(Ljava/util/List;Lnet/minecraft/world/level/storage/loot/LootContext;Lnet/minecraft/world/item/enchantment/Enchantment$GenericAction;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/enchantment/ConditionalEffect;matches(Lnet/minecraft/world/level/storage/loot/LootContext;)Z"))
-    private static <T> boolean targetDummySmite(boolean original, @Local ConditionalEffect<T> conditionalEffect, @Local(argsOnly = true) LootContext filterData) {
-        if (filterData.hasParameter(LootContextParams.THIS_ENTITY)) {
-            if (filterData.getOptionalParameter(LootContextParams.THIS_ENTITY) instanceof TargetDummy targetDummy) {
-                if (targetDummy.isZombie()) {
-                    if (conditionalEffect.requirements().isPresent()) {
-                        if (filterData.hasParameter(LootContextParams.ENCHANTMENT_LEVEL) && filterData.hasParameter(LootContextParams.DAMAGE_SOURCE)) {
-                            return conditionalEffect.requirements().get().test(damageContext(filterData.getLevel(), filterData.getOptionalParameter(LootContextParams.ENCHANTMENT_LEVEL), new Zombie(filterData.getLevel()), filterData.getOptionalParameter(LootContextParams.DAMAGE_SOURCE)));
-                        }
-                    }
-                }
-            }
-        }
-        return original;
-    }
 }

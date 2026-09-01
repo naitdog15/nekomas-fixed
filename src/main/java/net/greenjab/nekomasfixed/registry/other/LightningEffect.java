@@ -1,38 +1,50 @@
 package net.greenjab.nekomasfixed.registry.other;
 
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.effect.InstantaneousMobEffect;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
-import net.minecraft.world.entity.*;
-import org.jspecify.annotations.Nullable;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.LivingEntity;
+import javax.annotation.Nullable;
 
-
-public class LightningEffect extends InstantaneousMobEffect {
+/**
+ * 1.20.1 has no separate {@code InstantaneousMobEffect} class (that split is 26.x-only) — a
+ * one-shot effect is a plain {@link MobEffect} overriding {@link #isInstantenous()} to return
+ * {@code true} (note Mojang's own 1.20.1 spelling, missing the second "a") plus {@link
+ * #applyInstantenousEffect}. {@code EntityType.LIGHTNING_BOLT.create(Level)} takes no spawn-reason
+ * argument on 1.20.1 ({@code EntitySpawnReason} is 26.x-only).
+ */
+public class LightningEffect extends MobEffect {
     public LightningEffect(MobEffectCategory category, int color) {
         super(category, color);
     }
 
     @Override
-    public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
-        if (level.canSeeSky(entity.blockPosition())) {
-            LightningBolt lightning = EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.EVENT);
-            if (lightning != null) {
-                lightning.snapTo(entity.getX(), entity.getY(), entity.getZ());
-                level.addFreshEntity(lightning);
-            }
-        }
+    public boolean isInstantenous() {
         return true;
     }
 
     @Override
-    public void applyInstantaneousEffect(
-            ServerLevel level, @org.jspecify.annotations.Nullable Entity effectEntity, @Nullable Entity attacker, LivingEntity target, int amplifier, double proximity
-    ) {
-        if (level.canSeeSky(target.blockPosition())) {
-            LightningBolt lightning =EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.EVENT);
+    public void applyEffectTick(LivingEntity entity, int amplifier) {
+        strike(entity);
+    }
+
+    @Override
+    public void applyInstantenousEffect(@Nullable Entity source, @Nullable Entity indirectSource, LivingEntity target, int amplifier, double proximity) {
+        strike(target);
+    }
+
+    private static void strike(LivingEntity target) {
+        if (!(target.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        if (serverLevel.canSeeSky(target.blockPosition())) {
+            LightningBolt lightning = EntityType.LIGHTNING_BOLT.create(serverLevel);
             if (lightning != null) {
-                lightning.snapTo(target.getX(), target.getY(), target.getZ());
-                level.addFreshEntity(lightning);
+                lightning.moveTo(target.getX(), target.getY(), target.getZ());
+                serverLevel.addFreshEntity(lightning);
             }
         }
     }

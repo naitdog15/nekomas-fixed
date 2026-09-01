@@ -5,12 +5,11 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.projectile.throwableitemprojectile.Snowball;
+import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
-import org.jspecify.annotations.NonNull;
 
 public class SlownessSnowball extends Snowball {
 
@@ -18,12 +17,14 @@ public class SlownessSnowball extends Snowball {
         super(entityType, level);
     }
 
+    // PORT: 1.20.1's Snowball(Level, LivingEntity) is 2-arg (verified against vanilla Snowball.java) -
+    // no ItemStack parameter to carry (the snowball item is implicit for this entity type).
     public SlownessSnowball(Level level, LivingEntity owner) {
-        super(level, owner, new ItemStack(Items.SNOWBALL));
+        super(level, owner);
     }
 
     @Override
-    protected void onHitEntity(@NonNull EntityHitResult entityHitResult) {
+    protected void onHitEntity(EntityHitResult entityHitResult) {
         super.onHitEntity(entityHitResult);
         if (entityHitResult.getEntity() instanceof LivingEntity livingEntity) {
             livingEntity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 1), this.getOwner());

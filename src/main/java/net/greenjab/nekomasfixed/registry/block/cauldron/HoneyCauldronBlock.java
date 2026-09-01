@@ -4,7 +4,6 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.cauldron.CauldronInteraction;
-import net.minecraft.core.cauldron.CauldronInteractions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -25,7 +24,9 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
-import org.jspecify.annotations.NonNull;
+import net.minecraft.world.item.Item;
+
+import java.util.Map;
 
 public class HoneyCauldronBlock extends AbstractCauldronBlock {
     public static final MapCodec<HoneyCauldronBlock> CODEC = simpleCodec(HoneyCauldronBlock::new);
@@ -39,12 +40,12 @@ public class HoneyCauldronBlock extends AbstractCauldronBlock {
                 .setValue(HONEY_LEVEL, MAX_LEVEL));
     }
 
-    protected @NonNull ItemStack getCloneItemStack(@NonNull LevelReader level, @NonNull BlockPos pos, @NonNull BlockState state, boolean includeData) {
+    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         return Items.CAULDRON.getDefaultInstance();
     }
 
     @Override
-    protected @NonNull MapCodec<? extends AbstractCauldronBlock> codec() {
+    protected MapCodec<? extends AbstractCauldronBlock> codec() {
         return CODEC;
     }
 
@@ -53,11 +54,24 @@ public class HoneyCauldronBlock extends AbstractCauldronBlock {
         builder.add(HONEY_LEVEL);
     }
 
-    private static CauldronInteraction.Dispatcher createBehaviorMap() {
-        CauldronInteraction.Dispatcher map = new CauldronInteraction.Dispatcher();
-        CauldronInteractions.ID_MAPPER.put("honey", map);
+    // CauldronInteraction.Dispatcher/CauldronInteractions.ID_MAPPER (26.x) have
+    // no 1.20.1 equivalent - CauldronInteraction.newInteractionMap() (the exact static factory
+    // vanilla's own EMPTY/WATER/LAVA/POWDER_SNOW maps use) replaces both. Content is populated by
+    // registerInteractions(), not here - see its own javadoc.
+    public static final Map<Item, CauldronInteraction> HONEY = CauldronInteraction.newInteractionMap();
 
-        map.put(Items.AIR, (state, level, pos, player, hand, stack) -> {
+    private static Map<Item, CauldronInteraction> createBehaviorMap() {
+        return HONEY;
+    }
+
+    /**
+     * Called from {@code FMLCommonSetupEvent#enqueueWork} by
+     * {@code CauldronBehaviour.register()} ({@code ModBusEvents.java} needs to
+     * call {@code CauldronBehaviour.register()} from its own enqueueWork), not eagerly at
+     * class-load/field-initializer time.
+     */
+    public static void registerInteractions() {
+        HONEY.put(Items.AIR, (state, level, pos, player, hand, stack) -> {
             if(state.getValue(HONEY_LEVEL) == MAX_LEVEL) {
                 if (!level.isClientSide()) {
                     player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, new ItemStack(Items.HONEY_BLOCK)));
@@ -70,7 +84,7 @@ public class HoneyCauldronBlock extends AbstractCauldronBlock {
             }
         });
 
-        map.put(Items.GLASS_BOTTLE, (state, level, pos, player, hand, stack) -> {
+        HONEY.put(Items.GLASS_BOTTLE, (state, level, pos, player, hand, stack) -> {
             if (!level.isClientSide()) {
                 player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, new ItemStack(Items.HONEY_BOTTLE)));
                 if (state.getValue(HONEY_LEVEL) > 1) level.setBlockAndUpdate(pos, state.setValue(HONEY_LEVEL, state.getValue(HONEY_LEVEL) - 1));
@@ -82,7 +96,7 @@ public class HoneyCauldronBlock extends AbstractCauldronBlock {
             return InteractionResult.SUCCESS;
         });
 
-        map.put(Items.HONEY_BOTTLE, (state, level, pos, player, hand, stack) -> {
+        HONEY.put(Items.HONEY_BOTTLE, (state, level, pos, player, hand, stack) -> {
             if (state.getValue(HONEY_LEVEL) < MAX_LEVEL) {
                 if (!level.isClientSide()) {
                     level.setBlockAndUpdate(pos, state.setValue(HONEY_LEVEL, state.getValue(HONEY_LEVEL) + 1));
@@ -94,16 +108,15 @@ public class HoneyCauldronBlock extends AbstractCauldronBlock {
             return InteractionResult.SUCCESS;
         });
 
-        return map;
     }
 
-    protected void entityInside(@NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos, Entity entity, @NonNull InsideBlockEffectApplier handler, boolean bl) {
+    protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity, InsideBlockEffectApplier handler, boolean bl) {
         if (entity.asLivingEntity()!=null)
             entity.asLivingEntity().forceAddEffect(new MobEffectInstance(MobEffects.SLOWNESS, 3*20), entity.asLivingEntity());
     }
 
     @Override
-    protected void tick(@NonNull BlockState state, ServerLevel level, @NonNull BlockPos pos, @NonNull RandomSource random) {
+    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (!level.isClientSide()) {
             boolean hasBeehive = isBeeHiveAbove(pos, level);
             if (hasBeehive) {
@@ -134,7 +147,7 @@ public class HoneyCauldronBlock extends AbstractCauldronBlock {
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull Direction direction) {
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
         return state.getValue(HONEY_LEVEL);
     }
 }

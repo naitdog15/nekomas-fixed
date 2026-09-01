@@ -3,7 +3,6 @@ package net.greenjab.nekomasfixed.registry.block.entity;
 import com.mojang.logging.LogUtils;
 import net.greenjab.nekomasfixed.registry.block.ClamBlock;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
-import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
@@ -31,7 +30,6 @@ import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 
 public class ClamBlockEntity extends RandomizableContainerBlockEntity implements LidBlockEntity, ItemOwner {
@@ -49,13 +47,13 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 	}
 
 	@Override
-	protected void loadAdditional(@NonNull ValueInput view) {
+	protected void loadAdditional(ValueInput view) {
 		super.loadAdditional(view);
 		this.readInventoryNbt(view);
 	}
 
 	@Override
-	protected void saveAdditional(@NonNull ValueOutput view) {
+	protected void saveAdditional(ValueOutput view) {
 		super.saveAdditional(view);
 		if (!this.trySaveLootTable(view)) {
 			ContainerHelper.saveAllItems(view, this.inventory, false);
@@ -70,7 +68,7 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 	}
 
 	@Override
-	protected @NonNull Component getDefaultName() {
+	protected Component getDefaultName() {
 		return null;
 	}
 
@@ -79,11 +77,11 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 	}
 
 	@Override
-	public void preRemoveSideEffects(@NonNull BlockPos pos, @NonNull BlockState oldState) {
+	public void preRemoveSideEffects(BlockPos pos, BlockState oldState) {
 	}
 
 	@Override
-	public @NonNull CompoundTag getUpdateTag(HolderLookup.@NonNull Provider registries) {
+	public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
 		CompoundTag var4;
 		try (ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(this.problemPath(), LOGGER)) {
 			TagValueOutput nbtWriteView = TagValueOutput.createWithContext(logging, registries);
@@ -115,7 +113,7 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 
 
 	@Override
-	public @NonNull NonNullList<ItemStack> getItems() {
+	public NonNullList<ItemStack> getItems() {
 		return this.inventory;
 	}
 
@@ -125,22 +123,22 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 
 
 	@Override
-	protected void setItems(@NonNull NonNullList<ItemStack> inventory) {
+	protected void setItems(NonNullList<ItemStack> inventory) {
 		this.inventory = inventory;
 	}
 
 	@Override
-	protected @NonNull AbstractContainerMenu createMenu(int syncId, @NonNull Inventory playerInventory) {
+	protected AbstractContainerMenu createMenu(int syncId, Inventory playerInventory) {
 		return null;
 	}
 
 	@Override
-	public @NonNull Level level() {
+	public Level level() {
 		return this.level;
 	}
 
 	@Override
-	public @NonNull Vec3 position() {
+	public Vec3 position() {
 		return Vec3.atCenterOf(this.getBlockPos());
 	}
 
@@ -166,11 +164,9 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 		return 1;
 	}
 
-	@Override
-	protected void collectImplicitComponents(DataComponentMap.@NonNull Builder builder) {
-		super.collectImplicitComponents(builder);
-		if (state!=0) builder.set(ComponentRegistry.CLAM_STATE, state);
-	}
+	// collectImplicitComponents removed - see ClockBlockEntity.java's identical
+	// javadoc note (ComponentRegistry deleted; this file's own ValueInput/ValueOutput-based
+	// saveAdditional/loadAdditional are a separate, wider, not-yet-converted concern).
 
 	public void setState(int cstate) {
 		state = cstate;

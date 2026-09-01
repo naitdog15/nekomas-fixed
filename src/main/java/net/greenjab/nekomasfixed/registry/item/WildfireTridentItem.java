@@ -33,7 +33,6 @@ import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
 
 public class WildfireTridentItem extends Item implements ProjectileItem {
 
@@ -49,15 +48,15 @@ public class WildfireTridentItem extends Item implements ProjectileItem {
         return new Tool(List.of(), 1.0F, 2, false);
     }
 
-    public @NonNull ItemUseAnimation getUseAnimation(@NonNull ItemStack stack) {
+    public ItemUseAnimation getUseAnimation(ItemStack stack) {
         return ItemUseAnimation.TRIDENT;
     }
 
-    public int getUseDuration(@NonNull ItemStack stack, @NonNull LivingEntity user) {
+    public int getUseDuration(ItemStack stack, LivingEntity user) {
         return 72000;
     }
 
-    public boolean releaseUsing(@NonNull ItemStack stack, @NonNull Level level, @NonNull LivingEntity user, int remainingUseTicks) {
+    public boolean releaseUsing(ItemStack stack, Level level, LivingEntity user, int remainingUseTicks) {
         if (user instanceof Player playerEntity) {
             int i = this.getUseDuration(stack, user) - remainingUseTicks;
             if (i < 10) return false;
@@ -96,7 +95,7 @@ public class WildfireTridentItem extends Item implements ProjectileItem {
         } else return false;
     }
 
-    public @NonNull InteractionResult use(@NonNull Level level, Player user, @NonNull InteractionHand hand) {
+    public InteractionResult use(Level level, Player user, InteractionHand hand) {
         ItemStack itemStack = user.getItemInHand(hand);
         if (itemStack.nextDamageWillBreak()) {
             return InteractionResult.FAIL;
@@ -108,7 +107,7 @@ public class WildfireTridentItem extends Item implements ProjectileItem {
         }
     }
 
-    public @NonNull Projectile asProjectile(@NonNull Level level, Position pos, ItemStack stack, @NonNull Direction direction) {
+    public Projectile asProjectile(Level level, Position pos, ItemStack stack, Direction direction) {
         WildfireTrident tridentEntity = new WildfireTrident(level, pos.x(), pos.y(), pos.z(), stack.copyWithCount(1));
         tridentEntity.pickup = Pickup.ALLOWED;
         return tridentEntity;

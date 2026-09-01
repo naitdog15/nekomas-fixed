@@ -4,52 +4,50 @@ import com.google.common.collect.Lists;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.greenjab.nekomasfixed.registry.other.TermitesComponent;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
-import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
+import net.greenjab.nekomasfixed.util.EntityNbtHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponentGetter;
-import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.VisibleForDebug;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityProcessor;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.component.TypedEntityData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraft.world.level.storage.TagValueOutput;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 public class TermitehiveBlockEntity extends BlockEntity {
     static final Logger LOGGER = LogUtils.getLogger();
+    /**
+     * The 1.20.1 key names, each
+     * re-verified against forge-1.20.1-mapped-src. See
+     * {@link net.greenjab.nekomasfixed.registry.other.AnimalComponent#IRRELEVANT_ANIMAL_NBT_KEYS}
+     * for the full mapping table; this list is that one plus the two pollination keys.
+     * {@code equipment} (26.2's single merged equipment component) splits into 1.20.1's two
+     * {@code ArmorItems}/{@code HandItems} lists — Mob.java:380,392.
+     */
     static final List<String> IRRELEVANT_TERMITE_NBT_KEYS = Arrays.asList(
             "Air",
-            "drop_chances",
-            "equipment",
+            "ArmorDropChances",
+            "HandDropChances",
+            "ArmorItems",
+            "HandItems",
             "Brain",
             "CanPickUpLoot",
             "DeathTime",
-            "fall_distance",
+            "FallDistance",
             "FallFlying",
             "Fire",
             "HurtByTimestamp",
@@ -61,13 +59,15 @@ public class TermitehiveBlockEntity extends BlockEntity {
             "PortalCooldown",
             "Pos",
             "Rotation",
-            "sleeping_pos",
+            "SleepingX",
+            "SleepingY",
+            "SleepingZ",
             "CannotEnterHiveTicks",
             "TicksSincePollination",
             "CropsGrownSincePollination",
-            "hive_pos",
+            "HivePos",
             "Passengers",
-            "leash",
+            "Leash",
             "UUID"
     );
     private final List<TermitehiveBlockEntity.Termite> termites = Lists.newArrayList();
@@ -198,37 +198,32 @@ public class TermitehiveBlockEntity extends BlockEntity {
         }
     }
 
+    // See NautilusBlockEntity.java's javadoc on this same pair - the
+    // ValueInput/ValueOutput + applyImplicitComponents/collectImplicitComponents/
+    // removeComponentsFromTag trio are all 1.21+; load/saveAdditional alone already cover both the
+    // world-save case and (via BlockEntity#saveToItem's own default, unmodified body) the
+    // item-carry case on 1.20.1.
     @Override
-    protected void loadAdditional(@NonNull ValueInput view) {
-        super.loadAdditional(view);
+    public void load(CompoundTag tag) {
+        super.load(tag);
         this.termites.clear();
-        (view.read("termites", TermitehiveBlockEntity.TermiteData.LIST_CODEC).orElse(List.of())).forEach(this::addTermite);
+        if (tag.contains("termites")) {
+            TermitehiveBlockEntity.TermiteData.LIST_CODEC.parse(NbtOps.INSTANCE, tag.get("termites"))
+                    .result().ifPresent(list -> list.forEach(this::addTermite));
+        }
     }
 
+    // This is the second "unguarded even when the list is empty"
+    // site (26.2 source: TermitehiveBlockEntity.java:225's collectImplicitComponents). Guarded by
+    // the `if` below - an empty termite hive item/block writes no "termites" key at all.
     @Override
-    protected void saveAdditional(@NonNull ValueOutput view) {
-        super.saveAdditional(view);
-        view.store("termites", TermitehiveBlockEntity.TermiteData.LIST_CODEC, this.createTermitesData());
-    }
-
-    @Override
-    protected void applyImplicitComponents(@NonNull DataComponentGetter components) {
-        super.applyImplicitComponents(components);
-        this.termites.clear();
-        List<TermitehiveBlockEntity.TermiteData> list = components.getOrDefault(ComponentRegistry.TERMITES, TermitesComponent.DEFAULT).termites();
-        list.forEach(this::addTermite);
-    }
-
-    @Override
-    protected void collectImplicitComponents(DataComponentMap.@NonNull Builder builder) {
-        super.collectImplicitComponents(builder);
-        builder.set(ComponentRegistry.TERMITES, new TermitesComponent(this.createTermitesData()));
-    }
-
-    @Override
-    public void removeComponentsFromTag(@NonNull ValueOutput view) {
-        super.removeComponentsFromTag(view);
-        view.discard("termites");
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        List<TermitehiveBlockEntity.TermiteData> data = this.createTermitesData();
+        if (!data.isEmpty()) {
+            TermitehiveBlockEntity.TermiteData.LIST_CODEC.encodeStart(NbtOps.INSTANCE, data)
+                    .result().ifPresent(encoded -> tag.put("termites", encoded));
+        }
     }
 
     private List<TermitehiveBlockEntity.TermiteData> createTermitesData() {
@@ -259,50 +254,41 @@ public class TermitehiveBlockEntity extends BlockEntity {
 
     }
 
-    public record TermiteData(TypedEntityData<EntityType<?>> entityData, int ticksInHive, int minTicksInHive) {
+    /**
+     * REWRITTEN like {@code AnimalComponent.StoredEntityData} (same
+     * dependency: {@code TypedEntityData}, {@code ProblemReporter.ScopedCollector}, {@code
+     * TagValueOutput} do not exist on 1.20.1). Wraps a plain {@link CompoundTag} carrying its own
+     * {@code "id"} key (via {@link EntityNbtHelper}) instead of a typed wrapper.
+     */
+    public record TermiteData(CompoundTag entityData, int ticksInHive, int minTicksInHive) {
         public static final Codec<TermitehiveBlockEntity.TermiteData> CODEC = RecordCodecBuilder.create(
                  instance -> instance.group(
-                                TypedEntityData.codec(EntityType.CODEC).fieldOf("entity_data").forGetter(TermitehiveBlockEntity.TermiteData::entityData),
+                                CompoundTag.CODEC.fieldOf("entity_data").forGetter(TermitehiveBlockEntity.TermiteData::entityData),
                                 Codec.INT.fieldOf("ticks_in_hive").forGetter(TermitehiveBlockEntity.TermiteData::ticksInHive),
                                 Codec.INT.fieldOf("min_ticks_in_hive").forGetter(TermitehiveBlockEntity.TermiteData::minTicksInHive)
                         )
                         .apply(instance, TermitehiveBlockEntity.TermiteData::new)
         );
         public static final Codec<List<TermitehiveBlockEntity.TermiteData>> LIST_CODEC = CODEC.listOf();
-        public static final StreamCodec<RegistryFriendlyByteBuf, TermitehiveBlockEntity.TermiteData> PACKET_CODEC = StreamCodec.composite(
-                TypedEntityData.streamCodec(EntityType.STREAM_CODEC),
-                TermitehiveBlockEntity.TermiteData::entityData,
-                ByteBufCodecs.VAR_INT,
-                TermitehiveBlockEntity.TermiteData::ticksInHive,
-                ByteBufCodecs.VAR_INT,
-                TermitehiveBlockEntity.TermiteData::minTicksInHive,
-                TermitehiveBlockEntity.TermiteData::new
-        );
+        // PACKET_CODEC deleted, not ported: 1.20.1 syncs the whole stack/block-entity tag to
+        // the client for free, so a dedicated network codec for this record is unnecessary.
 
         public static TermitehiveBlockEntity.TermiteData of(Entity entity) {
-            TermitehiveBlockEntity.TermiteData var5;
-            try (ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(entity.problemPath(), TermitehiveBlockEntity.LOGGER)) {
-                TagValueOutput nbtWriteView = TagValueOutput.createWithContext(logging, entity.registryAccess());
-                entity.save(nbtWriteView);
-                TermitehiveBlockEntity.IRRELEVANT_TERMITE_NBT_KEYS.forEach(nbtWriteView::discard);
-                CompoundTag nbtCompound = nbtWriteView.buildResult();
-                boolean bl = nbtCompound.getBooleanOr("HasNectar", false);
-                var5 = new TermitehiveBlockEntity.TermiteData(TypedEntityData.of(entity.getType(), nbtCompound), 0, bl ? 2400 : 600);
-            }
-
-            return var5;
+            CompoundTag tag = EntityNbtHelper.store(entity, Set.copyOf(TermitehiveBlockEntity.IRRELEVANT_TERMITE_NBT_KEYS));
+            boolean hasNectar = tag.getBoolean("HasNectar");
+            return new TermitehiveBlockEntity.TermiteData(tag, 0, hasNectar ? 2400 : 600);
         }
 
         public static TermitehiveBlockEntity.TermiteData create(int ticksInHive) {
-            return new TermitehiveBlockEntity.TermiteData(TypedEntityData.of(EntityTypeRegistry.TERMITE, new CompoundTag()), ticksInHive, 600);
+            CompoundTag tag = new CompoundTag();
+            tag.putString("id", EntityType.getKey(EntityTypeRegistry.TERMITE.get()).toString());
+            return new TermitehiveBlockEntity.TermiteData(tag, ticksInHive, 600);
         }
 
         @Nullable
         public Entity loadEntity(Level level) {
-            CompoundTag nbtCompound = this.entityData.copyTagWithoutId();
-            TermitehiveBlockEntity.IRRELEVANT_TERMITE_NBT_KEYS.forEach(nbtCompound::remove);
-            Entity entity = EntityType.loadEntityRecursive(this.entityData.type(), nbtCompound, level, EntitySpawnReason.LOAD, EntityProcessor.NOP);
-            if (entity != null && entity.getType()==EntityTypeRegistry.TERMITE) {
+            Entity entity = EntityNbtHelper.load(this.entityData.copy(), level);
+            if (entity != null && entity.getType() == EntityTypeRegistry.TERMITE.get()) {
                 return entity;
             } else {
                 return null;

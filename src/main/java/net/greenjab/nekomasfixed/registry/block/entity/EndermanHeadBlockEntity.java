@@ -24,7 +24,6 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
 public class EndermanHeadBlockEntity extends BlockEntity {
 
 	protected EndermanHeadBlockEntity(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
@@ -36,12 +35,12 @@ public class EndermanHeadBlockEntity extends BlockEntity {
 	}
 
 	@Override
-	protected void loadAdditional(@NonNull ValueInput view) {
+	protected void loadAdditional(ValueInput view) {
 		super.loadAdditional(view);
 	}
 
 	@Override
-	protected void saveAdditional(@NonNull ValueOutput view) {
+	protected void saveAdditional(ValueOutput view) {
 		super.saveAdditional(view);
 	}
 
@@ -55,12 +54,12 @@ public class EndermanHeadBlockEntity extends BlockEntity {
 	}
 
 	@Override
-	protected void applyImplicitComponents(@NonNull DataComponentGetter components) {
+	protected void applyImplicitComponents(DataComponentGetter components) {
 		super.applyImplicitComponents(components);
 	}
 
 	@Override
-	protected void collectImplicitComponents(DataComponentMap.@NonNull Builder builder) {
+	protected void collectImplicitComponents(DataComponentMap.Builder builder) {
 		super.collectImplicitComponents(builder);
 	}
 

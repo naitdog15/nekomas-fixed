@@ -12,7 +12,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import org.jspecify.annotations.NonNull;
 
 public class StackedCakeBlockEntity extends BlockEntity {
     public BlockState LAYER_2_STATE = Blocks.AIR.defaultBlockState();
@@ -28,7 +27,7 @@ public class StackedCakeBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(@NonNull ValueOutput view) {
+    protected void saveAdditional(ValueOutput view) {
         super.saveAdditional(view);
         view.store("layer_2", BlockState.CODEC, LAYER_2_STATE);
         view.store("layer_3", BlockState.CODEC, LAYER_3_STATE);
@@ -36,7 +35,7 @@ public class StackedCakeBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void loadAdditional(@NonNull ValueInput view) {
+    protected void loadAdditional(ValueInput view) {
         super.loadAdditional(view);
         LAYER_2_STATE = view.read("layer_2", BlockState.CODEC).orElse(Blocks.AIR.defaultBlockState());
         LAYER_3_STATE = view.read("layer_3", BlockState.CODEC).orElse(Blocks.AIR.defaultBlockState());
@@ -44,7 +43,7 @@ public class StackedCakeBlockEntity extends BlockEntity {
     }
 
     @Override
-    public @NonNull CompoundTag getUpdateTag(HolderLookup.@NonNull Provider registries) {
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         return saveWithoutMetadata(registries);
     }
 }

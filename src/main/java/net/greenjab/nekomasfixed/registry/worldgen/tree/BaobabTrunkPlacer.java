@@ -10,7 +10,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
@@ -19,7 +18,6 @@ import net.minecraft.world.level.levelgen.feature.configurations.TreeConfigurati
 import net.minecraft.world.level.levelgen.feature.foliageplacers.FoliagePlacer;
 import net.minecraft.world.level.levelgen.feature.trunkplacers.TrunkPlacer;
 import net.minecraft.world.level.levelgen.feature.trunkplacers.TrunkPlacerType;
-import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -34,16 +32,19 @@ public class BaobabTrunkPlacer extends TrunkPlacer {
                     trunkPlacerParts(instance).apply(instance, BaobabTrunkPlacer::new));
 
     @Override
-    protected @NonNull TrunkPlacerType<?> type() {
-        return ModTrunkPlacers.BAOBAB_TRUNK_PLACER;
+    protected TrunkPlacerType<?> type() {
+        return ModTrunkPlacers.BAOBAB_TRUNK_PLACER.get();
     }
 
     @Override
-    public @NonNull List<FoliagePlacer.FoliageAttachment> placeTrunk(@NonNull WorldGenLevel level, @NonNull BiConsumer<BlockPos, BlockState> trunkSetter, @NonNull RandomSource random, int treeHeight, @NonNull BlockPos origin, @NonNull TreeConfiguration config) {
+    public List<FoliagePlacer.FoliageAttachment> placeTrunk(WorldGenLevel level, BiConsumer<BlockPos, BlockState> trunkSetter, RandomSource random, int treeHeight, BlockPos origin, TreeConfiguration config) {
         List<FoliagePlacer.FoliageAttachment> list = Lists.newArrayList();
+        // PORT: net.minecraft.world.attribute.EnvironmentAttributes (a per-position attribute query
+        // system) doesn't exist on 1.20.1; the vanilla 1.20.1 idiom for "does water evaporate here" is
+        // dimensionType().ultraWarm() (used by LavaFluid/WaterFluid and Nether generation).
         boolean water = false;
         if (level instanceof WorldGenRegion chunkRegion)
-            if (!chunkRegion.getLevel().environmentAttributes().getValue(EnvironmentAttributes.WATER_EVAPORATES, origin))
+            if (!chunkRegion.getLevel().dimensionType().ultraWarm())
                 water = random.nextBoolean();
         int x,y,z;
         float X = random.nextFloat()-0.5f;
@@ -111,8 +112,8 @@ public class BaobabTrunkPlacer extends TrunkPlacer {
                 dz += (float) Math.cos(rot*Math.PI/180f);
                 BlockPos pos = new BlockPos((int) dx, dy, (int) dz);
                 if (level.isStateAtPosition(pos, state -> state.is(BlockTags.REPLACEABLE))) {
-                    if (length < 3) trunkSetter.accept(pos, BlockRegistry.BAOBAB_LOG.defaultBlockState());
-                    else trunkSetter.accept(pos, BlockRegistry.BAOBAB_LOG.defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.fromYRot(rot).getAxis()));
+                    if (length < 3) trunkSetter.accept(pos, BlockRegistry.BAOBAB_LOG.get().defaultBlockState());
+                    else trunkSetter.accept(pos, BlockRegistry.BAOBAB_LOG.get().defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.fromYRot(rot).getAxis()));
                 }
                 if (length == 0) {
                     BlockPos leafPos = pos.above(1);

@@ -1,20 +1,63 @@
 package net.greenjab.nekomasfixed.registry.registries;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentCategory;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 
+/**
+ * On {@code main} these were {@code ResourceKey<Enchantment>} constants only, with the real
+ * enchantments living as datapack JSON (empty {@code "effects": {}} - the gameplay lives entirely
+ * in mixins). 1.20.1 has no datapack-JSON enchantment registry at all: enchantments are a plain
+ * Java {@code DeferredRegister<Enchantment>}, and {@code Enchantment} is abstract with a
+ * trivial {@code protected Enchantment(Rarity, EnchantmentCategory, EquipmentSlot[])} constructor -
+ * three one-line subclasses, no other members, since the JSON's own effects were already empty.
+ * <p>
+ * Rarity/category/slot values below are read off {@code data/nekomasfixed/enchantment/*.json}
+ * (still present, still the source of truth for these numbers even though the JSON registry path
+ * itself is gone): all three have {@code "weight": 5} (-&gt; {@link Enchantment.Rarity#UNCOMMON},
+ * the only 1.20.1 rarity whose own weight is 5) and {@code "slots": ["mainhand"]}. Category has no
+ * clean 1:1 translation (1.20.1's {@code EnchantmentCategory} is a coarser per-item-class
+ * classifier, not the JSON's tag-based {@code supported_items}) - chosen by nearest existing
+ * category to the JSON's {@code supported_items} tag: dismount -&gt; spears/TRIDENT (matches
+ * {@code #nekomasfixed:spears}), leeching -&gt; WEAPON (matches {@code
+ * #minecraft:enchantable/melee_weapon}), shatter -&gt; BOW (matches {@code
+ * #nekomasfixed:enchantable/slingshot}, a projectile launcher). This governs only which items the
+ * enchantment table / anvil will OFFER the enchantment for - it does not gate whether the mixins
+ * that implement the actual effects fire, since the effects blocks were already empty and no
+ * behaviour moves.
+ * <p>
+ * {@code mixin/target_dummy/EnchantmentMixin}'s {@code Enchantment.applyEffects(List, LootContext,
+ * GenericAction)} target has zero 1.20.1 counterpart, so that mixin's logic still needs to be
+ * re-expressed as an override on the three subclasses below.
+ */
 public class EnchantmentRegistry {
-    public static void registerEnchantments() {
-        System.out.println("register Enchantments");
+
+    public static final DeferredRegister<Enchantment> ENCHANTMENTS =
+            DeferredRegister.create(ForgeRegistries.ENCHANTMENTS, NekomasFixed.NAMESPACE);
+
+    public static final RegistryObject<Enchantment> DISMOUNT = ENCHANTMENTS.register("dismount", DismountEnchantment::new);
+    public static final RegistryObject<Enchantment> LEECHING = ENCHANTMENTS.register("leeching", LeechingEnchantment::new);
+    public static final RegistryObject<Enchantment> SHATTER = ENCHANTMENTS.register("shatter", ShatterEnchantment::new);
+
+    public static class DismountEnchantment extends Enchantment {
+        public DismountEnchantment() {
+            super(Rarity.UNCOMMON, EnchantmentCategory.TRIDENT, new EquipmentSlot[]{EquipmentSlot.MAINHAND});
+        }
     }
 
-    public static final ResourceKey<Enchantment> DISMOUNT = of("dismount");
-    public static final ResourceKey<Enchantment> LEECHING = of("leeching");
-    public static final ResourceKey<Enchantment> SHATTER = of("shatter");
+    public static class LeechingEnchantment extends Enchantment {
+        public LeechingEnchantment() {
+            super(Rarity.UNCOMMON, EnchantmentCategory.WEAPON, new EquipmentSlot[]{EquipmentSlot.MAINHAND});
+        }
+    }
 
-    private static ResourceKey<Enchantment> of(String id) {
-        return ResourceKey.create(Registries.ENCHANTMENT, NekomasFixed.id(id));
+    public static class ShatterEnchantment extends Enchantment {
+        public ShatterEnchantment() {
+            super(Rarity.UNCOMMON, EnchantmentCategory.BOW, new EquipmentSlot[]{EquipmentSlot.MAINHAND});
+        }
     }
 }

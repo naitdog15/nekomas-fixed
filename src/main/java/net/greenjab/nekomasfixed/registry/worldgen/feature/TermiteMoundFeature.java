@@ -42,8 +42,8 @@ public class TermiteMoundFeature extends Feature<SimpleBlockConfiguration> {
                         boolean isSupported = world.getBlockState(pos.below()).isRedstoneConductor(world, pos.below()) && !world.getBlockState(pos.below()).is(BlockTags.REPLACEABLE);
 
                         if (isSurface && random.nextInt(4) == 0 && isSupported) {
-                            world.setBlock(pos, BlockRegistry.TERMITE_HIVE.defaultBlockState(), 3);
-                            world.getBlockEntity(pos, BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY).ifPresent(blockEntity -> {
+                            world.setBlock(pos, BlockRegistry.TERMITE_HIVE.get().defaultBlockState(), 3);
+                            world.getBlockEntity(pos, BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY.get()).ifPresent(blockEntity -> {
                                 if (random.nextBoolean()) blockEntity.addTermite(TermitehiveBlockEntity.TermiteData.create(random.nextInt(599)));
                             });
                         } else if(isSupported){

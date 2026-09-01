@@ -29,7 +29,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -112,7 +111,7 @@ public class MelonBlock extends Block {
 	}
 
 	@Override
-	public @NonNull InteractionResult useItemOn(@NonNull ItemStack stack, @NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos, Player player, @NonNull InteractionHand hand, @NonNull BlockHitResult hit) {
+	public InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
 
 		if (!player.getItemInHand(hand).isEmpty()) {
 			return InteractionResult.FAIL;
@@ -165,7 +164,7 @@ public class MelonBlock extends Block {
 
 
 	@Override
-	protected @NonNull List<ItemStack> getDrops(@NonNull BlockState state, LootParams.@NonNull Builder builder) {
+	protected List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
 		if (this.drops.isEmpty()) {
 			return Collections.emptyList();
 		} else {
@@ -185,29 +184,29 @@ public class MelonBlock extends Block {
 	}
 
 	@Override
-	public @NonNull VoxelShape getShape(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull CollisionContext context) {
+	public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		return SHAPES[toInt(state)];
 	}
 
 	@Override
-	public boolean useShapeForLightOcclusion(@NonNull BlockState state) {
+	public boolean useShapeForLightOcclusion(BlockState state) {
 		return true;
 	}
 
 	@Override
-	public float getShadeBrightness(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos) {
+	public float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos) {
 		return isFull(state) ? 0.2F : 1.0F;
 	}
 
 	@Override
-	protected void createBlockStateDefinition(StateDefinition.@NonNull Builder<Block, BlockState> builder) {
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
 		for (int i = 0;i<8;i++){
 			builder.add(CORNERS[i]);
 		}
 	}
 
 	@Override
-	public void animateTick(@NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull RandomSource random) {
+	public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
 		if (!glistering)return;
 		if (level.getRandom().nextInt(2)!=0) return;
 		ParticleUtils.spawnParticlesOnBlockFace(level, pos, ParticleTypes.END_ROD, UniformInt.of(1, 1), Direction.getRandom(level.getRandom()), () -> new Vec3(0, 0, 0), 0.55);

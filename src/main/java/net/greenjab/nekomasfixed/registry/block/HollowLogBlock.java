@@ -2,13 +2,13 @@ package net.greenjab.nekomasfixed.registry.block;
 
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.greenjab.nekomasfixed.mixin.accessor.FlowerPotBlockAccessor;
 import net.greenjab.nekomasfixed.registry.block.entity.HollowLogBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.FlowerPotBlock;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,7 +22,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -46,8 +45,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -86,29 +84,23 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
             ).apply(instance, HollowLogBlock::new)
     );
     @Override
-    protected @NonNull MapCodec<? extends BaseEntityBlock> codec() {
+    protected MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
     }
 
     @Override
-    protected @NonNull BlockState updateShape(
-            BlockState state,
-            @NonNull LevelReader level,
-            @NonNull ScheduledTickAccess tickView,
-            @NonNull BlockPos pos,
-            @NonNull Direction direction,
-            @NonNull BlockPos neighborPos,
-            @NonNull BlockState neighborState,
-            @NonNull RandomSource random
+    protected BlockState updateShape(
+            BlockState state, Direction direction, BlockState neighborState,
+            LevelAccessor level, BlockPos pos, BlockPos neighborPos
     ) {
         if (state.getValue(WATERLOGGED)) {
-            tickView.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+            level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         }
-        return super.updateShape(state, level, tickView, pos, direction, neighborPos, neighborState, random);
+        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
 
     @Override
-    protected @NonNull BlockState rotate(@NonNull BlockState state, @NonNull Rotation rotation) {
+    protected BlockState rotate(BlockState state, Rotation rotation) {
         return changeRotation(state, rotation);
     }
     public static BlockState changeRotation(BlockState state, Rotation rotation) {
@@ -123,7 +115,7 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.@NonNull Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
         builder.add(AXIS, WATERLOGGED, LIGHT_LEVEL, SOLID_INSIDE);
     }
@@ -134,12 +126,12 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
     }
 
     @Override
-    protected @NonNull FluidState getFluidState(BlockState state) {
+    protected FluidState getFluidState(BlockState state) {
         return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
     @Override
-    public boolean placeLiquid(LevelAccessor level, @NonNull BlockPos pos, @NonNull BlockState state, @NonNull FluidState fluidState) {
+    public boolean placeLiquid(LevelAccessor level, BlockPos pos, BlockState state, FluidState fluidState) {
         if (level.getBlockEntity(pos) instanceof HollowLogBlockEntity logBE) {
             if (!(logBE.getStoredBlock()==Blocks.AIR.defaultBlockState()||logBE.getStoredStack().getItemName().getString().toLowerCase().contains("glass"))) return false;
         }
@@ -147,7 +139,7 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
     }
 
     @Override
-    public boolean canPlaceLiquid(@Nullable LivingEntity filler, BlockGetter level, @NonNull BlockPos pos, @NonNull BlockState state, @NonNull Fluid fluid) {
+    public boolean canPlaceLiquid(@Nullable LivingEntity filler, BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
         if (level.getBlockEntity(pos) instanceof HollowLogBlockEntity logBE) {
             if (!(logBE.getStoredBlock()==Blocks.AIR.defaultBlockState()||logBE.getStoredStack().getItemName().getString().toLowerCase().contains("glass"))) return false;
         }
@@ -155,24 +147,30 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
     }
 
     @Override
-    public @NonNull VoxelShape getShape(BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull CollisionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return state.getValue(SOLID_INSIDE)? SHAPES_BY_AXIS_FILLED.get(state.getValue(AXIS)):SHAPES_BY_AXIS.get(state.getValue(AXIS));
     }
 
     @Override
-    public @Nullable BlockEntity newBlockEntity(@NonNull BlockPos pos, @NonNull BlockState state) {
+    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
        return new HollowLogBlockEntity(pos, state);
     }
 
-    protected @NonNull InteractionResult useItemOn(@NonNull ItemStack stack, @NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull Player player, @NonNull InteractionHand hand, @NonNull BlockHitResult hit) {
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (level instanceof ServerLevel serverLevel) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof HollowLogBlockEntity logBE) {
                 if (stack.getItem() instanceof BlockItem blockItem) {
                     if (blockItem.getBlock().defaultBlockState().is(BlockTags.FLOWERS) && logBE.getStoredBlock().is(BlockTags.FLOWER_POTS)) {
+                        // FlowerPotBlockAccessor -> Forge's own FlowerPotBlock#getFullPotsView() (:127-137).
+                        // The null/absence branch below is intentional and must be preserved: membership in
+                        // BlockTags.FLOWERS does NOT guarantee a FlowerPotBlock mapping (tall flowers are
+                        // unpottable), so this must never collapse to a bare `.get(key).get()`.
                         Block plant = blockItem.getBlock();
-                        Block potted = FlowerPotBlockAccessor.getContentToPotted().get(plant);
-                        if (potted != null) {
+                        java.util.function.Supplier<? extends Block> pottedSupplier =
+                                ((FlowerPotBlock) Blocks.FLOWER_POT).getFullPotsView().get(ForgeRegistries.BLOCKS.getKey(plant));
+                        if (pottedSupplier != null) {
+                            Block potted = pottedSupplier.get();
                             logBE.setStoredBlock(stack.copyWithCount(1), potted.defaultBlockState());
                             stack.consume(1, player);
                             return InteractionResult.SUCCESS;
@@ -221,7 +219,7 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
     }
 
     @Override
-    protected @NonNull List<ItemStack> getDrops(@NonNull BlockState state, LootParams.Builder builder) {
+    protected List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
         BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         List<ItemStack> list = super.getDrops(state, builder);
         if (blockEntity instanceof HollowLogBlockEntity hollowLogBlockEntity) {

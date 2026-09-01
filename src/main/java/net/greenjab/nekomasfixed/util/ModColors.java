@@ -1,7 +1,6 @@
 package net.greenjab.nekomasfixed.util;
 
 import net.minecraft.util.StringRepresentable;
-import org.jspecify.annotations.NonNull;
 
 public class ModColors implements StringRepresentable {
     public static final ModColors AMBER = new ModColors("amber", 0xE0AF0B);
@@ -27,7 +26,7 @@ public class ModColors implements StringRepresentable {
     }
 
     @Override
-    public @NonNull String getSerializedName() {
+    public String getSerializedName() {
         return this.name;
     }
 }

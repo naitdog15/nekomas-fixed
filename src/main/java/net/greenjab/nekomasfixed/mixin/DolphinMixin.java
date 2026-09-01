@@ -2,10 +2,9 @@ package net.greenjab.nekomasfixed.mixin;
 
 import net.greenjab.nekomasfixed.registry.entity.goal.MoveToCoralReefGoal;
 import net.greenjab.nekomasfixed.registry.registries.OtherRegistry;
-import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.animal.dolphin.Dolphin;
+import net.minecraft.world.entity.animal.Dolphin;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -15,12 +14,16 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+// Dolphin has no .dolphin subpackage on 1.20.1 (same dropped-segment pattern as boat/skeleton/
+// illager). defineSynchedData() takes no Builder argument here either (matches SheepMixin's note).
+// Uses the public getEntityData() accessor (already relied on below) rather than @Shadow-ing the
+// field directly.
 @Mixin(Dolphin.class)
 public class DolphinMixin {
 
     @Inject(method = "defineSynchedData", at = @At("TAIL"))
-    private void initCustomDataTracker(SynchedEntityData.Builder entityData, CallbackInfo ci) {
-        entityData.define(OtherRegistry.IS_TROPICAL_FISH_FED, false);
+    private void initCustomDataTracker(CallbackInfo ci) {
+        ((Dolphin)(Object)this).getEntityData().define(OtherRegistry.IS_TROPICAL_FISH_FED, false);
     }
 
     @Inject(method = "mobInteract", at = @At("HEAD"))
@@ -29,7 +32,7 @@ public class DolphinMixin {
         if(stack.is(Items.TROPICAL_FISH)){
             Dolphin dolphin = (Dolphin)(Object)this;
             dolphin.getEntityData().set(OtherRegistry.IS_TROPICAL_FISH_FED, true);
-            stack.consume(1, player);
+            stack.shrink(1);
         }
     }
 

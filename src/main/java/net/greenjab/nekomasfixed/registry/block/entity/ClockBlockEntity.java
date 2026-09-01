@@ -7,7 +7,6 @@ import net.greenjab.nekomasfixed.registry.block.AbstractClockBlock;
 import net.greenjab.nekomasfixed.registry.block.FloorClockBlock;
 import net.greenjab.nekomasfixed.registry.other.StoredTimeComponent;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
-import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentGetter;
 import net.minecraft.core.component.DataComponentMap;
@@ -31,8 +30,7 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 
 public class ClockBlockEntity extends BlockEntity implements ItemOwner {
 	private int storedTime =-1;
@@ -50,7 +48,7 @@ public class ClockBlockEntity extends BlockEntity implements ItemOwner {
 	}
 
 	@Override
-	protected void loadAdditional(@NonNull ValueInput view) {
+	protected void loadAdditional(ValueInput view) {
 		super.loadAdditional(view);
 		view.read("storedTime", Codec.INT).ifPresent(this::setStoredTime);
 		view.read("timer", Codec.INT).ifPresent(this::setTimer);
@@ -59,7 +57,7 @@ public class ClockBlockEntity extends BlockEntity implements ItemOwner {
 	}
 
 	@Override
-	protected void saveAdditional(@NonNull ValueOutput view) {
+	protected void saveAdditional(ValueOutput view) {
 		super.saveAdditional(view);
 		view.storeNullable("storedTime", Codec.INT, getStoredTime());
 		view.storeNullable("timer", Codec.INT, getTimer());
@@ -72,7 +70,7 @@ public class ClockBlockEntity extends BlockEntity implements ItemOwner {
 	}
 
 	@Override
-	public void preRemoveSideEffects(@NonNull BlockPos pos, @NonNull BlockState oldState) {
+	public void preRemoveSideEffects(BlockPos pos, BlockState oldState) {
 		if (this.level != null && bell) {
 			Containers.dropItemStack(this.level, pos.getX(), pos.getY(), pos.getZ(), Items.BELL.getDefaultInstance());
 		}
@@ -83,17 +81,13 @@ public class ClockBlockEntity extends BlockEntity implements ItemOwner {
 		return super.triggerEvent(type, data);
 	}
 
-	@Override
-	protected void applyImplicitComponents(@NonNull DataComponentGetter components) {
-		super.applyImplicitComponents(components);
-		this.storedTime = components.getOrDefault(ComponentRegistry.STORED_TIME, new StoredTimeComponent(-1)).time();
-	}
-
-	@Override
-	protected void collectImplicitComponents(DataComponentMap.@NonNull Builder builder) {
-		super.collectImplicitComponents(builder);
-		if (this.storedTime>0) builder.set(ComponentRegistry.STORED_TIME, new StoredTimeComponent(this.storedTime));
-	}
+	// applyImplicitComponents/collectImplicitComponents (the item-stack-carries-
+	// block-entity-state sync pair) are 1.21+ and ComponentRegistry is deleted - removed
+	// rather than retargeted. NOT fully resolved here: this file's own saveAdditional/
+	// loadAdditional above/below still use the 1.21+ ValueInput/ValueOutput view API throughout
+	// (view.storeNullable(...) etc., not touched by this edit), which is a wider, separate
+	// conversion (roughly 18 such files repo-wide) outside a registry-conversion's
+	// scope - named here, not silently dropped.
 
 	public void setStoredTime(int time) {
 		storedTime = time;
@@ -121,12 +115,12 @@ public class ClockBlockEntity extends BlockEntity implements ItemOwner {
 	}
 
 	@Override
-	public @NonNull Level level() {
+	public Level level() {
 		return this.level;
 	}
 
 	@Override
-	public @NonNull Vec3 position() {
+	public Vec3 position() {
 		return Vec3.atCenterOf(this.getBlockPos());
 	}
 

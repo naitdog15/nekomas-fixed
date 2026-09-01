@@ -7,7 +7,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.Instrument;
 import net.minecraft.world.item.Instruments;
 import net.minecraft.world.item.component.InstrumentComponent;
-import org.jspecify.annotations.NonNull;
 
 public enum GoatHornType implements StringRepresentable {
     CALL(Instruments.CALL_GOAT_HORN, new MobEffectInstance(MobEffects.SPEED, 20*60, 0)),
@@ -49,7 +48,7 @@ public enum GoatHornType implements StringRepresentable {
     }
 
     @Override
-    public @NonNull String getSerializedName() {
+    public String getSerializedName() {
         return name().toLowerCase();
     }
 }

@@ -9,7 +9,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -20,8 +19,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.AbstractCandleBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -38,8 +37,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,18 +55,18 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    protected @NonNull Iterable<Vec3> getParticleOffsets(BlockState state) {
+    protected Iterable<Vec3> getParticleOffsets(BlockState state) {
         int height = ((state.getValue(SLICES)-1)/7)+1;
         return List.of((new Vec3(8.0F, 8f + 8f * height - ((2 * (height -1)) - (height >= 3 ? -2 : 0)), 8.0F)).scale(0.0625F));
     }
 
     @Override
-    protected boolean canSurvive(@NonNull BlockState state, LevelReader level, BlockPos pos) {
+    protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         return level.getBlockState(pos.below()).isSolid();
     }
 
     @Override
-    protected boolean canBeReplaced(@NonNull BlockState state, @NonNull BlockPlaceContext context) {
+    protected boolean canBeReplaced(BlockState state, BlockPlaceContext context) {
         return false;
     }
 
@@ -78,7 +76,7 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    public @NonNull MapCodec<StackedCakeBlock> codec(){return CODEC;}
+    public MapCodec<StackedCakeBlock> codec(){return CODEC;}
 
     static {
         for (int height = 0; height < 3; height++) {
@@ -94,7 +92,7 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    public void setPlacedBy(@NonNull Level level, @NonNull BlockPos pos, @NonNull BlockState state, @Nullable LivingEntity placer, @NonNull ItemStack itemStack) {
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.setPlacedBy(level, pos, state, placer, itemStack);
     }
 
@@ -141,7 +139,7 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    protected @NonNull VoxelShape getShape(BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull CollisionContext context) {
+    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         int height = (state.getValue(SLICES)-1)/7;
         int slice = (state.getValue(SLICES)-1)%7;
         if (state.getValue(CANDLE)){
@@ -166,12 +164,15 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    protected @NonNull BlockState updateShape(@NonNull BlockState state, @NonNull LevelReader level, @NonNull ScheduledTickAccess tickView, @NonNull BlockPos pos, @NonNull Direction direction, @NonNull BlockPos neighborPos, @NonNull BlockState neighborState, @NonNull RandomSource random) {
-        return direction == Direction.DOWN && !state.canSurvive(level, pos) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, level, tickView, pos, direction, neighborPos, neighborState, random);
+    protected BlockState updateShape(
+            BlockState state, Direction direction, BlockState neighborState,
+            LevelAccessor level, BlockPos pos, BlockPos neighborPos
+    ) {
+        return direction == Direction.DOWN && !state.canSurvive(level, pos) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
 
     @Override
-    protected @NonNull InteractionResult useItemOn(@NonNull ItemStack stack, @NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull Player player, @NonNull InteractionHand hand, @NonNull BlockHitResult hit) {
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (level.isClientSide()) return InteractionResult.SUCCESS;
         else if (level.getBlockEntity(pos) instanceof StackedCakeBlockEntity stackedCakeBlockEntity){
             if (state.getValue(SLICES) == 7 || state.getValue(SLICES) == 14 || state.getValue(SLICES) == 21) {
@@ -212,17 +213,17 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    public @Nullable BlockEntity newBlockEntity(@NonNull BlockPos pos, @NonNull BlockState state) {
+    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new StackedCakeBlockEntity(pos, state);
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull Direction direction) {
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
         return state.getValue(SLICES);
     }
 
     @Override
-    protected boolean hasAnalogOutputSignal(@NonNull BlockState state) {
+    protected boolean hasAnalogOutputSignal(BlockState state) {
         return true;
     }
 }

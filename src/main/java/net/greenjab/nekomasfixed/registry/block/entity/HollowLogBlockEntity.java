@@ -21,7 +21,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.shapes.Shapes;
-import org.jspecify.annotations.NonNull;
 
 public class HollowLogBlockEntity extends BlockEntity implements Container {
     private BlockState storedBlock = Blocks.AIR.defaultBlockState();
@@ -39,7 +38,7 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
     }
 
     @Override
-    public @NonNull CompoundTag getUpdateTag(HolderLookup.@NonNull Provider registries) {
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         return saveWithoutMetadata(registries);
     }
 
@@ -54,7 +53,7 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
     }
 
     @Override
-    protected void saveAdditional(@NonNull ValueOutput view) {
+    protected void saveAdditional(ValueOutput view) {
         super.saveAdditional(view);
 
         view.store("StoredBlock", BlockState.CODEC, storedBlock);
@@ -62,7 +61,7 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
     }
 
     @Override
-    protected void loadAdditional(@NonNull ValueInput view) {
+    protected void loadAdditional(ValueInput view) {
         super.loadAdditional(view);
 
         storedBlock = view.read("StoredBlock", BlockState.CODEC)
@@ -87,12 +86,12 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
     }
 
     @Override
-    public @NonNull ItemStack getItem(int slot) {
+    public ItemStack getItem(int slot) {
         return this.getHeldStacks().get(slot);
     }
 
     @Override
-    public @NonNull ItemStack removeItem(int slot, int amount) {
+    public ItemStack removeItem(int slot, int amount) {
         ItemStack itemStack = ContainerHelper.removeItem(this.getHeldStacks(), slot, amount);
         if (!itemStack.isEmpty()) {
             this.setChanged();
@@ -102,19 +101,19 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
     }
 
     @Override
-    public @NonNull ItemStack removeItemNoUpdate(int slot) {
+    public ItemStack removeItemNoUpdate(int slot) {
         return ContainerHelper.takeItem(this.getHeldStacks(), slot);
     }
 
     @Override
-    public void setItem(int slot, @NonNull ItemStack stack) {
+    public void setItem(int slot, ItemStack stack) {
         this.getHeldStacks().set(slot, stack);
         stack.limitSize(this.getMaxStackSize(stack));
         this.setChanged();
     }
 
     @Override
-    public boolean stillValid(@NonNull Player player) {
+    public boolean stillValid(Player player) {
         return Container.stillValidBlockEntity(this, player);
     }
 
@@ -129,7 +128,7 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
         this.storedStack.set(0, itemStack);
     }
     public ItemStack getHeldStack() {
-        return this.storedStack.getFirst();
+        return this.storedStack.get(0);
     }
 
     @Override

@@ -15,7 +15,6 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.block.state.properties.RotationSegment;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jspecify.annotations.NonNull;
 
 public class FloorClockBlock extends AbstractClockBlock {
 	public static final MapCodec<FloorClockBlock> CODEC = RecordCodecBuilder.mapCodec(
@@ -29,7 +28,7 @@ public class FloorClockBlock extends AbstractClockBlock {
 	private static final VoxelShape SHAPE = Block.column(8.0, 0.0, 8.0);
 
 	@Override
-	public @NonNull MapCodec<? extends FloorClockBlock> codec() {
+	public MapCodec<? extends FloorClockBlock> codec() {
 		return CODEC;
 	}
 
@@ -39,7 +38,7 @@ public class FloorClockBlock extends AbstractClockBlock {
 	}
 
 	@Override
-	protected @NonNull VoxelShape getShape(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull CollisionContext context) {
+	protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		return SHAPE;
 	}
 
@@ -49,12 +48,12 @@ public class FloorClockBlock extends AbstractClockBlock {
 	}
 
 	@Override
-	protected @NonNull BlockState rotate(BlockState state, Rotation rotation) {
+	protected BlockState rotate(BlockState state, Rotation rotation) {
 		return state.setValue(ROTATION, rotation.rotate(state.getValue(ROTATION), MAX_ROTATIONS));
 	}
 
 	@Override
-	protected @NonNull BlockState mirror(BlockState state, Mirror mirror) {
+	protected BlockState mirror(BlockState state, Mirror mirror) {
 		return state.setValue(ROTATION, mirror.mirror(state.getValue(ROTATION), MAX_ROTATIONS));
 	}
 

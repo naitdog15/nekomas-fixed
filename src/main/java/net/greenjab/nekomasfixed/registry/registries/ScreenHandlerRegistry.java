@@ -3,28 +3,20 @@ package net.greenjab.nekomasfixed.registry.registries;
 import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.screen.KilnMenu;
 import net.greenjab.nekomasfixed.screen.PyrotechnicsMenu;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 
 public class ScreenHandlerRegistry {
 
-    public static final MenuType<KilnMenu> KILN =
-            Registry.register(
-                    BuiltInRegistries.MENU,
-                    NekomasFixed.id("kiln"),
-                    new MenuType<>(KilnMenu::new, FeatureFlags.VANILLA_SET)
-            );
+    public static final DeferredRegister<MenuType<?>> MENU_TYPES =
+            DeferredRegister.create(ForgeRegistries.MENU_TYPES, NekomasFixed.NAMESPACE);
 
-    public static final MenuType<PyrotechnicsMenu> PYROTECHNICS =
-            Registry.register(
-                    BuiltInRegistries.MENU,
-                    NekomasFixed.id("pyrotechnics"),
-                    new MenuType<>(PyrotechnicsMenu::new, FeatureFlags.VANILLA_SET)
-            );
+    public static final RegistryObject<MenuType<KilnMenu>> KILN =
+            MENU_TYPES.register("kiln", () -> new MenuType<>(KilnMenu::new, FeatureFlags.VANILLA_SET));
 
-    public static void registerScreenHandlers() {
-        NekomasFixed.LOGGER.info("Registering screen handlers for " + "nekomasfixed");
-    }
+    public static final RegistryObject<MenuType<PyrotechnicsMenu>> PYROTECHNICS =
+            MENU_TYPES.register("pyrotechnics", () -> new MenuType<>(PyrotechnicsMenu::new, FeatureFlags.VANILLA_SET));
 }

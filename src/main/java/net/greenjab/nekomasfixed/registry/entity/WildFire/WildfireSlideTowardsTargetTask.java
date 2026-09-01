@@ -12,7 +12,6 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
 import net.minecraft.world.entity.ai.memory.WalkTarget;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Map;
 
@@ -21,20 +20,20 @@ public class WildfireSlideTowardsTargetTask extends Behavior<WildfireEntity> {
 		super(Map.of(
 				MemoryModuleType.WALK_TARGET,
 				MemoryStatus.VALUE_ABSENT,
-				MemoryModuleType.BREEZE_SHOOT,
+				WildfireRegistrations.BREEZE_SHOOT.get(),
 				MemoryStatus.VALUE_ABSENT,
-				MemoryModuleType.BREEZE_LEAVING_WATER,
+				WildfireRegistrations.BREEZE_LEAVING_WATER.get(),
 				MemoryStatus.VALUE_ABSENT,
 				MemoryModuleType.TOUCH_COOLDOWN,
 				MemoryStatus.REGISTERED,
 				MemoryModuleType.SNIFF_COOLDOWN,
 				MemoryStatus.REGISTERED,
-				MemoryModuleType.BREEZE_SHOOT_COOLDOWN,
+				WildfireRegistrations.BREEZE_SHOOT_COOLDOWN.get(),
 				MemoryStatus.REGISTERED
 		),200);
 	}
 
-    protected boolean canStillUse(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
+    protected boolean canStillUse(ServerLevel level, WildfireEntity wildFireEntity, long l) {
 		if (wildFireEntity.hurtTime>=9) return false;
 		if (wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.TOUCH_COOLDOWN)) return true;
 		if (wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.SNIFF_COOLDOWN)) {
@@ -45,17 +44,17 @@ public class WildfireSlideTowardsTargetTask extends Behavior<WildfireEntity> {
 		return true;
 	}
 
-	protected void start(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
+	protected void start(ServerLevel level, WildfireEntity wildFireEntity, long l) {
 		wildFireEntity.eyeOffset = -0.5f;
 		Vec3 fire = WildfireMovementUtil.findFirePos(wildFireEntity, false);
 		if (fire != null) {
             wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.WALK_TARGET, new WalkTarget(BlockPos.containing(fire), 0.6F, 0), 200L);
-			wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.BREEZE_LEAVING_WATER, Unit.INSTANCE, 200L);
+			wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_LEAVING_WATER.get(), Unit.INSTANCE, 200L);
 		}
 		wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.TOUCH_COOLDOWN, Unit.INSTANCE, 60L);
 		wildFireEntity.setFireActive(false);
 	}
-	protected void tick(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
+	protected void tick(ServerLevel level, WildfireEntity wildFireEntity, long l) {
 		Brain<WildfireEntity> brain = wildFireEntity.getBrain();
 		WalkTarget target = brain.getMemory(MemoryModuleType.WALK_TARGET).orElse(null);
 		if (target != null) {
@@ -66,15 +65,15 @@ public class WildfireSlideTowardsTargetTask extends Behavior<WildfireEntity> {
 					Vec3 fire = WildfireMovementUtil.findFirePos(wildFireEntity, false);
 					if (fire != null) {
 						wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.WALK_TARGET, new WalkTarget(BlockPos.containing(fire), 0.6F, 0), 200L);
-						wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.BREEZE_LEAVING_WATER, Unit.INSTANCE, 200L);
+						wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_LEAVING_WATER.get(), Unit.INSTANCE, 200L);
 					}
 				}
 			} else {
-				if (!brain.hasMemoryValue(MemoryModuleType.BREEZE_LEAVING_WATER)) {
+				if (!brain.hasMemoryValue(WildfireRegistrations.BREEZE_LEAVING_WATER.get())) {
 					Vec3 fire = WildfireMovementUtil.findFirePos(wildFireEntity, true);
 					if (fire != null) {
 						wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.WALK_TARGET, new WalkTarget(BlockPos.containing(fire), 0.6F, 0), 200L);
-						wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.BREEZE_LEAVING_WATER, Unit.INSTANCE, 200L);
+						wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_LEAVING_WATER.get(), Unit.INSTANCE, 200L);
 					}
 				} else {
 					if (!brain.hasMemoryValue(MemoryModuleType.SNIFF_COOLDOWN)) {
@@ -86,7 +85,7 @@ public class WildfireSlideTowardsTargetTask extends Behavior<WildfireEntity> {
         }
 	}
 
-	protected void stop(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
+	protected void stop(ServerLevel level, WildfireEntity wildFireEntity, long l) {
 		int i = wildFireEntity.getRandom().nextInt(wildFireEntity.getShieldsActive()>1?3:2);
 		if (i == 0)	wildFireEntity.setPose(Pose.SHOOTING);
 		else if (i == 1) wildFireEntity.setPose(Pose.LONG_JUMPING);
@@ -94,7 +93,7 @@ public class WildfireSlideTowardsTargetTask extends Behavior<WildfireEntity> {
 		wildFireEntity.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
 		wildFireEntity.getBrain().eraseMemory(MemoryModuleType.SNIFF_COOLDOWN);
 		wildFireEntity.getBrain().eraseMemory(MemoryModuleType.TOUCH_COOLDOWN);
-		wildFireEntity.getBrain().eraseMemory(MemoryModuleType.BREEZE_SHOOT_COOLDOWN);
-		wildFireEntity.getBrain().eraseMemory(MemoryModuleType.BREEZE_LEAVING_WATER);
+		wildFireEntity.getBrain().eraseMemory(WildfireRegistrations.BREEZE_SHOOT_COOLDOWN.get());
+		wildFireEntity.getBrain().eraseMemory(WildfireRegistrations.BREEZE_LEAVING_WATER.get());
 	}
 }

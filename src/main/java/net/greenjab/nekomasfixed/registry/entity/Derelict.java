@@ -7,9 +7,8 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.AreaEffectCloud;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.zombie.Zombie;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.level.Level;
-import org.jspecify.annotations.NonNull;
 
 public class Derelict extends Zombie {
 
@@ -28,7 +27,7 @@ public class Derelict extends Zombie {
     }
 
     @Override
-    public boolean hurtServer(@NonNull ServerLevel level, @NonNull DamageSource source, float amount) {
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         boolean isDamaged = super.hurtServer(level, source, amount);
         if (isDamaged && this.cloudCooldown == 0 && source.getEntity() instanceof LivingEntity) {
             this.spawnPoisonCloud(level);

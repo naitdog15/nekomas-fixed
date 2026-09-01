@@ -6,19 +6,18 @@ import net.greenjab.nekomasfixed.registry.entity.BigBoat;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntitySelector;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.monster.PatrollingMonster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raider;
-import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
+import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
@@ -33,8 +32,39 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * Not part of the core "keep and expect pain" set, but the pirate-patrol feature (BigBoat spawning)
+ * touches several 26.2-only APIs at once.
+ * <ul>
+ * <li>{@code EntitySpawnReason} is {@code MobSpawnType} on 1.20.1 (matches boat.MobMixin's note).
+ *     {@code EntityTypes.PILLAGER} is {@code EntityType.PILLAGER} — 1.20.1 keeps entity-type
+ *     constants directly on {@code EntityType} itself, with no separate plural holder class
+ *     (VERIFIED forge-1.20.1-mapped-src EntityType.java:243).</li>
+ * <li>{@code PatrolSpawner#tick} is {@code int tick(ServerLevel, boolean, boolean)} on 1.20.1, not
+ *     26.2's apparent {@code void tick(ServerLevel, boolean)} — VERIFIED
+ *     forge-1.20.1-mapped-src PatrolSpawner.java:23 (a 3rd boolean param, and an int budget-count
+ *     return instead of void). The {@code Math.ceil(double)} anchor and the {@code player}/
+ *     {@code spawnPos} locals this injector captures both still exist at the identical point inside
+ *     it (PatrolSpawner.java:57-58). Cancelling now means supplying a return value: 0, since this
+ *     mod's spawns bypass vanilla's counted budget entirely via a direct
+ *     {@code addFreshEntityWithPassengers} call, matching what an uncounted spawn should report.</li>
+ * <li>{@code EntityType#create} has no 2-arg {@code (Level, MobSpawnType)} convenience overload on
+ *     1.20.1 — only the bare {@code create(Level)} and a 7-arg full-context one (VERIFIED
+ *     EntityType.java:402,524). Every call site here already calls {@code .setPos(...)} manually
+ *     afterward, so {@code create(Level)} is the correct substitute. {@code Mob#finalizeSpawn} gains
+ *     a 5th {@code @Nullable CompoundTag} parameter on 1.20.1 (VERIFIED Mob.java:1064) — passed
+ *     {@code null} at every call site here, same as the {@code SpawnGroupData} before it.</li>
+ * <li>{@code Raid.getOminousBannerInstance(RegistryAccess)} does not exist; 1.20.1's equivalent is
+ *     the parameterless {@code Raid.getLeaderBannerInstance()} (VERIFIED Raid.java:608).</li>
+ * <li>Loot tables are plain {@code ResourceLocation}s on 1.20.1, not registry-backed
+ *     {@code ResourceKey<LootTable>} (VERIFIED: {@code Registries.LOOT_TABLE} does not exist; vanilla's
+ *     own {@code ChestBoat} stores a bare {@code ResourceLocation} field). Note for whoever owns
+ *     {@code BigBoat}: {@code BigBoat.setContainerLootTable} should take a {@code ResourceLocation},
+ *     not a {@code ResourceKey<LootTable>}, on this port.</li>
+ * </ul>
+ */
 @Mixin(PatrolSpawner.class)
 public class PatrolSpawnerMixin {
 
@@ -44,7 +74,7 @@ public class PatrolSpawnerMixin {
     }
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Ljava/lang/Math;ceil(D)D"), cancellable = true)
-    private void addMeleeGoalForSpear(ServerLevel level, boolean spawnEnemies, CallbackInfo ci, @Local Player player, @Local BlockPos.MutableBlockPos spawnPos) {
+    private void addMeleeGoalForSpear(ServerLevel level, boolean spawnFriendlies, boolean spawnEnemies, CallbackInfoReturnable<Integer> cir, @Local Player player, @Local BlockPos.MutableBlockPos spawnPos) {
         RandomSource random = level.getRandom();
         Holder<Biome> registryEntry = level.getBiome(spawnPos);
         if (registryEntry.is(BiomeTags.IS_OCEAN)) {
@@ -57,7 +87,7 @@ public class PatrolSpawnerMixin {
                                 for (int bz = spawnPos.getZ() - 8; bz < spawnPos.getZ() + 8; bz++) {
                                     BlockState blockState = level.getBlockState(new BlockPos(bx, by, bz));
                                     if (!(blockState.is(Blocks.AIR) || blockState.is(Blocks.WATER))) {
-                                        ci.cancel();
+                                        cir.setReturnValue(0);
                                         return;
                                     }
                                 }
@@ -79,8 +109,8 @@ public class PatrolSpawnerMixin {
                     }
                 }
             }
-            ci.cancel();
-        } else if (random.nextInt(5) != 0) ci.cancel();
+            cir.setReturnValue(0);
+        } else if (random.nextInt(5) != 0) cir.setReturnValue(0);
     }
 
     @Unique private boolean notNearOtherPatrols(ServerLevel level, BlockPos blockPos) {
@@ -89,9 +119,9 @@ public class PatrolSpawnerMixin {
 
     @Unique private boolean spawnBoat(ServerLevel level, BlockPos pos, RandomSource random, int boatType, boolean captain) {
         BlockState blockState = level.getBlockState(pos);
-        if (!NaturalSpawner.isValidEmptySpawnBlock(level, pos, blockState, blockState.getFluidState(), EntityTypes.PILLAGER)) {
+        if (!NaturalSpawner.isValidEmptySpawnBlock(level, pos, blockState, blockState.getFluidState(), EntityType.PILLAGER)) {
             return false;
-        } else if (!PatrollingMonster.checkPatrollingMonsterSpawnRules(EntityTypes.PILLAGER, level, EntitySpawnReason.PATROL, pos, random)) {
+        } else if (!PatrollingMonster.checkPatrollingMonsterSpawnRules(EntityType.PILLAGER, level, MobSpawnType.PATROL, pos, random)) {
             return false;
         } else {
             if (captain) return spawnCaptainBoat(level, pos, random, boatType);
@@ -101,18 +131,18 @@ public class PatrolSpawnerMixin {
 
     @Unique boolean spawnCaptainBoat(ServerLevel level, BlockPos pos, RandomSource random, int boatType){
         BigBoat bigBoat = level.getDifficulty().getId()>2?
-                EntityTypeRegistry.hugeBoats.get(boatType).create(level, EntitySpawnReason.PATROL):
-                EntityTypeRegistry.bigBoats.get(boatType).create(level, EntitySpawnReason.PATROL);
+                EntityTypeRegistry.hugeBoats.get(boatType).create(level):
+                EntityTypeRegistry.bigBoats.get(boatType).create(level);
         if (bigBoat == null) return false;
-        bigBoat.setBanner(Raid.getOminousBannerInstance(level.registryAccess().lookupOrThrow(Registries.BANNER_PATTERN)));
+        bigBoat.setBanner(Raid.getLeaderBannerInstance());
         bigBoat.setHasChest(true);
-        bigBoat.setContainerLootTable(ResourceKey.create(Registries.LOOT_TABLE, NekomasFixed.id("chests/patrol_boat")));
+        bigBoat.setContainerLootTable(NekomasFixed.id("chests/patrol_boat"));
         bigBoat.setContainerLootTableSeed(random.nextLong());
         bigBoat.setPos(Vec3.atCenterOf(pos));
         for (int i = 0; i < level.getDifficulty().getId(); i++) {
-            PatrollingMonster patrolEntity = EntityTypes.PILLAGER.create(level, EntitySpawnReason.PATROL);
+            PatrollingMonster patrolEntity = (PatrollingMonster) EntityType.PILLAGER.create(level);
             patrolEntity.setPos(pos.getX(), pos.getY(), pos.getZ());
-            patrolEntity.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), EntitySpawnReason.PATROL, null);
+            patrolEntity.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.PATROL, null, null);
             patrolEntity.startRiding(bigBoat);
         }
          level.addFreshEntityWithPassengers(bigBoat);
@@ -121,12 +151,12 @@ public class PatrolSpawnerMixin {
     }
 
     @Unique boolean spawnSmallBoat(ServerLevel level, BlockPos pos, RandomSource random, int boatType){
-        AbstractBoat boatEntity = EntityTypeRegistry.boats.get(boatType).create(level, EntitySpawnReason.PATROL);
+        Boat boatEntity = EntityTypeRegistry.boats.get(boatType).create(level);
         if (boatEntity != null) {
             boatEntity.setPos(Vec3.atCenterOf(pos));
-            PatrollingMonster patrolEntity = EntityTypes.PILLAGER.create(level, EntitySpawnReason.PATROL);
+            PatrollingMonster patrolEntity = (PatrollingMonster) EntityType.PILLAGER.create(level);
             patrolEntity.setPos(pos.getX(), pos.getY(), pos.getZ());
-            patrolEntity.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), EntitySpawnReason.PATROL, null);
+            patrolEntity.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.PATROL, null, null);
             patrolEntity.startRiding(boatEntity);
             level.addFreshEntityWithPassengers(boatEntity);
             return true;

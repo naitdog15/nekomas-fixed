@@ -9,8 +9,8 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -27,7 +27,6 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
 public class WallGlowTorchBlock extends GlowTorchBlock {
 	public static final MapCodec<WallGlowTorchBlock> CODEC = simpleCodec(WallGlowTorchBlock::new);
@@ -35,7 +34,7 @@ public class WallGlowTorchBlock extends GlowTorchBlock {
 	public static final BooleanProperty WATERLOGGED = GlowTorchBlock.WATERLOGGED;
 
 	@Override
-	public @NonNull MapCodec<WallGlowTorchBlock> codec() {
+	public MapCodec<WallGlowTorchBlock> codec() {
 		return CODEC;
 	}
 
@@ -45,27 +44,21 @@ public class WallGlowTorchBlock extends GlowTorchBlock {
 	}
 
 	@Override
-	protected @NonNull VoxelShape getShape(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull CollisionContext context) {
+	protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		return WallTorchBlock.getShape(state);
 	}
 
 	@Override
-	protected boolean canSurvive(BlockState state, @NonNull LevelReader level, @NonNull BlockPos pos) {
+	protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
 		return WallTorchBlock.canSurvive(level, pos, state.getValue(FACING));
 	}
 
 	@Override
-	protected @NonNull BlockState updateShape(
-            BlockState state,
-            @NonNull LevelReader level,
-            @NonNull ScheduledTickAccess tickView,
-            @NonNull BlockPos pos,
-            @NonNull Direction direction,
-            @NonNull BlockPos neighborPos,
-            @NonNull BlockState neighborState,
-            @NonNull RandomSource random
-	) {
-		if (state.getValue(WATERLOGGED)) tickView.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+	protected BlockState updateShape(
+            BlockState state, Direction direction, BlockState neighborState,
+            LevelAccessor level, BlockPos pos, BlockPos neighborPos
+    ) {
+		if (state.getValue(WATERLOGGED)) level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
 		return direction.getOpposite() == state.getValue(FACING) && !state.canSurvive(level, pos) ? Blocks.AIR.defaultBlockState() : state;
 	}
 
@@ -78,7 +71,7 @@ public class WallGlowTorchBlock extends GlowTorchBlock {
 	}
 
 	@Override
-	public void animateTick(@NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull RandomSource random) {
+	public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
 		if (level.getRandom().nextInt(4)!=0) return;
 		if (state.getValue(WATERLOGGED)) {
 			Direction direction = (state.getValue(FACING)).getOpposite();
@@ -90,12 +83,12 @@ public class WallGlowTorchBlock extends GlowTorchBlock {
 	}
 
 	@Override
-	protected @NonNull BlockState rotate(BlockState state, Rotation rotation) {
+	protected BlockState rotate(BlockState state, Rotation rotation) {
 		return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
 	}
 
 	@Override
-	protected @NonNull BlockState mirror(BlockState state, Mirror mirror) {
+	protected BlockState mirror(BlockState state, Mirror mirror) {
 		return state.rotate(mirror.getRotation(state.getValue(FACING)));
 	}
 

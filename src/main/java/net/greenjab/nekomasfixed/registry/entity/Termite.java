@@ -1,19 +1,15 @@
 package net.greenjab.nekomasfixed.registry.entity;
 
-import io.netty.buffer.ByteBuf;
+import net.greenjab.nekomasfixed.Registries;
 import net.greenjab.nekomasfixed.registry.block.TermitehiveBlock;
 import net.greenjab.nekomasfixed.registry.block.entity.TermitehiveBlockEntity;
 import net.greenjab.nekomasfixed.registry.block.enums.HollowLogType;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
-import net.greenjab.nekomasfixed.registry.registries.CustomTrackedDataHandlerRegistry;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.util.ByIdMap;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AnimationState;
 import net.minecraft.world.entity.Entity;
@@ -36,10 +32,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Optional;
-import java.util.function.IntFunction;
 
 public class Termite extends Monster {
     public final AnimationState swipeAnimationState = new AnimationState();
@@ -48,6 +42,14 @@ public class Termite extends Monster {
 
     public Termite(EntityType<? extends Monster> entityType, Level level) {
         super(entityType, level);
+        // PORT: Attributes.STEP_HEIGHT/SAFE_FALL_DISTANCE don't exist on 1.20.1 (post-1.20.5 attribute
+        // additions); 1.20.1 uses setMaxUpStep(float) / an overridden getMaxFallDistance() instead.
+        this.setMaxUpStep(1.0F);
+    }
+
+    @Override
+    public int getMaxFallDistance() {
+        return 2;
     }
 
     @Override
@@ -65,9 +67,9 @@ public class Termite extends Monster {
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.@NonNull Builder builder) {
-        super.defineSynchedData(builder);
-        builder.define(STATE, State.IDLING);
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(STATE, State.IDLING);
     }
 
     public static AttributeSupplier.Builder createAttributes(){
@@ -75,19 +77,17 @@ public class Termite extends Monster {
                 .add(Attributes.ATTACK_DAMAGE, 2d)
                 .add(Attributes.ATTACK_SPEED, 1.6d)
                 .add(Attributes.ATTACK_KNOCKBACK, 0.2d)
-                .add(Attributes.MOVEMENT_SPEED, 0.4d)
-                .add(Attributes.SAFE_FALL_DISTANCE, 2d)
-                .add(Attributes.STEP_HEIGHT, 1d);
+                .add(Attributes.MOVEMENT_SPEED, 0.4d);
     }
 
     @Override
-    public boolean doHurtTarget(@NonNull ServerLevel level, @NonNull Entity target) {
+    public boolean doHurtTarget(Entity target) {
         this.setState(State.SWIPING);
-        return super.doHurtTarget(level, target);
+        return super.doHurtTarget(target);
     }
 
     @Override
-    public void die(@NonNull DamageSource damageSource) {
+    public void die(DamageSource damageSource) {
         super.die(damageSource);
     }
 
@@ -96,7 +96,7 @@ public class Termite extends Monster {
     }
 
     @Override
-    public void onSyncedDataUpdated(@NonNull EntityDataAccessor<?> data) {
+    public void onSyncedDataUpdated(EntityDataAccessor<?> data) {
         if (STATE.equals(data)) {
             if (this.entityData.get(STATE) == State.SWIPING) {
                 this.swipeAnimationState.start(this.tickCount);
@@ -137,13 +137,13 @@ public class Termite extends Monster {
                 this.blockPosition(),
                 16,
                 8,
-                pos -> this.level().getBlockState(pos).is(BlockRegistry.TERMITE_HIVE)
+                pos -> this.level().getBlockState(pos).is(BlockRegistry.TERMITE_HIVE.get())
         );
         return blockPos.orElse(null);
     }
 
     static {
-        STATE = SynchedEntityData.defineId(Termite.class, CustomTrackedDataHandlerRegistry.TERMITE_STATE);
+        STATE = SynchedEntityData.defineId(Termite.class, Registries.TERMITE_STATE.get());
     }
 
     private static class GoToNearestMound extends MoveToBlockGoal {
@@ -154,15 +154,15 @@ public class Termite extends Monster {
         }
 
         @Override
-        protected boolean isValidTarget(@NonNull LevelReader level, @NonNull BlockPos pos) {
-            return level.getBlockState(pos).is(BlockRegistry.TERMITE_HIVE);
+        protected boolean isValidTarget(LevelReader level, BlockPos pos) {
+            return level.getBlockState(pos).is(BlockRegistry.TERMITE_HIVE.get());
         }
 
         @Override
         public boolean canUse() {
             if (this.termite.level().isDarkOutside() && this.termite.getMoundPosition()!=null) {
                 BlockState state = this.termite.level().getBlockState(this.termite.getMoundPosition());
-                return state.is(BlockRegistry.TERMITE_HIVE) && state.getValue(TermitehiveBlock.TERMITES) < 2;
+                return state.is(BlockRegistry.TERMITE_HIVE.get()) && state.getValue(TermitehiveBlock.TERMITES) < 2;
             }
             return false;
         }
@@ -171,7 +171,7 @@ public class Termite extends Monster {
         public boolean canContinueToUse() {
             if (!this.isReachedTarget() && this.termite.level().isDarkOutside() && this.termite.getMoundPosition()!=null) {
                 BlockState state = this.termite.level().getBlockState(this.termite.getMoundPosition());
-                return state.is(BlockRegistry.TERMITE_HIVE) && state.getValue(TermitehiveBlock.TERMITES) < 2;
+                return state.is(BlockRegistry.TERMITE_HIVE.get()) && state.getValue(TermitehiveBlock.TERMITES) < 2;
             }
             return false;
         }
@@ -183,7 +183,7 @@ public class Termite extends Monster {
                     5, 5,
                     pos -> {
                         BlockState state = termite.level().getBlockState(pos);
-                        return state.is(BlockRegistry.TERMITE_HIVE)
+                        return state.is(BlockRegistry.TERMITE_HIVE.get())
                                 && state.getValue(TermitehiveBlock.TERMITES) < 2;
                     }
             );
@@ -307,20 +307,12 @@ public class Termite extends Monster {
         }
     }
 
+    // EntityDataSerializer.simpleEnum(Termite.State.class) is byte-identical to the
+    // old ByteBufCodecs.idMapper wire form for a bare 2-constant enum whose declared index equals its
+    // ordinal - so the wire contract is simply "ordinal". PACKET_CODEC, INDEX_TO_VALUE and getIndex()
+    // are dropped, not ported.
     public enum State {
-        IDLING(0),
-        SWIPING(1);
-
-        public static final IntFunction<State> INDEX_TO_VALUE = ByIdMap.continuous(State::getIndex, values(), ByIdMap.OutOfBoundsStrategy.ZERO);
-        public static final StreamCodec<ByteBuf, State> PACKET_CODEC = ByteBufCodecs.idMapper(INDEX_TO_VALUE, State::getIndex);
-        private final int index;
-
-        State(final int index) {
-            this.index = index;
-        }
-
-        public int getIndex() {
-            return this.index;
-        }
+        IDLING,
+        SWIPING
     }
 }

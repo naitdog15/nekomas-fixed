@@ -1,101 +1,150 @@
+// Refmap generation — Mixin's annotation processor is what turns
+// string-based injector references ("method = \"useOn\"", "target = \"...\"") into an SRG-name
+// refmap; without one, all 77 injector-heavy mixins in this mod silently fail to apply in a
+// production (reobfuscated) jar. ForgeGradle 6 alone configures no refmap, so MixinGradle is added
+// here explicitly and the refmap is named + wired into BOTH mixin configs below.
+buildscript {
+    repositories {
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.spongepowered:mixingradle:0.7.+'
+    }
+}
 plugins {
-	alias(libs.plugins.fabric.loom)
-	alias(libs.plugins.yamlang)
+    id 'eclipse'; id 'idea'
+    id 'net.minecraftforge.gradle' version '6.0.54'
 }
+apply plugin: 'org.spongepowered.mixin'
+version = mod_version
+group   = mod_group_id
+base { archivesName = mod_id }
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-version = "0.5.2-26.2"
-group = "net.green_jab.nekomasfixed"
-
-base {
-	archivesName = project.name
+minecraft {
+    mappings channel: mapping_channel, version: mapping_version
+    copyIdeResources = true
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'info'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', file('build/createSrgToMcp/output.srg').absolutePath
+            arg '-mixin.config=nekomasfixed.mixins.json'
+            arg '-mixin.config=nekomasfixed.client.mixins.json'
+            mods { "${mod_id}" { source sourceSets.main } }
+        }
+        client { jvmArgs '-Xms2G','-Xmx4G','-XX:+UseG1GC','-XX:MaxGCPauseMillis=50' }
+        server { args '--nogui' }
+        gameTestServer { property 'forge.enabledGameTestNamespaces', mod_id }
+        data {
+            workingDirectory project.file('run-data')
+            args '--mod', mod_id, '--all',
+                 '--output',   file('src/generated/resources/'),
+                 '--existing', file('src/main/resources/')
+        }
+    }
 }
-
-loom {
-	splitEnvironmentSourceSets()
-	accessWidenerPath = file("src/main/resources/nekomasfixed.accesswidener")
-	mods {
-		register("nekomasfixed") {
-			sourceSet(sourceSets["main"])
-			sourceSet(sourceSets["client"])
-		}
-	}
-	decompilers {
-		vineflower {
-			options.put("mark-corresponding-synthetics", "1")
-		}
-	}
-	runs {
-		datagen {
-			client()
-			name "Data Generation"
-			vmArg "-Dfabric-api.datagen"
-			vmArg "-Dfabric-api.datagen.output-dir=${file('src/main/generated')}"
-			runDir "build/datagen"
-		}
-	}
-}
-
 sourceSets {
-	main {
-		resources {
-			srcDirs += 'src/main/generated'
-		}
-	}
+    main { resources { srcDir 'src/generated/resources' } }
+    test { java.setSrcDirs([]); resources.setSrcDirs([]) }
 }
-
+// One explicitly named refmap for sourceSets.main; both configs point at it (see the
+// "refmap" key in nekomasfixed.mixins.json / nekomasfixed.client.mixins.json). MixinGradle also
+// hands the AP the SRG file so the emitted refmap carries production names.
+mixin {
+    add sourceSets.main, 'nekomasfixed.refmap.json'
+    config 'nekomasfixed.mixins.json'
+    config 'nekomasfixed.client.mixins.json'
+}
 repositories {
-	maven { url "https://maven.solo-studios.ca/releases/" }
-	maven { url "https://maven.fabricmc.net/" }
-	maven { url "https://maven.shedaniel.me/" }
-	maven { url "https://maven.terraformersmc.com/releases/" }
-	mavenCentral()
+    maven { url 'https://maven.shedaniel.me/' }
+    maven { url 'https://repo.spongepowered.org/repository/maven-public/' }
 }
-
 dependencies {
-	minecraft(libs.minecraft)
-	implementation(libs.fabric.loader)
-	implementation(libs.fabric.api)
-	vineflowerDecompilerClasspath(libs.vineflower)
-	api "me.shedaniel.cloth:cloth-config-fabric:26.2.155"
-	api "com.terraformersmc:modmenu:20.0.1"
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.3.5"))
+    implementation fg.deobf("me.shedaniel.cloth:cloth-config-forge:11.1.136")
 }
 
-tasks.processResources {
-	filesMatching("fabric.mod.json") {
-		expand(
-				"version": project.version,
-				"fabric_api": libs.versions.fabric.api.get(),
-				"minecraft": libs.versions.minecraft.get(),
-		)
-	}
-}
+def sharedReplaceProperties = [
+    minecraft_version      : minecraft_version,
+    minecraft_version_range: minecraft_version_range,
+    forge_version          : forge_version,
+    forge_version_range    : forge_version_range,
+    loader_version_range   : loader_version_range,
+    mod_id                 : mod_id,
+    mod_name                : mod_name,
+    mod_license              : mod_license,
+    mod_version              : mod_version,
+    mod_authors              : mod_authors,
+    mod_description          : mod_description,
+]
 
-yamlang {
-	targetSourceSets = [sourceSets.main]
-	inputDir.set("assets/nekomasfixed/lang")
+tasks.named('processResources', ProcessResources).configure {
+    inputs.properties sharedReplaceProperties
+    filesMatching(['META-INF/mods.toml','pack.mcmeta']) { expand sharedReplaceProperties + [project: project] }
 }
-
+tasks.named('jar', Jar).configure {
+    manifest { attributes([
+        'Specification-Title'     : mod_id,
+        'Specification-Vendor'    : mod_authors,
+        'Specification-Version'   : '1',
+        'Implementation-Title'    : mod_id,
+        'Implementation-Version'  : project.version,
+        'Implementation-Vendor'   : mod_authors,
+        'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+        'MixinConfigs'             : 'nekomasfixed.mixins.json,nekomasfixed.client.mixins.json'
+    ])}
+}
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 25
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:-removal' << '-Xlint:-deprecation' << '-Xlint:-unchecked'
+    // The categorized error inventory IS the deliverable, so javac must report every
+    // error rather than stopping at its default 100.
+    options.compilerArgs << '-Xmaxerrs' << '100000'
 }
 
-java {
-	withSourcesJar()
-}
-
-afterEvaluate {
-	loom {
-		runs {
-			configureEach {
-				vmArgs("-Xmx2G")
-				property("fabric.development", "true")
-				property("mixin.debug", "true")
-				property("mixin.debug.export.decompile", "false")
-				property("mixin.debug.verbose", "true")
-				property("mixin.dumpTargetOnFailure", "true")
-				property("mixin.hotSwap", "true")
-				ideConfigGenerated(true)
-			}
-		}
-	}
-}
+// ============================================================================================
+// SCRATCH EXCLUSION (temporary). Restricts sourceSets.main.java to the files below, which were
+// already converted to Forge, while the rest of the codebase still contained unconverted
+// Fabric-era Java (which does not compile against Forge/vanilla 1.20.1 APIs).
+// Was ACTIVE while this restricted build was verified (build/runClient/runServer all confirmed
+// green); REVERTED (commented out, below) immediately after, once the rest of the port was ready
+// to compile alongside it.
+// Two files were deliberately left OUT of this include-list even though they live under
+// registry/other/**: DyedBrushBehaviour.java (references DyedBrushItem plus AllDyes/
+// BlockDyeMap/ModTags from other packages) and TermitesComponent.java (references
+// TermitehiveBlockEntity.TermiteData). Both are structurally coupled to other packages' output and
+// cannot compile until those packages land; they are staged correctly in-place for later
+// reconciliation.
+// ============================================================================================
+// sourceSets.main.java {
+//     setSrcDirs(['src/main/java'])
+//     include 'net/greenjab/nekomasfixed/NekomasFixed.java'
+//     include 'net/greenjab/nekomasfixed/ClientSyncHandler.java'
+//     include 'net/greenjab/nekomasfixed/ModBusEvents.java'
+//     include 'net/greenjab/nekomasfixed/ForgeBusEvents.java'
+//     include 'net/greenjab/nekomasfixed/ModBusClientEvents.java'
+//     include 'net/greenjab/nekomasfixed/Registries.java'
+//     include 'net/greenjab/nekomasfixed/network/**'
+//     include 'net/greenjab/nekomasfixed/registry/other/AnimalComponent.java'
+//     include 'net/greenjab/nekomasfixed/registry/other/AnimalTooltipData.java'
+//     include 'net/greenjab/nekomasfixed/registry/other/ComboComponent.java'
+//     include 'net/greenjab/nekomasfixed/registry/other/ContainerTooltipData.java'
+//     include 'net/greenjab/nekomasfixed/registry/other/LightningEffect.java'
+//     include 'net/greenjab/nekomasfixed/registry/other/StoredTimeComponent.java'
+//     include 'net/greenjab/nekomasfixed/util/StackData.java'
+//     include 'net/greenjab/nekomasfixed/util/EntityNbtHelper.java'
+// }
+// ============================================================================================
+// DIAGNOSTIC (temporary): runServer failed to reach "Done" with the full resource tree present,
+// root-caused to pre-existing data/** JSON that references Java registrations excluded from this
+// restricted build. Excluding assets/**+data/** in isolation confirmed the scaffold itself (this
+// file, the @Mod lifecycle, mixin loading) reaches "Done" on a near-vanilla resource set ("Done
+// (25.318s)!"). Reverted immediately after, alongside the Java exclusion above.
+// sourceSets.main.resources { exclude 'assets/**', 'data/**' }
+// ============================================================================================

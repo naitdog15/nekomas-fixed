@@ -21,14 +21,13 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.level.redstone.ExperimentalRedstoneUtils;
 import net.minecraft.world.level.redstone.Orientation;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 
 public abstract class AbstractEndermanHeadBlock extends BaseEntityBlock {
 	public static final IntegerProperty POWER = BlockStateProperties.POWER;
 
 	@Override
-	public abstract @NonNull MapCodec<? extends AbstractEndermanHeadBlock> codec();
+	public abstract MapCodec<? extends AbstractEndermanHeadBlock> codec();
 
 	public AbstractEndermanHeadBlock(Properties settings) {
 		super(settings);
@@ -36,7 +35,7 @@ public abstract class AbstractEndermanHeadBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	public BlockState getStateForPlacement(@NonNull BlockPlaceContext ctx) {
+	public BlockState getStateForPlacement(BlockPlaceContext ctx) {
 		return this.defaultBlockState().setValue(POWER, 0);
 	}
 
@@ -46,28 +45,28 @@ public abstract class AbstractEndermanHeadBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	public BlockEntity newBlockEntity(@NonNull BlockPos pos, @NonNull BlockState state) {
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
 		return new EndermanHeadBlockEntity(pos, state);
 	}
 
 	@Nullable
 	@Override
-	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, @NonNull BlockState state, @NonNull BlockEntityType<T> type) {
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
 		return createTickerHelper(type, BlockEntityTypeRegistry.ENDERMAN_HEAD_BLOCK_ENTITY, level.isClientSide()? null: EndermanHeadBlockEntity::tick);
 	}
 
 	@Override
-	protected int getSignal(BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull Direction direction) {
+	protected int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
 		return state.getValue(POWER);
 	}
 
 	@Override
-	protected int getDirectSignal(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull Direction direction) {
+	protected int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
 		return direction == Direction.UP ? state.getSignal(level, pos, direction) : 0;
 	}
 
 	@Override
-	protected boolean isSignalSource(@NonNull BlockState state) {
+	protected boolean isSignalSource(BlockState state) {
 		return true;
 	}
 
@@ -86,14 +85,14 @@ public abstract class AbstractEndermanHeadBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	protected void affectNeighborsAfterRemoval(BlockState state, @NonNull ServerLevel level, @NonNull BlockPos pos, boolean moved) {
+	protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean moved) {
 		if (state.getValue(POWER)>0) {
 			this.updateNeighbors(state.setValue(POWER, 0), level, pos);
 		}
 	}
 
 	@Override
-	protected boolean isPathfindable(@NonNull BlockState state, @NonNull PathComputationType type) {
+	protected boolean isPathfindable(BlockState state, PathComputationType type) {
 		return false;
 	}
 }

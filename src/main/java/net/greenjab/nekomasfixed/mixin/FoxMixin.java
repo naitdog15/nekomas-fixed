@@ -8,18 +8,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 import java.util.Random;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.animal.fox.Fox;
-import net.minecraft.world.entity.animal.sheep.Sheep;
+import net.minecraft.world.entity.animal.Fox;
+import net.minecraft.world.entity.animal.Sheep;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -40,10 +40,10 @@ public class FoxMixin {
                 stack.hurtAndBreak(1, foxEntity, InteractionHand.MAIN_HAND);
             }
         }else if(stack.is(Items.SHEARS) && randInt){
-            List<Sheep> nearbySheeps = world.getEntitiesOfClass(Sheep.class, foxEntity.getBoundingBox().inflate(1), _ -> true);
+            List<Sheep> nearbySheeps = world.getEntitiesOfClass(Sheep.class, foxEntity.getBoundingBox().inflate(1), ignored -> true);
             Sheep sheep;
             if(!nearbySheeps.isEmpty()){
-                sheep = nearbySheeps.getFirst();
+                sheep = nearbySheeps.get(0);
                 if(sheep.readyForShearing()){
                     if (world.isClientSide()) {return;}
                     sheep.shear((ServerLevel) world, SoundSource.PLAYERS, stack);
@@ -62,11 +62,9 @@ public class FoxMixin {
                 stack.hurtAndBreak(1, foxEntity, InteractionHand.MAIN_HAND);
             }
         }else if(stack.is(Items.POTION) && randInt){
-            if(stack.has(DataComponents.POTION_CONTENTS)){
-                PotionContents potionContent = stack.get(DataComponents.POTION_CONTENTS);
-                assert potionContent != null;
-                if(!potionContent.hasEffects())return;
-                for(MobEffectInstance effect : potionContent.getAllEffects()){
+            Potion potionContent = PotionUtils.getPotion(stack);
+            if (potionContent != null && !potionContent.getEffects().isEmpty()) {
+                for(MobEffectInstance effect : potionContent.getEffects()){
                     MobEffectInstance copy = new MobEffectInstance(effect);
                     foxEntity.addEffect(copy);
                 }

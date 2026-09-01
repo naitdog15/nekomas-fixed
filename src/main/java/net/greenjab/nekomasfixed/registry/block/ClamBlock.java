@@ -12,7 +12,7 @@ import net.greenjab.nekomasfixed.registry.registries.LootTableRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -36,7 +36,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -69,7 +68,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 import java.util.Map;
@@ -87,11 +85,11 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 	public static final Map<Direction, VoxelShape> SHAPES_BY_DIRECTION;
 
-	public static final Identifier CONTENTS_DYNAMIC_DROP_ID = NekomasFixed.id("clam_contents");
+	public static final ResourceLocation CONTENTS_DYNAMIC_DROP_ID = NekomasFixed.id("clam_contents");
 	private final ClamType clamType;
 
 	@Override
-	public @NonNull MapCodec<? extends ClamBlock> codec() {
+	public MapCodec<? extends ClamBlock> codec() {
 		return CODEC;
 	}
 
@@ -102,20 +100,14 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	}
 
 	@Override
-	protected @NonNull BlockState updateShape(
-            BlockState state,
-            @NonNull LevelReader level,
-            @NonNull ScheduledTickAccess tickView,
-            @NonNull BlockPos pos,
-            @NonNull Direction direction,
-            @NonNull BlockPos neighborPos,
-            @NonNull BlockState neighborState,
-            @NonNull RandomSource random
-	) {
+	protected BlockState updateShape(
+            BlockState state, Direction direction, BlockState neighborState,
+            LevelAccessor level, BlockPos pos, BlockPos neighborPos
+    ) {
 		if (state.getValue(WATERLOGGED)) {
-			tickView.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+			level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
 		}
-		return super.updateShape(state, level, tickView, pos, direction, neighborPos, neighborState, random);
+		return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
 	}
 
 	private void tryLaunch(BlockState state, Level level, BlockPos pos) {
@@ -149,24 +141,24 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	}
 
 	@Override
-	public void setPlacedBy(Level level, @NonNull BlockPos pos, @NonNull BlockState state, LivingEntity placer, @NonNull ItemStack itemStack) {
+	public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
 		if (!level.isClientSide()) tryLaunch(state, level, pos);
 	}
 
 	@Override
-	protected void neighborChanged(@NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull Block sourceBlock, @Nullable Orientation wireOrientation, boolean notify) {
+	protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block sourceBlock, @Nullable Orientation wireOrientation, boolean notify) {
 		if (!level.isClientSide()) tryLaunch(state, level, pos);
 	}
 
 	@Override
-	protected void onPlace(BlockState state, @NonNull Level level, @NonNull BlockPos pos, BlockState oldState, boolean notify) {
+	protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean notify) {
 		if (!oldState.is(state.getBlock())) {
 			if (!level.isClientSide() && level.getBlockEntity(pos) == null) tryLaunch(state, level, pos);
 		}
 	}
 
 	@Override
-	protected @NonNull VoxelShape getShape(BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull CollisionContext context) {
+	protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		return SHAPES_BY_DIRECTION.get((state.getValue(FACING)));
 	}
 
@@ -179,17 +171,17 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	}
 
 	@Override
-	protected @NonNull FluidState getFluidState(BlockState state) {
+	protected FluidState getFluidState(BlockState state) {
 		return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
 	}
 
 	@Override
-	protected void affectNeighborsAfterRemoval(@NonNull BlockState state, @NonNull ServerLevel level, @NonNull BlockPos pos, boolean moved) {
+	protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean moved) {
 		Containers.updateNeighboursAfterDestroy(state, level, pos);
 	}
 
 	@Override
-	protected @NonNull InteractionResult useItemOn(@NonNull ItemStack stack, @NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull Player player, @NonNull InteractionHand hand, @NonNull BlockHitResult hit) {
+	protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
 		if (level.getBlockEntity(pos) instanceof ClamBlockEntity clamBlockEntity && !hand.equals(InteractionHand.OFF_HAND)) {
 			if (level.isClientSide()) {
 				return InteractionResult.SUCCESS;
@@ -234,7 +226,7 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	}
 
 	@Override
-	protected @NonNull InteractionResult useWithoutItem(@NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull Player player, @NonNull BlockHitResult hit) {
+	protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
 		if (!level.isClientSide()) {
 			BlockState blockState = state.cycle(OPEN);
 			level.setBlock(pos, blockState, Block.UPDATE_CLIENTS);
@@ -252,13 +244,13 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	}
 
 	@Override
-	public BlockEntity newBlockEntity(@NonNull BlockPos pos, @NonNull BlockState state) {
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
 		return new ClamBlockEntity(pos, state);
 	}
 
 	@Nullable
 	@Override
-	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, @NonNull BlockState state, @NonNull BlockEntityType<T> type) {
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
 		return level.isClientSide() ? createTickerHelper(type, BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY, ClamBlockEntity::clientTick) : null;
 	}
 
@@ -268,10 +260,10 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	}
 
 	@Override
-	protected void randomTick(@NonNull BlockState state, ServerLevel level, @NonNull BlockPos pos, @NonNull RandomSource random) {
+	protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
 		BlockEntity blockEntity = level.getBlockEntity(pos);
 		if (blockEntity instanceof ClamBlockEntity clamBlockEntity) {
-			ItemStack item = clamBlockEntity.getItems().getFirst();
+			ItemStack item = clamBlockEntity.getItems().get(0);
 			BlockState below = level.getBlockState(pos.below());
 			if (below.is(Blocks.SAND) || below.is(Blocks.GRAVEL) || below.is(Blocks.DIRT)) {
 				if (state.getValue(OPEN)) {
@@ -298,12 +290,12 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 
 							ObjectArrayList<ItemStack> loots = lootTable.getRandomItems(lootContextParameterSet);
 							if (!loots.isEmpty()) {
-								ItemStack itemStack = clamBlockEntity.getItems().getFirst();
+								ItemStack itemStack = clamBlockEntity.getItems().get(0);
 								ItemEntity itemEntity = new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, itemStack);
 								itemEntity.setDefaultPickUpDelay();
 								level.addFreshEntity(itemEntity);
 
-								clamBlockEntity.setHeldStack(loots.getFirst());
+								clamBlockEntity.setHeldStack(loots.get(0));
 							}
 						}
 					}
@@ -317,22 +309,22 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	}
 
 	@Override
-	protected boolean hasAnalogOutputSignal(@NonNull BlockState state) {
+	protected boolean hasAnalogOutputSignal(BlockState state) {
 		return true;
 	}
 
 	@Override
-	protected int getAnalogOutputSignal(@NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull Direction direction) {
+	protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
 		return AbstractContainerMenu.getRedstoneSignalFromBlockEntity(level.getBlockEntity(pos));
 	}
 
 	@Override
-	protected @NonNull BlockState rotate(BlockState state, Rotation rotation) {
+	protected BlockState rotate(BlockState state, Rotation rotation) {
 		return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
 	}
 
 	@Override
-	protected @NonNull BlockState mirror(BlockState state, Mirror mirror) {
+	protected BlockState mirror(BlockState state, Mirror mirror) {
 		return state.rotate(mirror.getRotation(state.getValue(FACING)));
 	}
 
@@ -342,11 +334,11 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	}
 
 	@Override
-	public @NonNull BlockState playerWillDestroy(Level level, @NonNull BlockPos pos, @NonNull BlockState state, @NonNull Player player) {
+	public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
 		BlockEntity blockEntity = level.getBlockEntity(pos);
 		if (blockEntity instanceof ClamBlockEntity clamBlockEntity) {
 			int cstate = state.getValueOrElse(ClamBlock.OPEN, false)?1:0;
-			if (cstate==1 && !clamBlockEntity.getItems().isEmpty() && !clamBlockEntity.getItems().getFirst().isEmpty()) cstate++;
+			if (cstate==1 && !clamBlockEntity.getItems().isEmpty() && !clamBlockEntity.getItems().get(0).isEmpty()) cstate++;
 			clamBlockEntity.setState(cstate);
 			if (!level.isClientSide() && player.preventsBlockDrops()) {
 				ItemStack itemStack = getItemStack(this.getClamType());
@@ -362,7 +354,7 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	}
 
 	@Override
-	protected @NonNull List<ItemStack> getDrops(@NonNull BlockState state, LootParams.Builder builder) {
+	protected List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
 		BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
 		if (blockEntity instanceof ClamBlockEntity clamBlockEntity) {
 			builder = builder.withDynamicDrop(CONTENTS_DYNAMIC_DROP_ID, lootConsumer -> {
@@ -407,7 +399,7 @@ public class ClamBlock extends BaseEntityBlock implements SimpleWaterloggedBlock
 	}
 
 	@Override
-	protected boolean isPathfindable(@NonNull BlockState state, @NonNull PathComputationType type) {
+	protected boolean isPathfindable(BlockState state, PathComputationType type) {
 		return false;
 	}
 

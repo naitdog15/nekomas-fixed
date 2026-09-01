@@ -13,10 +13,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+// 1.20.1 delta: ArmorStand overrides interactAt(Player, Vec3, InteractionHand) — the click-position
+// hook — not a plain interact(Player, InteractionHand) (VERIFIED forge-1.20.1-mapped-src
+// ArmorStand.java:292); note the parameter order (Vec3 before InteractionHand) differs from the
+// generic Entity#interact this mixin's original target name suggested.
 @Mixin(ArmorStand.class)
 public class ArmorStandMixin {
-    @Inject(method = "interact", at = @At("HEAD"), cancellable = true)
-    private void interactAt(Player player, InteractionHand hand, Vec3 location, CallbackInfoReturnable<InteractionResult> cir) {
+    @Inject(method = "interactAt", at = @At("HEAD"), cancellable = true)
+    private void interactAt(Player player, Vec3 location, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
         if(player!=null && player.isShiftKeyDown()){
             ArmorStand armorStandEntity = (ArmorStand) (Object) this;
             player.swing(hand, true);

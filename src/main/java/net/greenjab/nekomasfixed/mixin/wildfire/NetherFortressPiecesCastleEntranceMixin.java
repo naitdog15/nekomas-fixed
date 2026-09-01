@@ -1,28 +1,33 @@
 package net.greenjab.nekomasfixed.mixin.wildfire;
 
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceBlock;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.TrialSpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.structures.NetherFortressPieces;
-import net.minecraft.world.level.storage.TagValueInput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
+/**
+ * {@code NetherFortressPieces.CastleEntrance} itself, {@code createPiece}/{@code addChildren}/
+ * {@code postProcess} and {@code BoundingBox#orientBox} are all unchanged on 1.20.1 (VERIFIED
+ * forge-1.20.1-mapped-src NetherFortressPieces.java:374, 104-etc.). Not a feature cut
+ * — this is content unavailability, not a decision, the same category as
+ * copper armor/the Mace): {@code Blocks.TRIAL_SPAWNER}/{@code TrialSpawnerBlockEntity} do not exist
+ * on 1.20.1 at all (Trial Chambers are a 1.21+ feature — VERIFIED: zero matches for
+ * {@code TRIAL_SPAWNER} in Blocks.java). The room's own block-by-block construction (walls, floor,
+ * fences, lava, magma) is fully portable and kept verbatim; only the trial-spawner placement at the
+ * very end is gapped out.
+ */
 @Mixin(NetherFortressPieces.CastleEntrance.class)
 public class NetherFortressPiecesCastleEntranceMixin {
     @Unique
@@ -143,21 +148,11 @@ public class NetherFortressPiecesCastleEntranceMixin {
         piece.placeBlock(level, Blocks.LAVA.defaultBlockState(), XC, 3, XC-1, chunkBB);
         piece.placeBlock(level, Blocks.LAVA.defaultBlockState(), XC, 3, XC+1, chunkBB);
 
-        BlockPos blockPos = piece.getWorldPos( XC, 3, XC);
-        if (chunkBB.isInside(blockPos)) {
-            level.setBlock(blockPos, Blocks.TRIAL_SPAWNER.defaultBlockState(), 2);
-            BlockEntity blockEntity = level.getBlockEntity(blockPos);
-            if (blockEntity instanceof TrialSpawnerBlockEntity trialSpawnerBlockEntity) {
-                CompoundTag nbt = new CompoundTag();
-                nbt.putString("id", "minecraft:trial_spawner");
-                nbt.putString("normal_config", "nekomasfixed:trial_chamber/wildfire/normal");
-                nbt.putString("ominous_config", "nekomasfixed:trial_chamber/wildfire/ominous");
+        // NAMED GAP (class header): Blocks.TRIAL_SPAWNER does not exist on 1.20.1. The room itself
+        // (everything above) is built; only the spawner that was meant to occupy its centre is
+        // absent. Left as plain air (already the case: the "air" box carved out above covers this
+        // position) rather than substituting a different spawner mechanism unreviewed.
 
-                try (ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(LogUtils.getLogger())) {
-                    trialSpawnerBlockEntity.loadWithComponents(TagValueInput.create(logging, level.registryAccess(), nbt));
-                }
-            }
-        }
         ci.cancel();
     }
 }

@@ -11,7 +11,6 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecorator;
 import net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecoratorType;
-import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 
@@ -27,8 +26,8 @@ public class BaobabTreeDecorator extends TreeDecorator {
     }
 
     @Override
-    protected @NonNull TreeDecoratorType<?> type() {
-        return ModTreeDecorators.BAOBAB_TREE_DECORATOR;
+    protected TreeDecoratorType<?> type() {
+        return ModTreeDecorators.BAOBAB_TREE_DECORATOR.get();
     }
 
     @Override
@@ -46,12 +45,12 @@ public class BaobabTreeDecorator extends TreeDecorator {
                             for (int rope = 3 + random.nextInt(5); rope >= 0; rope--) {
                                 BlockPos finalFruitPos = fruitPos;
                                 if (generator.level().isStateAtPosition(fruitPos.below(), state -> state.is(BlockTags.REPLACEABLE) && !generator.logs().contains(finalFruitPos))) {
-                                    generator.setBlock(fruitPos, BlockRegistry.ROPE.defaultBlockState().setValue(RopeBlock.ATTACHED, true));
+                                    generator.setBlock(fruitPos, BlockRegistry.ROPE.get().defaultBlockState().setValue(RopeBlock.ATTACHED, true));
                                     fruitPos = fruitPos.below();
                                 }
                             }
-                            generator.setBlock(fruitPos, BlockRegistry.BAOBAB_FRUIT.defaultBlockState().setValue(AGE, 1));
-                        } else generator.setBlock(fruitPos, BlockRegistry.BAOBAB_FRUIT.defaultBlockState().setValue(AGE, 0));
+                            generator.setBlock(fruitPos, BlockRegistry.BAOBAB_FRUIT.get().defaultBlockState().setValue(AGE, 1));
+                        } else generator.setBlock(fruitPos, BlockRegistry.BAOBAB_FRUIT.get().defaultBlockState().setValue(AGE, 0));
                     }
                 }
             }

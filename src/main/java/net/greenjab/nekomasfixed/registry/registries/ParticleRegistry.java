@@ -1,17 +1,16 @@
 package net.greenjab.nekomasfixed.registry.registries;
 
-import net.minecraft.core.Registry;
+import net.greenjab.nekomasfixed.NekomasFixed;
 import net.minecraft.core.particles.SimpleParticleType;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 
 public class ParticleRegistry {
-    public static void registerParticles() {
-        System.out.println("register Particles");
-    }
 
-    public static final SimpleParticleType NUMBER = registerParticle("number", true);
+    public static final DeferredRegister<net.minecraft.core.particles.ParticleType<?>> PARTICLE_TYPES =
+            DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, NekomasFixed.NAMESPACE);
 
-    private static SimpleParticleType registerParticle(String name, boolean alwaysShow) {
-        return Registry.register(BuiltInRegistries.PARTICLE_TYPE, name, new SimpleParticleType(alwaysShow));
-    }
+    public static final RegistryObject<SimpleParticleType> NUMBER =
+            PARTICLE_TYPES.register("number", () -> new SimpleParticleType(true));
 }

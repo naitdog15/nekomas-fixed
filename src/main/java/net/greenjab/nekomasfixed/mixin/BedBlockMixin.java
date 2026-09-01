@@ -35,8 +35,10 @@ public class BedBlockMixin implements MessyBedAccessor {
         builder.add(MessyBedAccessor.MESSY);
     }
 
-    @Inject(method =  "useWithoutItem", at = @At("HEAD"), cancellable = true)
-        protected void onUse(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
+    // 1.20.1 delta: no useWithoutItem split (see BlockBehaviourMixin's header) — retargeted onto the
+    // combined use(...), which gains an InteractionHand parameter useWithoutItem did not have.
+    @Inject(method =  "use", at = @At("HEAD"), cancellable = true)
+        protected void onUse(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
         if(!level.isClientSide()){
             BlockPos otherPos = state.getValue(BedBlock.PART) == BedPart.FOOT ? pos.relative(state.getValue(BedBlock.FACING)) :pos.relative(state.getValue(BedBlock.FACING).getOpposite()) ;
             if(player.isShiftKeyDown() && player.getMainHandItem().isEmpty() && state.getValue(MessyBedAccessor.MESSY)){

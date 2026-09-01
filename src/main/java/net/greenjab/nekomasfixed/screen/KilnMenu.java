@@ -2,17 +2,29 @@ package net.greenjab.nekomasfixed.screen;
 
 import net.greenjab.nekomasfixed.registry.registries.RecipeRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ScreenHandlerRegistry;
+import net.greenjab.nekomasfixed.util.ModRecipeBookType;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.*;
+import net.minecraft.world.inventory.AbstractFurnaceMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.crafting.AbstractCookingRecipe;
+import net.minecraft.world.item.crafting.RecipeType;
 
+/**
+ * {@code RecipeManagerMixin} is deleted, so both constructors take a
+ * {@code RecipeType<? extends AbstractCookingRecipe>} in place of the dropped {@code
+ * RecipePropertySet} key - {@code RecipeRegistry.KILN_INPUT}'s TYPE changes accordingly (this
+ * package only supplies the new parameter shape). The 3rd constructor argument is {@code
+ * ModRecipeBookType.KILN}, not vanilla's {@code RecipeBookType.FURNACE} - see that class's javadoc
+ * for why. Everything else about {@code AbstractFurnaceMenu}'s constructor is unchanged.
+ */
 public class KilnMenu extends AbstractFurnaceMenu {
 
     public KilnMenu(final int containerId, final Inventory inventory) {
-        super(ScreenHandlerRegistry.KILN, RecipeRegistry.KILN_INPUT, RecipeBookType.FURNACE, containerId, inventory);
+        super(ScreenHandlerRegistry.KILN.get(), RecipeRegistry.KILN_INPUT.get(), ModRecipeBookType.KILN, containerId, inventory);
     }
 
     public KilnMenu(final int containerId, final Inventory inventory, final Container container, final ContainerData data) {
-        super(ScreenHandlerRegistry.KILN, RecipeRegistry.KILN_INPUT, RecipeBookType.FURNACE, containerId, inventory, container, data);
+        super(ScreenHandlerRegistry.KILN.get(), RecipeRegistry.KILN_INPUT.get(), ModRecipeBookType.KILN, containerId, inventory, container, data);
     }
 }

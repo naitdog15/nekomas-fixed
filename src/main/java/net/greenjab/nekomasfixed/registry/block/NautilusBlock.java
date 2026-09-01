@@ -37,7 +37,6 @@ import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 
@@ -53,7 +52,7 @@ public class NautilusBlock extends BaseEntityBlock {
 	private final NautilusBlockType nautilusBlockType;
 
 	@Override
-	public @NonNull MapCodec<NautilusBlock> codec() {
+	public MapCodec<NautilusBlock> codec() {
 		return CODEC;
 	}
 
@@ -64,22 +63,22 @@ public class NautilusBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	protected boolean hasAnalogOutputSignal(@NonNull BlockState state) {
+	protected boolean hasAnalogOutputSignal(BlockState state) {
 		return true;
 	}
 
 	@Override
-	protected int getAnalogOutputSignal(BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull Direction direction) {
+	protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
 		return state.getValue(OCCUPIED)?15:0;
 	}
 
 	@Override
-	public void playerDestroy(@NonNull Level level, @NonNull Player player, @NonNull BlockPos pos, @NonNull BlockState state, @Nullable BlockEntity blockEntity, @NonNull ItemStack tool) {
+	public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack tool) {
 		super.playerDestroy(level, player, pos, state, blockEntity, tool);
 	}
 
 	@Override
-	protected @NonNull InteractionResult useItemOn(@NonNull ItemStack stack, @NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull Player player, @NonNull InteractionHand hand, @NonNull BlockHitResult hit) {
+	protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
 		boolean occupied = hasAnimal(level, pos);
 		if (level instanceof ServerLevel serverLevel) {
 			if (occupied) {
@@ -88,7 +87,7 @@ public class NautilusBlock extends BaseEntityBlock {
 					if (!list.isEmpty()) {
 						level.setBlockAndUpdate(pos, state.setValue(NautilusBlock.OCCUPIED, false));
 						if (stack.is(Items.LEAD)) {
-							if (list.getFirst() instanceof Leashable leashable) {
+							if (list.get(0) instanceof Leashable leashable) {
 								leashable.setLeashedTo(player, true);
 								stack.shrink(1);
 							}
@@ -143,12 +142,12 @@ public class NautilusBlock extends BaseEntityBlock {
 
 	@Nullable
 	@Override
-	public BlockEntity newBlockEntity(@NonNull BlockPos pos, @NonNull BlockState state) {
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
 		return new NautilusBlockEntity(pos, state);
 	}
 
 	@Override
-	public @NonNull BlockState playerWillDestroy(@NonNull Level level, @NonNull BlockPos pos, @NonNull BlockState state, @NonNull Player player) {
+	public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
 		if (level instanceof ServerLevel serverLevel
 			&& player.preventsBlockDrops()
 			&& serverLevel.getGameRules().get(GameRules.BLOCK_DROPS)
@@ -185,7 +184,7 @@ public class NautilusBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	protected @NonNull ItemStack getCloneItemStack(@NonNull LevelReader level, @NonNull BlockPos pos, @NonNull BlockState state, boolean includeData) {
+	protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
 		ItemStack itemStack = super.getCloneItemStack(level, pos, state, includeData);
 		if (includeData) {
 			itemStack.set(DataComponents.BLOCK_STATE, BlockItemStateProperties.EMPTY.with(OCCUPIED, state.getValue(OCCUPIED)));
@@ -195,12 +194,12 @@ public class NautilusBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	public @NonNull BlockState rotate(BlockState state, Rotation rotation) {
+	public BlockState rotate(BlockState state, Rotation rotation) {
 		return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
 	}
 
 	@Override
-	public @NonNull BlockState mirror(BlockState state, Mirror mirror) {
+	public BlockState mirror(BlockState state, Mirror mirror) {
 		return state.rotate(mirror.getRotation(state.getValue(FACING)));
 	}
 

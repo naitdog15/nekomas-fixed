@@ -16,7 +16,6 @@ import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.component.Consumable;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.Level;
-import org.jspecify.annotations.NonNull;
 
 public class SpecialSoupItem extends Item {
 
@@ -25,23 +24,23 @@ public class SpecialSoupItem extends Item {
     }
 
     @Override
-    public @NonNull InteractionResult use(@NonNull Level level, Player user, @NonNull InteractionHand hand) {
+    public InteractionResult use(Level level, Player user, InteractionHand hand) {
         user.startUsingItem(hand);
         return InteractionResult.CONSUME;
     }
 
     @Override
-    public @NonNull ItemUseAnimation getUseAnimation(@NonNull ItemStack stack) {
+    public ItemUseAnimation getUseAnimation(ItemStack stack) {
         return ItemUseAnimation.EAT;
     }
 
     @Override
-    public int getUseDuration(@NonNull ItemStack stack, @NonNull LivingEntity user) {
+    public int getUseDuration(ItemStack stack, LivingEntity user) {
         return 32;
     }
 
     @Override
-    public @NonNull ItemStack finishUsingItem(@NonNull ItemStack stack, Level level, @NonNull LivingEntity user) {
+    public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity user) {
         if (!level.isClientSide() && user instanceof Player player) {
             ItemContainerContents c = stack.getOrDefault(DataComponents.CONTAINER, ItemContainerContents.fromItems(List.of()));
             List<ItemStack> ingredients = c.allItemsCopyStream().toList();

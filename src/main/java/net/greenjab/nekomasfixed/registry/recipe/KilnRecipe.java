@@ -1,49 +1,42 @@
 package net.greenjab.nekomasfixed.registry.recipe;
 
-import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.registry.registries.RecipeRegistry;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.world.item.Item;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ItemStackTemplate;
-import net.minecraft.world.item.crafting.*;
-import org.jspecify.annotations.NonNull;
+import net.minecraft.world.item.crafting.AbstractCookingRecipe;
+import net.minecraft.world.item.crafting.CookingBookCategory;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeSerializer;
 
-
+/**
+ * PORT: 1.20.1's {@code AbstractCookingRecipe} is not codec-based (that's the 1.21+ Recipe-as-data
+ * system) - it takes a raw constructor {@code (RecipeType<?>, ResourceLocation id, String group,
+ * CookingBookCategory, Ingredient, ItemStack result, float xp, int cookTime)}, matching vanilla's own
+ * {@code SmeltingRecipe} exactly (verified against forge-1.20.1-mapped-src). {@code getSerializer()}
+ * must be implemented directly (the {@code Recipe} interface declares it abstract on 1.20.1, no base
+ * default): {@code RecipeRegistry.KILN_SERIALIZER} is expected as a
+ * {@code RegistryObject<RecipeSerializer<KilnRecipe>>}, built from a {@code SimpleCookingSerializer<
+ * KilnRecipe>}-shaped factory taking this class's exact constructor signature (mirrors vanilla's own
+ * {@code RecipeSerializer.SMELTING_RECIPE} construction), since {@code RecipeRegistry.java} lives
+ * outside this file. {@code recipeBookCategory()} (a
+ * per-recipe override) has no 1.20.1 hook at all; the category-to-{@code RecipeBookCategories} mapping
+ * that used to live here is now a CLIENT-only Forge event handler (see {@code
+ * screen/KilnRecipeBookClient.java}, which restores the kiln's 3 recipe-book tabs).
+ */
 public class KilnRecipe extends AbstractCookingRecipe {
-    public static final MapCodec<KilnRecipe> MAP_CODEC = cookingMapCodec(KilnRecipe::new, 100);
-    public static final StreamCodec<RegistryFriendlyByteBuf, KilnRecipe> STREAM_CODEC = cookingStreamCodec(KilnRecipe::new);
-    public static final RecipeSerializer<KilnRecipe> SERIALIZER = new RecipeSerializer<>(MAP_CODEC, STREAM_CODEC);
 
-    public KilnRecipe(
-            final Recipe.CommonInfo commonInfo,
-            final AbstractCookingRecipe.CookingBookInfo bookInfo,
-            final Ingredient ingredient,
-            final ItemStackTemplate result,
-            final float experience,
-            final int cookingTime
-    ) {
-        super(commonInfo, bookInfo, ingredient, result, experience, cookingTime);
+    public KilnRecipe(ResourceLocation id, String group, CookingBookCategory category, Ingredient ingredient, ItemStack result, float experience, int cookingTime) {
+        super(RecipeRegistry.KILN.get(), id, group, category, ingredient, result, experience, cookingTime);
     }
 
-    protected @NonNull Item furnaceIcon() {
-        return ItemRegistry.KILN;
+    @Override
+    public ItemStack getToastSymbol() {
+        return new ItemStack(ItemRegistry.KILN.get());
     }
 
-    public @NonNull RecipeSerializer<KilnRecipe> getSerializer() {
-        return SERIALIZER;
-    }
-
-    public @NonNull RecipeType<KilnRecipe> getType() {
-        return RecipeRegistry.KILN;
-    }
-
-    public @NonNull RecipeBookCategory recipeBookCategory() {
-        return switch (this.category()) {
-            case BLOCKS -> RecipeRegistry.KILNING_BLOCK;
-            case FOOD, MISC -> RecipeRegistry.KILNING_MISC;
-        };
+    @Override
+    public RecipeSerializer<?> getSerializer() {
+        return RecipeRegistry.KILN_SERIALIZER.get();
     }
 }

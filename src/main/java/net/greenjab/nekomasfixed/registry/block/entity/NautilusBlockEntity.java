@@ -4,11 +4,10 @@ import com.google.common.collect.Lists;
 import net.greenjab.nekomasfixed.registry.block.NautilusBlock;
 import net.greenjab.nekomasfixed.registry.other.AnimalComponent;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
-import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponentGetter;
-import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -17,10 +16,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 
@@ -97,36 +93,36 @@ public class NautilusBlockEntity extends BlockEntity {
 		} else return false;
 	}
 
+	// ValueInput/ValueOutput and the applyImplicitComponents/
+	// collectImplicitComponents/removeComponentsFromTag trio are all 1.21+ (the latter three exist
+	// specifically to sync a block entity's state into/out of a 1.21+ ItemStack data component when
+	// the block is mined/placed). On 1.20.1 that same "animal survives being mined and re-placed"
+	// behaviour is already covered by plain load/saveAdditional: BlockEntity#saveToItem(ItemStack)
+	// (uninherited, unmodified here) calls saveWithoutMetadata() -> saveAdditional() and stores the
+	// result under the dropped stack's own BlockEntityTag, and NautilusBlock#playerWillDestroy
+	// already builds the drop through that path - so one CompoundTag-based pair covers both the
+	// world-save case and the item-carry case, and no separate component sync method is needed.
 	@Override
-	protected void loadAdditional(@NonNull ValueInput view) {
-		super.loadAdditional(view);
+	public void load(CompoundTag tag) {
+		super.load(tag);
 		this.animal.clear();
-        this.animal.addAll((view.read("animal", AnimalComponent.StoredEntityData.LIST_CODEC)
-                .orElse(List.of())));
+		if (tag.contains("animal")) {
+			AnimalComponent.StoredEntityData.LIST_CODEC.parse(NbtOps.INSTANCE, tag.get("animal"))
+					.result().ifPresent(this.animal::addAll);
+		}
 	}
 
+	// This is the exact "unguarded even when the list is empty" site
+	// (26.2 source: NautilusBlockEntity.java:124's collectImplicitComponents) - an empty
+	// AnimalComponent elided for free under the old component system, but an NBT facade writes an
+	// empty compound unless guarded explicitly, which is a real on-disk/on-wire diff for every
+	// nautilus block in every world. Guarded by the `if` below.
 	@Override
-	protected void saveAdditional(@NonNull ValueOutput view) {
-		super.saveAdditional(view);
-		view.store("animal", AnimalComponent.StoredEntityData.LIST_CODEC, this.animal);
-	}
-
-	@Override
-	protected void applyImplicitComponents(@NonNull DataComponentGetter components) {
-		super.applyImplicitComponents(components);
-		this.animal.clear();
-		this.animal.addAll(components.getOrDefault(ComponentRegistry.ANIMAL, AnimalComponent.DEFAULT).animal());
-	}
-
-	@Override
-	protected void collectImplicitComponents(DataComponentMap.@NonNull Builder builder) {
-		super.collectImplicitComponents(builder);
-		builder.set(ComponentRegistry.ANIMAL, new AnimalComponent(Lists.newArrayList(this.animal)));
-	}
-
-	@Override
-	public void removeComponentsFromTag(@NonNull ValueOutput view) {
-		super.removeComponentsFromTag(view);
-		view.discard("animal");
+	protected void saveAdditional(CompoundTag tag) {
+		super.saveAdditional(tag);
+		if (!this.animal.isEmpty()) {
+			AnimalComponent.StoredEntityData.LIST_CODEC.encodeStart(NbtOps.INSTANCE, this.animal)
+					.result().ifPresent(encoded -> tag.put("animal", encoded));
+		}
 	}
 }

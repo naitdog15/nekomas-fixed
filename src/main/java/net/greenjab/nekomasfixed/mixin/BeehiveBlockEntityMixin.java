@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.BeehiveBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,7 +25,7 @@ public class BeehiveBlockEntityMixin {
 
     @Inject(method = "releaseOccupant", at = @At("HEAD"))
     private static void onReleaseBee(Level level, BlockPos blockPos, BlockState state,
-                                     BeehiveBlockEntity.Occupant beeData, @Nullable List<Entity> spawned,
+                                     BeehiveBlockEntity.BeeData beeData, @Nullable List<Entity> spawned,
                                      BeehiveBlockEntity.BeeReleaseStatus releaseStatus, @Nullable BlockPos savedFlowerPos,
                                      CallbackInfoReturnable<Boolean> cir) {
         if (releaseStatus != BeehiveBlockEntity.BeeReleaseStatus.HONEY_DELIVERED) return;
@@ -37,11 +37,11 @@ public class BeehiveBlockEntityMixin {
             belowState = level.getBlockState(belowPos);
             i++;
         }
-        if (belowState.getBlock() == BlockRegistry.HONEY_CAULDRON && state.getValue(BeehiveBlock.HONEY_LEVEL) == 5) {
+        if (belowState.getBlock() == BlockRegistry.HONEY_CAULDRON.get() && state.getValue(BeehiveBlock.HONEY_LEVEL) == 5) {
             incrementHoneyLevel(level, belowPos, belowState);
         }
         else if (belowState.getBlock() == Blocks.CAULDRON && state.getValue(BeehiveBlock.HONEY_LEVEL) == 5) {
-            level.setBlockAndUpdate(belowPos, BlockRegistry.HONEY_CAULDRON.defaultBlockState()
+            level.setBlockAndUpdate(belowPos, BlockRegistry.HONEY_CAULDRON.get().defaultBlockState()
                     .setValue(HoneyCauldronBlock.HONEY_LEVEL, 1));
             level.playSound(null, belowPos, SoundEvents.BEEHIVE_DRIP, SoundSource.BLOCKS, 1.0F, 1.0F);
 
@@ -51,7 +51,7 @@ public class BeehiveBlockEntityMixin {
     @Unique
     private static void incrementHoneyLevel(Level level, BlockPos pos, BlockState state) {
         if (level.isClientSide()) return;
-        if (state.getBlock() != BlockRegistry.HONEY_CAULDRON) return;
+        if (state.getBlock() != BlockRegistry.HONEY_CAULDRON.get()) return;
 
         int currentLevel = state.getValue(HoneyCauldronBlock.HONEY_LEVEL);
         if (currentLevel >= HoneyCauldronBlock.MAX_LEVEL) return;

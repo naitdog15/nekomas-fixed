@@ -1,0 +1,13 @@
+{
+  "type": "nekomasfixed:kilning",
+  "category": "blocks",
+  "ingredient": {
+    "item": "minecraft:red_sandstone"
+  },
+  "result": {
+    "count": 1,
+    "item": "minecraft:smooth_red_sandstone"
+  },
+  "experience": 0.4,
+  "cookingtime": 100
+}

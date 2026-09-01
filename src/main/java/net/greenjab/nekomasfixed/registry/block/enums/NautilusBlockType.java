@@ -1,7 +1,6 @@
 package net.greenjab.nekomasfixed.registry.block.enums;
 import com.mojang.serialization.Codec;
 import net.minecraft.util.StringRepresentable;
-import org.jspecify.annotations.NonNull;
 
 public enum NautilusBlockType implements StringRepresentable {
 	REGULAR("regular"),
@@ -17,7 +16,7 @@ public enum NautilusBlockType implements StringRepresentable {
 	}
 
 	@Override
-	public @NonNull String getSerializedName() {
+	public String getSerializedName() {
 		return this.name;
 	}
 

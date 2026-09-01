@@ -16,7 +16,6 @@ import net.minecraft.world.entity.ai.memory.MemoryStatus;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Optional;
 
@@ -32,60 +31,60 @@ public class WildfireBombTask extends Behavior<WildfireEntity> {
 				MemoryStatus.VALUE_PRESENT,
 				MemoryModuleType.WALK_TARGET,
 				MemoryStatus.VALUE_ABSENT,
-				MemoryModuleType.BREEZE_SHOOT_COOLDOWN,
+				WildfireRegistrations.BREEZE_SHOOT_COOLDOWN.get(),
 				MemoryStatus.VALUE_PRESENT,
-				MemoryModuleType.BREEZE_LEAVING_WATER,
+				WildfireRegistrations.BREEZE_LEAVING_WATER.get(),
 				MemoryStatus.VALUE_PRESENT,
-				MemoryModuleType.BREEZE_SHOOT,
+				WildfireRegistrations.BREEZE_SHOOT.get(),
 				MemoryStatus.REGISTERED,
-				MemoryModuleType.BREEZE_SHOOT_CHARGING,
+				WildfireRegistrations.BREEZE_SHOOT_CHARGING.get(),
 				MemoryStatus.REGISTERED,
-				MemoryModuleType.BREEZE_SHOOT_RECOVERING,
+				WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get(),
 				MemoryStatus.REGISTERED,
 				MemoryModuleType.LIKED_NOTEBLOCK_COOLDOWN_TICKS,
 				MemoryStatus.REGISTERED
 		), SHOOT_CHARGING_EXPIRY + RECOVER_EXPIRY);
 	}
 
-	protected boolean checkExtraStartConditions(@NonNull ServerLevel level, WildfireEntity wildFireEntity) {
+	protected boolean checkExtraStartConditions(ServerLevel level, WildfireEntity wildFireEntity) {
 		if (wildFireEntity.getPose() != Pose.DIGGING) return false;
 		return wildFireEntity.getBrain()
                 .getMemory(MemoryModuleType.ATTACK_TARGET)
                 .map(target -> isTargetWithinRange(wildFireEntity, target))
                 .map(withinRange -> {
-                    if (!withinRange) wildFireEntity.getBrain().eraseMemory(MemoryModuleType.BREEZE_SHOOT);
+                    if (!withinRange) wildFireEntity.getBrain().eraseMemory(WildfireRegistrations.BREEZE_SHOOT.get());
 					return withinRange;
                 }).orElse(false);
 	}
 
-	protected boolean canStillUse(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
-		return wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.ATTACK_TARGET)/* && wildFireEntity.getBrain().hasMemoryModule(MemoryModuleType.BREEZE_SHOOT)*/;
+	protected boolean canStillUse(ServerLevel level, WildfireEntity wildFireEntity, long l) {
+		return wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.ATTACK_TARGET)/* && wildFireEntity.getBrain().hasMemoryModule(WildfireRegistrations.BREEZE_SHOOT.get())*/;
 	}
 
-	protected void start(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
+	protected void start(ServerLevel level, WildfireEntity wildFireEntity, long l) {
 		wildFireEntity.setPose(Pose.STANDING);
-		wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.BREEZE_SHOOT_CHARGING, Unit.INSTANCE, SHOOT_CHARGING_EXPIRY);
-		wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.BREEZE_SHOOT, Unit.INSTANCE,SHOOT_CHARGING_EXPIRY + RECOVER_EXPIRY);
-		wildFireEntity.playSound(SoundEvents.BREEZE_INHALE, 1.0F, 1.0F);
+		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_CHARGING.get(), Unit.INSTANCE, SHOOT_CHARGING_EXPIRY);
+		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT.get(), Unit.INSTANCE,SHOOT_CHARGING_EXPIRY + RECOVER_EXPIRY);
+		wildFireEntity.playSound(WildfireRegistrations.BREEZE_INHALE.get(), 1.0F, 1.0F);
 		wildFireEntity.setFireActive(true);
 	}
 
-	protected void stop(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
-		wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.BREEZE_SHOOT_COOLDOWN, Unit.INSTANCE, 200L);
-		wildFireEntity.getBrain().eraseMemory(MemoryModuleType.BREEZE_SHOOT);
+	protected void stop(ServerLevel level, WildfireEntity wildFireEntity, long l) {
+		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_COOLDOWN.get(), Unit.INSTANCE, 200L);
+		wildFireEntity.getBrain().eraseMemory(WildfireRegistrations.BREEZE_SHOOT.get());
 		wildFireEntity.getBrain().eraseMemory(MemoryModuleType.LIKED_NOTEBLOCK_COOLDOWN_TICKS);
 		wildFireEntity.setFireActive(false);
 		wildFireEntity.eyeOffset = -0.5f;
 	}
 
-	protected void tick(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
+	protected void tick(ServerLevel level, WildfireEntity wildFireEntity, long l) {
 		Brain<WildfireEntity> brain = wildFireEntity.getBrain();
 		LivingEntity livingEntity = brain.getMemory(MemoryModuleType.ATTACK_TARGET).orElse(null);
 		if (livingEntity != null) {
 			wildFireEntity.lookAt(EntityAnchorArgument.Anchor.EYES, livingEntity.position());
-			if (brain.getMemory(MemoryModuleType.BREEZE_SHOOT_CHARGING).isEmpty() &&
-				brain.getMemory(MemoryModuleType.BREEZE_SHOOT_RECOVERING).isEmpty()) {
-				brain.setMemoryWithExpiry(MemoryModuleType.BREEZE_SHOOT_RECOVERING, Unit.INSTANCE, SHOOT_COOLDOWN_EXPIRY);
+			if (brain.getMemory(WildfireRegistrations.BREEZE_SHOOT_CHARGING.get()).isEmpty() &&
+				brain.getMemory(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get()).isEmpty()) {
+				brain.setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get(), Unit.INSTANCE, SHOOT_COOLDOWN_EXPIRY);
 
 				Optional<Vec3> optional = LongJumpUtil.calculateJumpVectorForAngle(wildFireEntity, livingEntity.position(), 1.11f, level.getRandom().nextInt(10) + 45, false);
 				if (optional.isPresent()) {
@@ -100,7 +99,7 @@ public class WildfireBombTask extends Behavior<WildfireEntity> {
 						FireBomb fireBombEntity = new FireBomb(level, wildFireEntity);
 						fireBombEntity.setPos(fireBombEntity.getX(), wildFireEntity.getY(0.5) + 0.5, fireBombEntity.getZ());
 						Projectile.spawnProjectileUsingShoot(fireBombEntity, level, ItemStack.EMPTY, v.x, v.y, v.z, (float) v.length() * (1-i/20f), 0.0F);
-						wildFireEntity.playSound(SoundEvents.BREEZE_SHOOT, 1.5F, 1.0F);
+						wildFireEntity.playSound(WildfireRegistrations.BREEZE_SHOOT_SOUND.get(), 1.5F, 1.0F);
 					}
 				}
 			}

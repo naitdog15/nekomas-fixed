@@ -28,9 +28,12 @@ bin/
 
 *.DS_Store
 
-# fabric
+# forge
 
 run/
+run-data/
+logs/
+forge*changelog.txt
 
 # java
 

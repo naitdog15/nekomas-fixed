@@ -18,7 +18,6 @@ import net.minecraft.world.entity.ai.memory.MemoryStatus;
 import net.minecraft.world.entity.ai.memory.WalkTarget;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.block.Blocks;
-import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 
@@ -34,55 +33,55 @@ public class WildfireMeleeTask extends Behavior<WildfireEntity> {
 				MemoryStatus.VALUE_PRESENT,
 				MemoryModuleType.WALK_TARGET,
 				MemoryStatus.VALUE_ABSENT,
-				MemoryModuleType.BREEZE_SHOOT_COOLDOWN,
+				WildfireRegistrations.BREEZE_SHOOT_COOLDOWN.get(),
 				MemoryStatus.VALUE_ABSENT,
-				MemoryModuleType.BREEZE_SHOOT,
+				WildfireRegistrations.BREEZE_SHOOT.get(),
 				MemoryStatus.REGISTERED,
-				MemoryModuleType.BREEZE_SHOOT_CHARGING,
+				WildfireRegistrations.BREEZE_SHOOT_CHARGING.get(),
 				MemoryStatus.REGISTERED,
-				MemoryModuleType.BREEZE_SHOOT_RECOVERING,
+				WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get(),
 				MemoryStatus.REGISTERED
 		), MELEE_CHARGING_EXPIRY + MELEE_EXPIRY);
 	}
 
-	protected boolean checkExtraStartConditions(@NonNull ServerLevel level, WildfireEntity wildFireEntity) {
+	protected boolean checkExtraStartConditions(ServerLevel level, WildfireEntity wildFireEntity) {
 		if (wildFireEntity.getPose() != Pose.SPIN_ATTACK) return false;
 		return wildFireEntity.getBrain()
                 .getMemory(MemoryModuleType.ATTACK_TARGET)
                 .map(target -> isTargetWithinRange(wildFireEntity, target))
                 .map(withinRange -> {
-                    if (!withinRange) wildFireEntity.getBrain().eraseMemory(MemoryModuleType.BREEZE_SHOOT);
+                    if (!withinRange) wildFireEntity.getBrain().eraseMemory(WildfireRegistrations.BREEZE_SHOOT.get());
                     return withinRange;
                 }).orElse(false);
 	}
 
-	protected boolean canStillUse(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
-		return wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.ATTACK_TARGET) && wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.BREEZE_SHOOT);
+	protected boolean canStillUse(ServerLevel level, WildfireEntity wildFireEntity, long l) {
+		return wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.ATTACK_TARGET) && wildFireEntity.getBrain().hasMemoryValue(WildfireRegistrations.BREEZE_SHOOT.get());
 	}
 
-	protected void start(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
+	protected void start(ServerLevel level, WildfireEntity wildFireEntity, long l) {
 		wildFireEntity.setPose(Pose.STANDING);
-		wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.BREEZE_SHOOT_CHARGING, Unit.INSTANCE, MELEE_CHARGING_EXPIRY);
-		wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.BREEZE_SHOOT, Unit.INSTANCE,MELEE_CHARGING_EXPIRY + MELEE_EXPIRY);
-		wildFireEntity.playSound(SoundEvents.BREEZE_INHALE, 1.0F, 1.0F);
+		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_CHARGING.get(), Unit.INSTANCE, MELEE_CHARGING_EXPIRY);
+		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT.get(), Unit.INSTANCE,MELEE_CHARGING_EXPIRY + MELEE_EXPIRY);
+		wildFireEntity.playSound(WildfireRegistrations.BREEZE_INHALE.get(), 1.0F, 1.0F);
 		wildFireEntity.setFireActive(true);
 	}
 
-	protected void stop(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
-		wildFireEntity.getBrain().setMemoryWithExpiry(MemoryModuleType.BREEZE_SHOOT_COOLDOWN, Unit.INSTANCE, 200L);
-		wildFireEntity.getBrain().eraseMemory(MemoryModuleType.BREEZE_SHOOT);
+	protected void stop(ServerLevel level, WildfireEntity wildFireEntity, long l) {
+		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_COOLDOWN.get(), Unit.INSTANCE, 200L);
+		wildFireEntity.getBrain().eraseMemory(WildfireRegistrations.BREEZE_SHOOT.get());
 		wildFireEntity.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
 		wildFireEntity.setFireActive(false);
 	}
 
-	protected void tick(@NonNull ServerLevel level, WildfireEntity wildFireEntity, long l) {
+	protected void tick(ServerLevel level, WildfireEntity wildFireEntity, long l) {
 		Brain<WildfireEntity> brain = wildFireEntity.getBrain();
 		LivingEntity livingEntity = brain.getMemory(MemoryModuleType.ATTACK_TARGET).orElse(null);
 		if (livingEntity != null) {
 			wildFireEntity.lookAt(EntityAnchorArgument.Anchor.EYES, livingEntity.position());
-			if (brain.getMemory(MemoryModuleType.BREEZE_SHOOT_CHARGING).isEmpty()
-				&& brain.getMemory(MemoryModuleType.BREEZE_SHOOT_RECOVERING).isEmpty()) {
-				brain.setMemoryWithExpiry(MemoryModuleType.BREEZE_SHOOT_RECOVERING, Unit.INSTANCE, MELEE_HIT_COOLDOWN_EXPIRY);
+			if (brain.getMemory(WildfireRegistrations.BREEZE_SHOOT_CHARGING.get()).isEmpty()
+				&& brain.getMemory(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get()).isEmpty()) {
+				brain.setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get(), Unit.INSTANCE, MELEE_HIT_COOLDOWN_EXPIRY);
 
 				if (level.getBlockState(wildFireEntity.blockPosition()).is(BlockTags.REPLACEABLE))
 					level.setBlockAndUpdate(wildFireEntity.blockPosition(), Blocks.FIRE.defaultBlockState());
@@ -94,8 +93,15 @@ public class WildfireMeleeTask extends Behavior<WildfireEntity> {
 					double h = Math.max(f * f + g * g, 0.1);
 					entity.push(f / h * 2.0, 0.2F, g / h * 2.0);
 					DamageSource damageSource = wildFireEntity.damageSources().mobAttack(wildFireEntity);
-					entity.hurtServer(level, damageSource, wildFireEntity.isSoulActive()?6.0F:4.0F);
-					EnchantmentHelper.doPostAttackEffects(level, entity, damageSource);
+					// entity.hurt(...) is the outgoing-damage dispatcher (routes to the target's own
+					// hurtServer override on the server); 1.20.1 has no unified doPostAttackEffects, so
+					// the two-call vanilla form is used instead (see WildfireTrident.onHitEntity).
+					if (entity.hurt(damageSource, wildFireEntity.isSoulActive()?6.0F:4.0F)) {
+						if (entity instanceof LivingEntity hurtLiving) {
+							EnchantmentHelper.doPostHurtEffects(hurtLiving, wildFireEntity);
+							EnchantmentHelper.doPostDamageEffects(wildFireEntity, hurtLiving);
+						}
+					}
 				}
 			}
 			wildFireEntity.getBrain().setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(BlockPos.containing(livingEntity.position()), wildFireEntity.isSoulActive()?0.65F:0.5F, 0));

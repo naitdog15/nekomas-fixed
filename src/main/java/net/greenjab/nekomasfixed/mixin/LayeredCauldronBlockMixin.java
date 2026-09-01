@@ -22,7 +22,7 @@ public class LayeredCauldronBlockMixin {
     @Inject(method = "handlePrecipitation", at = @At(value = "HEAD"), cancellable = true)
     private void turnIntoIce(BlockState state, Level level, BlockPos pos, Biome.Precipitation precipitation, CallbackInfo ci) {
         if (precipitationType==Biome.Precipitation.RAIN && precipitation == Biome.Precipitation.SNOW && state.getValue(LayeredCauldronBlock.LEVEL)==3) {
-            BlockState blockState = BlockRegistry.ICE_CAULDRON.defaultBlockState();
+            BlockState blockState = BlockRegistry.ICE_CAULDRON.get().defaultBlockState();
             level.setBlockAndUpdate(pos, blockState);
             level.gameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Context.of(blockState));
             ci.cancel();

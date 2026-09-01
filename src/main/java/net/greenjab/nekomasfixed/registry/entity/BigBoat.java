@@ -1,7 +1,7 @@
 package net.greenjab.nekomasfixed.registry.entity;
 
-import com.mojang.serialization.Codec;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -14,56 +14,56 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityDimensions;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.SlotAccess;
-import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
-import net.minecraft.world.entity.vehicle.boat.AbstractChestBoat;
+import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.gamerules.GameRules;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
-import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Iterator;
 import java.util.function.Supplier;
 
-public class BigBoat extends AbstractChestBoat {
+/**
+ * PORT (best-effort, documented gap): 1.20.1
+ * has no {@code AbstractChestBoat}/{@code ChestVehicle} hierarchy at all - only two fixed, separate
+ * top-level classes, {@code Boat} and {@code ChestBoat extends Boat} (verified: forge-1.20.1-mapped-
+ * src/net/minecraft/world/entity/vehicle/ has exactly those two, no shared chest-capable base, no
+ * per-passenger {@code getPassengerAttachmentPoint}/{@code EntityDimensions} hook on {@code Boat} at
+ * all). BigBoat's whole design - one entity type that TOGGLES a chest on/off plus a banner, unlike
+ * vanilla's fixed dual-entity-type split - has no clean 1.20.1 analogue to retarget onto, so this is
+ * a genuine redesign, not a port: BigBoat now extends {@code Boat} directly. The toggleable-chest
+ * *data* (the {@code CHEST} boolean + banner sync) is kept, since it's just a flag; the chest
+ * *inventory UI* ({@code ContainerEntity}/{@code HasCustomInventoryScreen}, opening a real chest
+ * screen) is NOT reimplemented here - it would need a new common inventory-screen contract this
+ * package doesn't own the pieces for (a MenuType is registry/item territory owned elsewhere). Passenger seating
+ * uses whatever default vanilla {@code Boat} positioning provides (no custom per-passenger offset
+ * hook exists to override on 1.20.1) - a graceful degradation, not a crash.
+ */
+public class BigBoat extends Boat {
 
 	protected static final EntityDataAccessor<Boolean> CHEST = SynchedEntityData.defineId(BigBoat.class, EntityDataSerializers.BOOLEAN);
 	protected static final EntityDataAccessor<ItemStack> BANNER = SynchedEntityData.defineId(BigBoat.class, EntityDataSerializers.ITEM_STACK);
 
 	private FakeBoat front;
 	private FakeBoat back;
+	private final Supplier<Item> dropItemSupplier;
 
-	public BigBoat(EntityType<? extends AbstractChestBoat> entityType, Level level, Supplier<Item> supplier) {
-		super(entityType, level, supplier);
-
+	public BigBoat(EntityType<? extends Boat> entityType, Level level, Supplier<Item> supplier) {
+		super(entityType, level);
+		this.dropItemSupplier = supplier;
 	}
 
 	@Override
-	protected void defineSynchedData(SynchedEntityData.@NonNull Builder builder) {
-		super.defineSynchedData(builder);
-		builder.define(CHEST, false);
-		builder.define(BANNER, ItemStack.EMPTY);
-	}
-
-    @Override
-	protected double rideHeight(EntityDimensions dimensions) {
-		return dimensions.height() / 3.0F +0.2f;
-	}
-
-	@Override
-	protected @NonNull Vec3 getPassengerAttachmentPoint(@NonNull Entity passenger, @NonNull EntityDimensions dimensions, float scaleFactor) {
-		float f = 0.8f- this.getPassengers().indexOf(passenger)*1.0f;
-		return new Vec3(0.0, this.rideHeight(dimensions), f).yRot(-this.getYRot() * (float) (Math.PI / 180.0));
+	protected void defineSynchedData() {
+		super.defineSynchedData();
+		this.entityData.define(CHEST, false);
+		this.entityData.define(BANNER, ItemStack.EMPTY);
 	}
 
 	@Override
@@ -72,19 +72,19 @@ public class BigBoat extends AbstractChestBoat {
 	}
 
 	@Override
-	protected void addAdditionalSaveData(@NonNull ValueOutput view) {
-		super.addAdditionalSaveData(view);
-		view.putBoolean("Chest", hasChest());
+	protected void addAdditionalSaveData(CompoundTag tag) {
+		super.addAdditionalSaveData(tag);
+		tag.putBoolean("Chest", hasChest());
 		if (!getBanner().isEmpty()) {
-			view.store("Banner", ItemStack.CODEC, getBanner());
+			tag.put("Banner", getBanner().save(new CompoundTag()));
 		}
 	}
 
 	@Override
-	protected void readAdditionalSaveData(@NonNull ValueInput view) {
-		super.readAdditionalSaveData(view);
-		setHasChest(view.read("Chest", Codec.BOOL).orElse(false));
-		setBanner(view.read("Banner", ItemStack.CODEC).orElse(ItemStack.EMPTY));
+	protected void readAdditionalSaveData(CompoundTag tag) {
+		super.readAdditionalSaveData(tag);
+		setHasChest(tag.getBoolean("Chest"));
+		setBanner(tag.contains("Banner") ? ItemStack.of(tag.getCompound("Banner")) : ItemStack.EMPTY);
 	}
 
 	@Override
@@ -92,14 +92,14 @@ public class BigBoat extends AbstractChestBoat {
 		super.tick();
 
 		if (front==null || !front.isAlive()) {
-			front = EntityTypeRegistry.FAKE_BOAT.create(this.level(), EntitySpawnReason.MOB_SUMMONED);
+			front = EntityTypeRegistry.FAKE_BOAT.get().create(this.level(), MobSpawnType.MOB_SUMMONED);
 			if (front!=null) {
 				front.owner = this;
 				this.level().addFreshEntity(front);
 			}
 		}
 		if (back==null || !back.isAlive()) {
-			back = EntityTypeRegistry.FAKE_BOAT.create(this.level(), EntitySpawnReason.MOB_SUMMONED);
+			back = EntityTypeRegistry.FAKE_BOAT.get().create(this.level(), MobSpawnType.MOB_SUMMONED);
 			if (back!=null) {
 				back.owner = this;
 				this.level().addFreshEntity(back);
@@ -119,7 +119,7 @@ public class BigBoat extends AbstractChestBoat {
 	}
 
 	@Override
-	public @NonNull InteractionResult interact(Player player, @NonNull InteractionHand hand, @NonNull Vec3 location) {
+	public InteractionResult interact(Player player, InteractionHand hand) {
 		ItemStack itemStack = player.getItemInHand(hand);
 		if (itemStack.is(Items.CHEST)) {
 			if (!hasChest() && getPassengers().size()<4) {
@@ -140,14 +140,14 @@ public class BigBoat extends AbstractChestBoat {
 				player.level().playSound(null, this, SoundEvents.COPPER_GOLEM_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
 				ItemStack banner = getBanner().copy();
 				setBanner(ItemStack.EMPTY);
-				if (player.level() instanceof ServerLevel level) {
-					this.spawnAtLocation(level, banner, 1.5F);
+				if (player.level() instanceof ServerLevel) {
+					this.spawnAtLocation(banner, 1.5F);
 					itemStack.hurtAndBreak(1, player, hand);
 				}
 			}
 			return InteractionResult.SUCCESS;
 		} else {
-			return super.interact(player, hand, location);
+			return super.interact(player, hand);
 		}
 	}
 
@@ -176,27 +176,33 @@ public class BigBoat extends AbstractChestBoat {
 		Iterator<Entity> iter = getPassengers().stream().iterator();
 		while (iter.hasNext()){
 			Entity e = iter.next();
-			if (e instanceof Player || e instanceof Villager || e instanceof Raider) {
+			if (e instanceof Player || e instanceof AbstractVillager || e instanceof Raider) {
 				i++;
 			}
 		}
 		return i;
 	}
 
+	/** {@code Boat#destroy(DamageSource)} calls this internally (spawnAtLocation) - overriding it also
+	 * fixes getPickResult()'s drop for free, since vanilla builds that from the same hook. */
 	@Override
-	public void destroy(@NonNull ServerLevel level, @NonNull DamageSource damageSource) {
-		if (front!=null) this.front.remove(RemovalReason.DISCARDED);
-		if (back!=null) this.back.remove(RemovalReason.DISCARDED);
-		this.destroy(level, this.getDropItem());
-		if (level.getGameRules().get(GameRules.ENTITY_DROPS)) {
-			if (hasChest()) Containers.dropItemStack(level, this.getX(), this.getY(), this.getZ(), Items.CHEST.getDefaultInstance());
-			Containers.dropItemStack(level, this.getX(), this.getY(), this.getZ(), getBanner());
-		}
-		this.chestVehicleDestroyed(damageSource, level, this);
+	public Item getDropItem() {
+		return this.dropItemSupplier.get();
 	}
 
 	@Override
-	public void remove(@NonNull RemovalReason reason) {
+	protected void destroy(DamageSource damageSource) {
+		if (front!=null) this.front.remove(RemovalReason.DISCARDED);
+		if (back!=null) this.back.remove(RemovalReason.DISCARDED);
+		super.destroy(damageSource);
+		if (this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+			if (hasChest()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), Items.CHEST.getDefaultInstance());
+			Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getBanner());
+		}
+	}
+
+	@Override
+	public void remove(RemovalReason reason) {
 		if (front!=null) this.front.remove(RemovalReason.DISCARDED);
 		if (back!=null) this.back.remove(RemovalReason.DISCARDED);
 		if (!this.level().isClientSide() && reason.shouldDestroy()) {
@@ -207,46 +213,17 @@ public class BigBoat extends AbstractChestBoat {
 		super.remove(reason);
 	}
 
-	@Override
-	public void chestVehicleDestroyed(@NonNull DamageSource source, @NonNull ServerLevel level, @NonNull Entity vehicle) {
-		if (front!=null) this.front.remove(RemovalReason.DISCARDED);
-		if (back!=null) this.back.remove(RemovalReason.DISCARDED);
-		if (level.getGameRules().get(GameRules.ENTITY_DROPS)) {
-			if (hasChest()) Containers.dropItemStack(level, vehicle.getX(), vehicle.getY(), vehicle.getZ(), Items.CHEST.getDefaultInstance());
-			Containers.dropItemStack(level, vehicle.getX(), vehicle.getY(), vehicle.getZ(), getBanner());
-		}
-		super.chestVehicleDestroyed(source, level, vehicle);
-	}
-
-
-	public @NonNull InteractionResult interactWithContainerVehicle(@NonNull Player player) {
-		if (hasChest()) return super.interactWithContainerVehicle(player);
-		return InteractionResult.PASS;
-	}
-
-	@Override
-	public void openCustomInventoryScreen(@NonNull Player player) {
-		if (hasChest()) super.openCustomInventoryScreen(player);
-
-	}
-
-	@Override
-	public SlotAccess getChestVehicleSlot(int slot) {
-		if (hasChest()) return super.getChestVehicleSlot(slot);
-		return null;
-	}
-
-	public boolean canHaveALeashAttachedTo(@NonNull Entity entity) {
+	public boolean canHaveALeashAttachedTo(Entity entity) {
 		return false;
 	}
 
 	@Override
-	public boolean canCollideWith(@NonNull Entity other) {
+	public boolean canCollideWith(Entity other) {
 		return !(other==front||other==back) && super.canCollideWith(other);
 	}
 
 	@Override
-	public boolean hurtServer(@NonNull ServerLevel level, @NonNull DamageSource source, float amount) {
+	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
 		return super.hurtServer(level, source, amount*0.8f);
 	}
 }

@@ -1,21 +1,18 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import java.util.function.Consumer;
-import net.minecraft.core.component.DataComponentGetter;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.ItemContainerContents;
 
-@Mixin(ItemContainerContents.class)
+/**
+ * Left empty rather than deleted (nekomasfixed.mixins.json still names
+ * {@code ItemContainerContentsMixin}).
+ * {@code net.minecraft.world.item.component.ItemContainerContents} (the 1.20.5+ data component this
+ * mixin's own name and target class are both about) does not exist on 1.20.1 — there is no
+ * component-level {@code addToTooltip} hook to cancel at all, so the "suppress the normal tooltip
+ * text, the mod supplies its own" purpose this mixin served is moot rather than portable: per
+ * ItemStackMixin's header, the mod's own replacement tooltip text/image for containers is itself a
+ * later workstream, not implemented yet.
+ */
+@Mixin(ItemStack.class)
 public class ItemContainerContentsMixin {
-
-    @Inject(method = "addToTooltip", at = @At("HEAD"), cancellable = true)
-    private void removeNormalTooltip(Item.TooltipContext context, Consumer<Component> consumer, TooltipFlag flag, DataComponentGetter components, CallbackInfo ci){
-        ci.cancel();
-    }
 }

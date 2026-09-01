@@ -17,12 +17,11 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
-import org.jspecify.annotations.NonNull;
 
 public class DyedBrushBehaviour extends OptionalDispenseItemBehavior {
 
 	@Override
-	protected @NonNull ItemStack execute(final @NonNull BlockSource source, final ItemStack dispensed) {
+	protected ItemStack execute(final BlockSource source, final ItemStack dispensed) {
 		this.setSuccess(false);
 		if (dispensed.getItem() instanceof DyedBrushItem brushItem) {
 			AllDyes color = brushItem.getColor();
@@ -108,7 +107,7 @@ public class DyedBrushBehaviour extends OptionalDispenseItemBehavior {
 						if (level.getBlockEntity(pos) instanceof ShulkerBoxBlockEntity newshulkerBoxBlockEntity) {
 							for (int i = 0; i < shulkerBoxBlockEntity.getContainerSize(); i++)
 								newshulkerBoxBlockEntity.setItem(i, shulkerBoxBlockEntity.getItem(i));
-							newshulkerBoxBlockEntity.name = shulkerBoxBlockEntity.getCustomName();
+							newshulkerBoxBlockEntity.setCustomName(shulkerBoxBlockEntity.getCustomName());
 						}
 					}
 					used = true;

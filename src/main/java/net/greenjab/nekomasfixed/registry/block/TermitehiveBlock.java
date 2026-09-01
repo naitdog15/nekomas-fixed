@@ -11,7 +11,6 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.EnchantmentTags;
-import net.minecraft.util.RandomSource;
 import net.minecraft.util.Util;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.Entity;
@@ -27,8 +26,8 @@ import net.minecraft.world.item.component.BlockItemStateProperties;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.FireBlock;
@@ -42,8 +41,7 @@ import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -57,7 +55,7 @@ public class TermitehiveBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected @NonNull MapCodec<? extends BaseEntityBlock> codec() {return CODEC;}
+    protected MapCodec<? extends BaseEntityBlock> codec() {return CODEC;}
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
@@ -65,7 +63,7 @@ public class TermitehiveBlock extends BaseEntityBlock {
     }
 
     @Override
-    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, @NonNull BlockState state, @NonNull BlockEntityType<T> type) {
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         if (level.isClientSide()) return null;
 
         if (type == BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY) {
@@ -82,7 +80,7 @@ public class TermitehiveBlock extends BaseEntityBlock {
     }
 
     @Override
-    public @NonNull BlockState playerWillDestroy(@NonNull Level level, @NonNull BlockPos pos, @NonNull BlockState state, @NonNull Player player) {
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (level instanceof ServerLevel serverLevel
                 && player.preventsBlockDrops()
                 && serverLevel.getGameRules().get(GameRules.BLOCK_DROPS)
@@ -101,14 +99,14 @@ public class TermitehiveBlock extends BaseEntityBlock {
 
 
     @Override
-    protected @NonNull ItemStack getCloneItemStack(@NonNull LevelReader level, @NonNull BlockPos pos, @NonNull BlockState state, boolean includeData) {
+    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         ItemStack itemStack = super.getCloneItemStack(level, pos, state, includeData);
         if (includeData) itemStack.set(DataComponents.BLOCK_STATE, BlockItemStateProperties.EMPTY.with(TERMITES, state.getValue(TERMITES)));
         return itemStack;
     }
 
     @Override
-    protected @NonNull List<ItemStack> getDrops(@NonNull BlockState state, LootParams.Builder builder) {
+    protected List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
         Entity entity = builder.getOptionalParameter(LootContextParams.THIS_ENTITY);
         if (entity instanceof PrimedTnt
                 || entity instanceof Creeper
@@ -125,30 +123,24 @@ public class TermitehiveBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected @NonNull BlockState updateShape(
-            @NonNull BlockState state,
-            LevelReader level,
-            @NonNull ScheduledTickAccess tickView,
-            @NonNull BlockPos pos,
-            @NonNull Direction direction,
-            @NonNull BlockPos neighborPos,
-            @NonNull BlockState neighborState,
-            @NonNull RandomSource random
+    protected BlockState updateShape(
+            BlockState state, Direction direction, BlockState neighborState,
+            LevelAccessor level, BlockPos pos, BlockPos neighborPos
     ) {
         if (level.getBlockState(neighborPos).getBlock() instanceof FireBlock && level.getBlockEntity(pos) instanceof TermitehiveBlockEntity termitehiveBlockEntity) {
             termitehiveBlockEntity.angerTermites(TermitehiveBlockEntity.TermiteState.EMERGENCY);
         }
-        return super.updateShape(state, level, tickView, pos, direction, neighborPos, neighborState, random);
+        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
 
 
     @Override
-    public @Nullable BlockEntity newBlockEntity(@NonNull BlockPos pos, @NonNull BlockState state) {
+    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new TermitehiveBlockEntity(pos, state);
     }
 
     @Override
-    public void playerDestroy(@NonNull Level level, @NonNull Player player, @NonNull BlockPos pos, @NonNull BlockState state, @Nullable BlockEntity blockEntity, @NonNull ItemStack tool) {
+    public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack tool) {
         super.playerDestroy(level, player, pos, state, blockEntity, tool);
         if (!level.isClientSide() && blockEntity instanceof TermitehiveBlockEntity termitehiveBlockEntity) {
             if (!EnchantmentHelper.hasTag(tool, EnchantmentTags.PREVENTS_BEE_SPAWNS_WHEN_MINING)) {
@@ -161,7 +153,7 @@ public class TermitehiveBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected void onExplosionHit(@NonNull BlockState state, @NonNull ServerLevel level, @NonNull BlockPos pos, @NonNull Explosion explosion, @NonNull BiConsumer<ItemStack, BlockPos> stackMerger) {
+    protected void onExplosionHit(BlockState state, ServerLevel level, BlockPos pos, Explosion explosion, BiConsumer<ItemStack, BlockPos> stackMerger) {
         super.onExplosionHit(state, level, pos, explosion, stackMerger);
         this.angerNearbyTermites(level, pos);
     }

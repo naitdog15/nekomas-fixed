@@ -21,8 +21,7 @@ import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.level.Level;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 
 public class SlingshotItem extends ProjectileWeaponItem {
 
@@ -31,7 +30,7 @@ public class SlingshotItem extends ProjectileWeaponItem {
     }
 
     @Override
-    public boolean releaseUsing(@NonNull ItemStack stack, @NonNull Level level, @NonNull LivingEntity user, int remainingUseTicks) {
+    public boolean releaseUsing(ItemStack stack, Level level, LivingEntity user, int remainingUseTicks) {
         if (!(user instanceof Player playerEntity)) {
             return false;
         } else {
@@ -54,12 +53,12 @@ public class SlingshotItem extends ProjectileWeaponItem {
     }
 
     @Override
-    protected @NonNull Projectile createProjectile(@NonNull Level level, @NonNull LivingEntity shooter, @NonNull ItemStack weaponStack, @NonNull ItemStack projectileStack, boolean critical) {
+    protected Projectile createProjectile(Level level, LivingEntity shooter, ItemStack weaponStack, ItemStack projectileStack, boolean critical) {
         return new SlingshotProjectile(level, shooter, projectileStack, weaponStack, NekomasFixed.enchantLevel(weaponStack, "shatter")!=0);
     }
 
     @Override
-    protected void shootProjectile(@NonNull LivingEntity shooter, Projectile projectile, int index, float speed, float divergence, float yaw, @Nullable LivingEntity target) {
+    protected void shootProjectile(LivingEntity shooter, Projectile projectile, int index, float speed, float divergence, float yaw, @Nullable LivingEntity target) {
         projectile.shootFromRotation(shooter, shooter.getXRot(), shooter.getYRot() + yaw, 0.0F, speed, divergence);
     }
 
@@ -71,17 +70,17 @@ public class SlingshotItem extends ProjectileWeaponItem {
     }
 
     @Override
-    public int getUseDuration(@NonNull ItemStack stack, @NonNull LivingEntity user) {
+    public int getUseDuration(ItemStack stack, LivingEntity user) {
         return 72000;
     }
 
     @Override
-    public @NonNull ItemUseAnimation getUseAnimation(@NonNull ItemStack stack) {
+    public ItemUseAnimation getUseAnimation(ItemStack stack) {
         return ItemUseAnimation.BOW;
     }
 
     @Override
-    public @NonNull InteractionResult use(@NonNull Level level, Player user, @NonNull InteractionHand hand) {
+    public InteractionResult use(Level level, Player user, InteractionHand hand) {
         ItemStack itemStack = user.getItemInHand(hand);
         boolean bl = !user.getProjectile(itemStack).isEmpty();
         if (!user.hasInfiniteMaterials() && !bl) return InteractionResult.FAIL;
@@ -92,7 +91,7 @@ public class SlingshotItem extends ProjectileWeaponItem {
     public static final Predicate<ItemStack> SLINGSHOT_PROJECTILES =stack -> stack.is(ModTags.SLINGSHOT_PROJECTILES);
 
     @Override
-    public @NonNull Predicate<ItemStack> getAllSupportedProjectiles() {
+    public Predicate<ItemStack> getAllSupportedProjectiles() {
         return SLINGSHOT_PROJECTILES;
     }
 

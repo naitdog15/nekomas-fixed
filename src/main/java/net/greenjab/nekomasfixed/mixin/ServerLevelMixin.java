@@ -6,19 +6,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.profiling.Profiler;
-import net.minecraft.util.profiling.ProfilerFiller;
-import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -30,6 +25,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 
+/**
+ * 1.20.1 deltas: {@code EntitySpawnReason}/{@code EntityTypes} (plural holder) do not exist — see
+ * boat.MobMixin/boat.PatrolSpawnerMixin's matching notes. {@code ServerLevel} has no
+ * {@code tickThunder(LevelChunk)} method at all on 1.20.1 (VERIFIED: zero matches) — its own
+ * lightning-strike selection is inlined directly in {@code tick(BooleanSupplier)}
+ * (ServerLevel.java:407-423), so this retargets onto the same {@code tick} HEAD the other injector
+ * here already uses, rather than a per-chunk hook that does not exist. This is moot regardless: see
+ * EntityMixin's copper-armor NAMED GAP note, which applies identically here.
+ */
 @Mixin(ServerLevel.class)
 public abstract class ServerLevelMixin {
     @Shadow
@@ -53,19 +57,17 @@ public abstract class ServerLevelMixin {
         }
     }
 
-    @Inject(method = "tickThunder", at = @At("HEAD"))
-    private void tickThunder(LevelChunk chunk, CallbackInfo ci) {
+    @Inject(method = "tick", at = @At("HEAD"))
+    private void tickThunder(BooleanSupplier haveTime, CallbackInfo ci) {
         ServerLevel level = (ServerLevel) (Object)this;
         boolean bl = level.isRaining();
-        ProfilerFiller profiler = Profiler.get();
-        profiler.push("thunder");
         ServerPlayer player = this.getRandomPlayer();
         if (level.getRandom().nextInt(100) == 0 && ModConfigValues.enableCopperBuff && bl && level.isThundering() && player != null) {
             int armor = getCopperArmor(player);
             if (armor > 0 && level.getRandom().nextInt(1400-200*armor) == 0) {
                 BlockPos blockPos = player.blockPosition();
                 if (level.isRainingAt(blockPos)) {
-                    LightningBolt lightningEntity = EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.EVENT);
+                    LightningBolt lightningEntity = EntityType.LIGHTNING_BOLT.create(level);
                     if (lightningEntity != null) {
                         lightningEntity.snapTo(Vec3.atBottomCenterOf(blockPos));
                         level.addFreshEntity(lightningEntity);
@@ -73,16 +75,12 @@ public abstract class ServerLevelMixin {
                 }
             }
         }
-        profiler.pop();
     }
 
+    // See EntityMixin's matching note: copper armor does not exist on 1.20.1, so this is
+    // permanently 0 (NAMED GAP, not a feature cut).
     @Unique
     private static int getCopperArmor(LivingEntity entity) {
-        int i =0;
-        if (entity.getItemBySlot(EquipmentSlot.FEET).is(Items.COPPER_BOOTS)) i++;
-        if (entity.getItemBySlot(EquipmentSlot.LEGS).is(Items.COPPER_LEGGINGS)) i++;
-        if (entity.getItemBySlot(EquipmentSlot.CHEST).is(Items.COPPER_CHESTPLATE)) i++;
-        if (entity.getItemBySlot(EquipmentSlot.HEAD).is(Items.COPPER_HELMET)) i++;
-        return i;
+        return 0;
     }
 }

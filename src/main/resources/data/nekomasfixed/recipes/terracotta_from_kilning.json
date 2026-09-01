@@ -1,0 +1,13 @@
+{
+  "type": "nekomasfixed:kilning",
+  "category": "blocks",
+  "ingredient": {
+    "item": "minecraft:clay"
+  },
+  "result": {
+    "count": 1,
+    "item": "minecraft:terracotta"
+  },
+  "experience": 0.4,
+  "cookingtime": 100
+}

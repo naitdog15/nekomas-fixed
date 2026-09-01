@@ -20,7 +20,6 @@ import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Map;
 
@@ -35,7 +34,7 @@ public class WallEndermanHeadHead extends AbstractEndermanHeadBlock {
 	private static final Map<Direction, VoxelShape> SHAPES_POWERED_BY_DIRECTION = Shapes.rotateHorizontal(Block.boxZ(8.0, 13.0,8.0, 16.0));
 
 	@Override
-	public @NonNull MapCodec<? extends WallEndermanHeadHead> codec() {
+	public MapCodec<? extends WallEndermanHeadHead> codec() {
 		return CODEC;
 	}
 
@@ -45,14 +44,14 @@ public class WallEndermanHeadHead extends AbstractEndermanHeadBlock {
 	}
 
 	@Override
-	protected void affectNeighborsAfterRemoval(BlockState state, @NonNull ServerLevel level, @NonNull BlockPos pos, boolean moved) {
+	protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean moved) {
 		if (!moved && state.getValue(POWER)>0) {
 			this.updateNeighbors(state, level, pos);
 		}
 	}
 
 	@Override
-	protected int getDirectSignal(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull Direction direction) {
+	protected int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
 		return direction == state.getValue(FACING) ? state.getSignal(level, pos, direction) : 0;
 	}
 
@@ -67,12 +66,12 @@ public class WallEndermanHeadHead extends AbstractEndermanHeadBlock {
 
 
 	@Override
-	protected @NonNull VoxelShape getShape(BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull CollisionContext context) {
+	protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		return state.getValue(POWER)>0?SHAPES_POWERED_BY_DIRECTION.get(state.getValue(FACING)):SHAPES_BY_DIRECTION.get(state.getValue(FACING));
 	}
 
 	@Override
-	public BlockState getStateForPlacement(@NonNull BlockPlaceContext ctx) {
+	public BlockState getStateForPlacement(BlockPlaceContext ctx) {
 		BlockState blockState = super.getStateForPlacement(ctx);
 		BlockGetter blockView = ctx.getLevel();
 		BlockPos blockPos = ctx.getClickedPos();
@@ -91,12 +90,12 @@ public class WallEndermanHeadHead extends AbstractEndermanHeadBlock {
 	}
 
 	@Override
-	protected @NonNull BlockState rotate(BlockState state, Rotation rotation) {
+	protected BlockState rotate(BlockState state, Rotation rotation) {
 		return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
 	}
 
 	@Override
-	protected @NonNull BlockState mirror(BlockState state, Mirror mirror) {
+	protected BlockState mirror(BlockState state, Mirror mirror) {
 		return state.rotate(mirror.getRotation(state.getValue(FACING)));
 	}
 

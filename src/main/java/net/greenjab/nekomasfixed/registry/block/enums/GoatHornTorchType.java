@@ -7,7 +7,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-import org.jspecify.annotations.NonNull;
 
 public enum GoatHornTorchType implements StringRepresentable {
     NORMAL_TORCH(ParticleTypes.FLAME, 15),
@@ -35,7 +34,7 @@ public enum GoatHornTorchType implements StringRepresentable {
     }
 
     @Override
-    public @NonNull String getSerializedName() {
+    public String getSerializedName() {
         return this.name().toLowerCase();
     }
 

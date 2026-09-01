@@ -19,14 +19,13 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
 
 public class KilnBlock extends AbstractFurnaceBlock {
     public static final MapCodec<KilnBlock> CODEC = simpleCodec(KilnBlock::new);
 
     @Override
-    public @NonNull MapCodec<KilnBlock> codec() {
+    public MapCodec<KilnBlock> codec() {
         return CODEC;
     }
 
@@ -35,18 +34,18 @@ public class KilnBlock extends AbstractFurnaceBlock {
     }
 
     @Override
-    public BlockEntity newBlockEntity(@NonNull BlockPos pos, @NonNull BlockState state) {
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new KilnBlockEntity(pos, state);
     }
 
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(@NonNull Level level, @NonNull BlockState state, @NonNull BlockEntityType<T> type) {
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         return createFurnaceTicker(level, type, BlockEntityTypeRegistry.KILN_BLOCK_ENTITY);
     }
 
     @Override
-    protected void openContainer(Level level, @NonNull BlockPos pos, @NonNull Player player) {
+    protected void openContainer(Level level, BlockPos pos, Player player) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof KilnBlockEntity) {
             player.openMenu((MenuProvider)blockEntity);
@@ -55,7 +54,7 @@ public class KilnBlock extends AbstractFurnaceBlock {
     }
 
     @Override
-    public void animateTick(BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull RandomSource random) {
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         if (state.getValue(LIT)) {
             double d = pos.getX() + 0.5;
             double e = pos.getY();

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": {
+      "item": "minecraft:stick"
+    },
+    "X": {
+      "item": "minecraft:string"
+    },
+    "$": {
+      "item": "minecraft:leather"
+    }
+  },
+  "pattern": [
+    " X",
+    "#$"
+  ],
+  "result": {
+    "count": 1,
+    "item": "nekomasfixed:slingshot"
+  }
+}

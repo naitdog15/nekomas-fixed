@@ -8,8 +8,8 @@ import net.minecraft.tags.FluidTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.BaseTorchBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SimpleWaterloggedBlock;
@@ -21,14 +21,13 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
 public class GlowTorchBlock extends BaseTorchBlock implements SimpleWaterloggedBlock {
 	public static final MapCodec<GlowTorchBlock> CODEC = simpleCodec(GlowTorchBlock::new);
 	public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
 	@Override
-	public @NonNull MapCodec<? extends GlowTorchBlock> codec() {
+	public MapCodec<? extends GlowTorchBlock> codec() {
 		return CODEC;
 	}
 
@@ -38,24 +37,18 @@ public class GlowTorchBlock extends BaseTorchBlock implements SimpleWaterloggedB
 	}
 
 	@Override
-	protected @NonNull BlockState updateShape(
-            BlockState state,
-            @NonNull LevelReader level,
-            @NonNull ScheduledTickAccess tickView,
-            @NonNull BlockPos pos,
-            @NonNull Direction direction,
-            @NonNull BlockPos neighborPos,
-            @NonNull BlockState neighborState,
-            @NonNull RandomSource random
-	) {
+	protected BlockState updateShape(
+            BlockState state, Direction direction, BlockState neighborState,
+            LevelAccessor level, BlockPos pos, BlockPos neighborPos
+    ) {
 		if (state.getValue(WATERLOGGED)) {
-			tickView.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+			level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
 		}
-		return super.updateShape(state, level, tickView, pos, direction, neighborPos, neighborState, random);
+		return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
 	}
 
 	@Override
-	protected @NonNull FluidState getFluidState(BlockState state) {
+	protected FluidState getFluidState(BlockState state) {
 		return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
 	}
 
@@ -67,7 +60,7 @@ public class GlowTorchBlock extends BaseTorchBlock implements SimpleWaterloggedB
 	}
 
 	@Override
-	public void animateTick(@NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull RandomSource random) {
+	public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
 		if (level.getRandom().nextInt(4)!=0) return;
 		if (state.getValue(WATERLOGGED)) {
 			double d = pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.2;

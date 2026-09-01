@@ -18,24 +18,28 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import static net.greenjab.nekomasfixed.util.ModColors.*;
 
+// 1.20.1 delta: DyeItem#tryApplyToSign(Level, SignBlockEntity, boolean, Player) has no ItemStack
+// parameter (VERIFIED forge-1.20.1-mapped-src DyeItem.java:49) — the dye identity comes from `this`
+// (the mixin's own target instance) instead, since it is an instance method on the dye item itself.
 @Mixin(DyeItem.class)
 public class DyeItemMixin {
     @Inject(method = "tryApplyToSign", at = @At("RETURN"), cancellable = true)
-    private void changeDye(Level level, SignBlockEntity sign, boolean isFrontText, ItemStack item, Player player, CallbackInfoReturnable<Boolean> cir) {
-        if (item.is(ItemRegistry.AMBER_DYE)) {
+    private void changeDye(Level level, SignBlockEntity sign, boolean isFrontText, Player player, CallbackInfoReturnable<Boolean> cir) {
+        DyeItem self = (DyeItem)(Object)this;
+        if (self == ItemRegistry.AMBER_DYE.get()) {
             applyDye(sign, isFrontText, AMBER.getColor());
             cir.setReturnValue(true);
         }
-        if (item.is(ItemRegistry.AQUA_DYE)) {
+        if (self == ItemRegistry.AQUA_DYE.get()) {
             applyDye(sign, isFrontText, AQUA.getColor());
             cir.setReturnValue(true);
         }
-        if (item.is(ItemRegistry.INDIGO_DYE)) {
+        if (self == ItemRegistry.INDIGO_DYE.get()) {
             applyDye(sign, isFrontText, INDIGO.getColor());
             cir.setReturnValue(true);
         }
 
-        if (item.is(ItemRegistry.MAROON_DYE)) {
+        if (self == ItemRegistry.MAROON_DYE.get()) {
             applyDye(sign, isFrontText, MAROON.getColor());
             cir.setReturnValue(true);
         }

@@ -9,7 +9,7 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -17,11 +17,9 @@ import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.spider.Spider;
+import net.minecraft.world.entity.monster.Spider;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
 public class SuspiciousSpider extends Spider {
 
@@ -34,7 +32,7 @@ public class SuspiciousSpider extends Spider {
     }
 
     @Override
-    public @Nullable SpawnGroupData finalizeSpawn(@NonNull ServerLevelAccessor level, @NonNull DifficultyInstance difficulty, @NonNull EntitySpawnReason spawnReason, @Nullable SpawnGroupData entityData) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnReason, SpawnGroupData entityData) {
         entityData = super.finalizeSpawn(level, difficulty, spawnReason, entityData);
         if (entityData instanceof Spider.SpiderEffectsGroupData spiderData) {
             spiderData.setRandomEffect(random);
@@ -45,8 +43,8 @@ public class SuspiciousSpider extends Spider {
     }
 
     @Override
-    public boolean doHurtTarget(@NonNull ServerLevel level, @NonNull Entity target) {
-        boolean bl = super.doHurtTarget(level, target);
+    public boolean doHurtTarget(Entity target) {
+        boolean bl = super.doHurtTarget(target);
         if (bl && target instanceof LivingEntity)
             ((LivingEntity)target).addEffect(getRandomStatusEffectOnHit());
         return bl;
@@ -63,8 +61,8 @@ public class SuspiciousSpider extends Spider {
     }
 
     public static boolean canSpawn(
-            EntityType<? extends Mob> type, ServerLevelAccessor level, EntitySpawnReason spawnReason, BlockPos pos, RandomSource random
+            EntityType<? extends Mob> type, ServerLevelAccessor level, MobSpawnType spawnReason, BlockPos pos, RandomSource random
     ) {
-        return checkMonsterSpawnRules(type, level, spawnReason, pos, random) && (EntitySpawnReason.isSpawner(spawnReason) || !level.canSeeSky(pos));
+        return checkMonsterSpawnRules(type, level, spawnReason, pos, random) && (spawnReason == MobSpawnType.SPAWNER || !level.canSeeSky(pos));
     }
 }

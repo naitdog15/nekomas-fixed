@@ -14,7 +14,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.*;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -33,11 +33,11 @@ import net.minecraft.world.entity.ai.navigation.AmphibiousPathNavigation;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
 import net.minecraft.world.entity.animal.axolotl.Axolotl;
-import net.minecraft.world.entity.animal.golem.IronGolem;
-import net.minecraft.world.entity.animal.turtle.Turtle;
-import net.minecraft.world.entity.monster.skeleton.AbstractSkeleton;
-import net.minecraft.world.entity.monster.skeleton.Skeleton;
-import net.minecraft.world.entity.npc.villager.AbstractVillager;
+import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.animal.Turtle;
+import net.minecraft.world.entity.monster.AbstractSkeleton;
+import net.minecraft.world.entity.monster.Skeleton;
+import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -50,8 +50,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
 import java.util.EnumSet;
 
@@ -63,14 +61,16 @@ public class Drenched extends AbstractSkeleton {
         super(entityType, level);
         this.moveControl = new Drenched.DrenchedMoveControl(this);
         this.setPathfindingMalus(PathType.WATER, 0.0F);
+        this.setMaxUpStep(1.0F);
     }
 
+    // PORT: Attributes.STEP_HEIGHT doesn't exist on 1.20.1; setMaxUpStep(float) in the constructor replaces it.
     public static AttributeSupplier.Builder createDrenchedAttributes() {
-        return Skeleton.createAttributes().add(Attributes.STEP_HEIGHT, 1.0);
+        return Skeleton.createAttributes();
     }
 
     @Override
-    protected @NonNull PathNavigation createNavigation(@NonNull Level level) {
+    protected PathNavigation createNavigation(Level level) {
         return new AmphibiousPathNavigation(this, level);
     }
 
@@ -83,7 +83,7 @@ public class Drenched extends AbstractSkeleton {
         this.goalSelector.addGoal(6, new Drenched.TargetAboveWaterGoal(this, 1.0, this.level().getSeaLevel()));
         this.goalSelector.addGoal(7, new RandomStrollGoal(this, 1.0));
         this.targetSelector
-                .addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, (target, _) -> this.canDrenchedAttackTarget(target)));
+                .addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, (target, ignored) -> this.canDrenchedAttackTarget(target)));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, false));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, IronGolem.class, true));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Axolotl.class, true, false));
@@ -91,7 +91,7 @@ public class Drenched extends AbstractSkeleton {
     }
 
     @Override
-    public SpawnGroupData finalizeSpawn(@NonNull ServerLevelAccessor level, @NonNull DifficultyInstance difficulty, @NonNull EntitySpawnReason spawnReason, SpawnGroupData entityData) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnReason, SpawnGroupData entityData) {
         entityData = super.finalizeSpawn(level, difficulty, spawnReason, entityData);
         this.setVariant(this.random.nextInt(3));
         if (this.getItemBySlot(EquipmentSlot.OFFHAND).isEmpty() && level.getRandom().nextFloat() < 0.03F) {
@@ -102,20 +102,25 @@ public class Drenched extends AbstractSkeleton {
     }
 
     private Item getClam(float rarity) {
-        if (rarity>0.5) return ItemRegistry.CLAM;
-        if (rarity>0.25) return ItemRegistry.CLAM_BLUE;
-        if (rarity>0.125) return ItemRegistry.CLAM_PINK;
-        if (rarity>0.0625) return ItemRegistry.CLAM_PURPLE;
-        return ItemRegistry.CLAM;
+        if (rarity>0.5) return ItemRegistry.CLAM.get();
+        if (rarity>0.25) return ItemRegistry.CLAM_BLUE.get();
+        if (rarity>0.125) return ItemRegistry.CLAM_PINK.get();
+        if (rarity>0.0625) return ItemRegistry.CLAM_PURPLE.get();
+        return ItemRegistry.CLAM.get();
     }
 
-    public static boolean canSpawn(EntityType<Drenched> type, ServerLevelAccessor level, EntitySpawnReason spawnReason, BlockPos pos, RandomSource random) {
-        if (!level.getFluidState(pos.below()).is(FluidTags.WATER) && !EntitySpawnReason.isSpawner(spawnReason)) return false;
+    // PORT: 1.20.1's MobSpawnType has no isSpawner()/ignoresLightRequirements() helpers (26.2-only
+    // conveniences); replaced with direct enum comparison, mirroring vanilla Drowned.checkDrownedSpawnRules
+    // (forge-1.20.1-mapped-src/.../monster/Drowned.java:95-100), which itself has no light-requirement
+    // bypass branch - so that OR-branch is dropped rather than invented (§ this is a forced, version-level
+    // simplification: darkness is always required to spawn on 1.20.1, matching vanilla Drowned exactly).
+    public static boolean canSpawn(EntityType<Drenched> type, ServerLevelAccessor level, MobSpawnType spawnReason, BlockPos pos, RandomSource random) {
+        if (!level.getFluidState(pos.below()).is(FluidTags.WATER) && spawnReason != MobSpawnType.SPAWNER) return false;
         Holder<Biome> registryEntry = level.getBiome(pos);
         boolean bl = level.getDifficulty() != Difficulty.PEACEFUL
-                && (EntitySpawnReason.ignoresLightRequirements(spawnReason) || isDarkEnoughToSpawn(level, pos, random))
-                && (EntitySpawnReason.isSpawner(spawnReason) || level.getFluidState(pos).is(FluidTags.WATER));
-        if (!bl || !EntitySpawnReason.isSpawner(spawnReason) && spawnReason != EntitySpawnReason.REINFORCEMENT) {
+                && isDarkEnoughToSpawn(level, pos, random)
+                && (spawnReason == MobSpawnType.SPAWNER || level.getFluidState(pos).is(FluidTags.WATER));
+        if (!bl || spawnReason != MobSpawnType.SPAWNER && spawnReason != MobSpawnType.REINFORCEMENT) {
             return registryEntry.is(BiomeTags.MORE_FREQUENT_DROWNED_SPAWNS)
                     ? random.nextInt(15) == 0 && bl
                     : random.nextInt(40) == 0 && isValidSpawnDepth(level, pos) && bl;
@@ -134,9 +139,9 @@ public class Drenched extends AbstractSkeleton {
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.@NonNull Builder builder) {
-        super.defineSynchedData(builder);
-        builder.define(VARIANT, 0);
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(VARIANT, 0);
     }
 
     public int getVariant() {
@@ -148,18 +153,18 @@ public class Drenched extends AbstractSkeleton {
     }
 
     @Override
-    protected void populateDefaultEquipmentSlots(RandomSource random, @NonNull DifficultyInstance localDifficulty) {
+    protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance localDifficulty) {
         if (random.nextFloat() > 0.9) {
-            this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ItemRegistry.ANCHOR));
+            this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ItemRegistry.ANCHOR.get()));
         }
     }
 
     @Override
-    public @NonNull SoundEvent getStepSound() {
+    public SoundEvent getStepSound() {
         return SoundEvents.SKELETON_STEP;
     }
     @Override
-    protected @NonNull SoundEvent getSwimSound() {
+    protected SoundEvent getSwimSound() {
         return SoundEvents.DROWNED_SWIM;
     }
     @Override
@@ -167,11 +172,11 @@ public class Drenched extends AbstractSkeleton {
         return SoundEvents.SKELETON_AMBIENT;
     }
     @Override
-    protected @NonNull SoundEvent getHurtSound(@NonNull DamageSource source) {
+    protected SoundEvent getHurtSound(DamageSource source) {
         return SoundEvents.SKELETON_HURT;
     }
     @Override
-    protected @NonNull SoundEvent getDeathSound() {
+    protected SoundEvent getDeathSound() {
         return SoundEvents.SKELETON_DEATH;
     }
 
@@ -179,7 +184,7 @@ public class Drenched extends AbstractSkeleton {
         return level.isUnobstructed(this);
     }
 
-    public boolean canDrenchedAttackTarget(@Nullable LivingEntity target) {
+    public boolean canDrenchedAttackTarget(LivingEntity target) {
         return target != null && (!this.level().isBrightOutside() || target.isInWater());
     }
 
@@ -195,7 +200,7 @@ public class Drenched extends AbstractSkeleton {
     }
 
     @Override
-    protected void travelInWater(@NonNull Vec3 movementInput, double gravity, boolean falling, double y) {
+    protected void travelInWater(Vec3 movementInput, double gravity, boolean falling, double y) {
         if (this.isUnderWater() && this.isTargetingUnderwater()) {
             this.moveRelative(0.01F, movementInput);
             this.move(MoverType.SELF, this.getDeltaMovement());
@@ -387,7 +392,7 @@ public class Drenched extends AbstractSkeleton {
 
         @Override
         public boolean canStart() {
-            return super.canStart() && this.drenched.getMainHandStack().isOf(ItemRegistry.ANCHOR);
+            return super.canStart() && this.drenched.getMainHandStack().isOf(ItemRegistry.ANCHOR.get());
         }
 
         @Override
@@ -449,7 +454,6 @@ public class Drenched extends AbstractSkeleton {
             this.mob.getNavigation().moveTo(this.x, this.y, this.z, this.speed);
         }
 
-        @Nullable
         private Vec3 getWanderTarget() {
             RandomSource random = this.mob.getRandom();
             BlockPos blockPos = this.mob.blockPosition();

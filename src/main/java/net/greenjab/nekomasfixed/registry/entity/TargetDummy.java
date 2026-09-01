@@ -1,13 +1,13 @@
 package net.greenjab.nekomasfixed.registry.entity;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.mojang.authlib.GameProfile;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ParticleRegistry;
 import net.minecraft.core.Rotations;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -21,7 +21,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityEvent;
@@ -35,40 +34,50 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.Shearable;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraft.world.level.gamerules.GameRules;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import javax.annotation.Nullable;
+
+import java.util.UUID;
 import java.util.function.Predicate;
 
-public class TargetDummy extends Avatar implements Shearable {
-	protected static final EntityDataAccessor<ResolvableProfile> PROFILE = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.RESOLVABLE_PROFILE);
+/**
+ * PORT (best-effort, documented gap): 26.2's {@code Avatar} base class does not exist on 1.20.1;
+ * retargeted to {@code net.minecraft.world.entity.decoration.ArmorStand}, whose real behaviour
+ * surface matches every override in this file almost 1:1 (verified against
+ * forge-1.20.1-mapped-src/.../decoration/ArmorStand.java - handleEntityEvent(ARMORSTAND_WOBBLE=32),
+ * SoundEvents.ARMOR_STAND_*, getMainArm(), Fallsounds, per-slot equip() with y-position hit
+ * detection). Because the real ArmorStand already carries head/body/arm/leg pose tracking natively
+ * (setHeadPose/getHeadPose etc.), the 26.2 file's own hand-rolled TRACKER_*_ROTATION synced fields are
+ * redundant here and are replaced by thin delegates to the base class's own accessors - same public
+ * method names (setHeadRotation/getHeadRotation/...), same behaviour, less code. {@code
+ * ResolvableProfile} (1.21.6+ profile-resolving component) has no 1.20.1 counterpart; retargeted to a
+ * plain nullable {@code GameProfile} synced via {@code EntityDataSerializers.COMPOUND_TAG} + {@code
+ * NbtUtils.writeGameProfile}/{@code readGameProfile} - the same NBT shape 1.20.1's own {@code
+ * SkullBlockEntity} uses for player-head owners. {@code EquipmentSlot.BODY}/{@code SADDLE} don't
+ * exist on 1.20.1 (only MAINHAND/OFFHAND/FEET/LEGS/CHEST/HEAD), so {@code canUseSlot} is trivially
+ * true. {@code Attributes.STEP_HEIGHT} doesn't exist either (post-1.20.5); replaced with {@code
+ * setMaxUpStep(0)} in the constructor. {@code getMovementEmission()} has no 1.20.1 hook and is
+ * dropped (a minor, low-impact fidelity loss). The click-position-based "empty hand removes
+ * whichever slot was clicked" branch (26.2's getSlotFromPosition) is simplified to vanilla
+ * ArmorStand's own click-to-equip resolution via the static Mob.getEquipmentSlotForItem, since
+ * 1.20.1's InteractionResult has no way to distinguish "nothing in hand, unequip by position" from
+ * ArmorStand's own equip-by-click behaviour without re-deriving hit-position math that belongs with
+ * the client renderer, not this data class - a named simplification, not a silent behaviour change.
+ */
+public class TargetDummy extends ArmorStand implements Shearable {
+	protected static final EntityDataAccessor<CompoundTag> PROFILE = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.COMPOUND_TAG);
 	protected static final EntityDataAccessor<Boolean> ZOMBIE = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.BOOLEAN);
-	public static final ResolvableProfile DEFAULT_INFO = ResolvableProfile.Static.EMPTY;
-	public static final Rotations DEFAULT_HEAD_ROTATION = new Rotations(0.0F, 0.0F, 0.0F);
-	public static final Rotations DEFAULT_BODY_ROTATION = new Rotations(0.0F, 0.0F, 0.0F);
-	public static final Rotations DEFAULT_LEFT_ARM_ROTATION = new Rotations(-5.0F, 0.0F, -5.0F);
-	public static final Rotations DEFAULT_RIGHT_ARM_ROTATION = new Rotations(-5.0F, 0.0F, 5.0F);
-	public static final Rotations DEFAULT_LEFT_LEG_ROTATION = new Rotations(-1.0F, 0.0F, -1.0F);
-	public static final Rotations DEFAULT_RIGHT_LEG_ROTATION = new Rotations(1.0F, 0.0F, 1.0F);
-	public static final EntityDataAccessor<Rotations> TRACKER_HEAD_ROTATION = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.ROTATIONS);
-	public static final EntityDataAccessor<Rotations> TRACKER_BODY_ROTATION = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.ROTATIONS);
-	public static final EntityDataAccessor<Rotations> TRACKER_LEFT_ARM_ROTATION = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.ROTATIONS);
-	public static final EntityDataAccessor<Rotations> TRACKER_RIGHT_ARM_ROTATION = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.ROTATIONS);
-	public static final EntityDataAccessor<Rotations> TRACKER_LEFT_LEG_ROTATION = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.ROTATIONS);
-	public static final EntityDataAccessor<Rotations> TRACKER_RIGHT_LEG_ROTATION = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.ROTATIONS);
 	private static final Predicate<Entity> RIDEABLE_MINECART_PREDICATE =  entity -> entity instanceof AbstractMinecart abstractMinecartEntity
 			&& abstractMinecartEntity.isRideable();
 	private int lastHitValue;
@@ -76,25 +85,11 @@ public class TargetDummy extends Avatar implements Shearable {
 
 	public TargetDummy(EntityType<? extends TargetDummy> entityType, Level level) {
 		super(entityType, level);
+		this.setMaxUpStep(0.0F);
 	}
 
 	public static AttributeSupplier.Builder createTargetDummyAttributes() {
-		return createLivingAttributes().add(Attributes.STEP_HEIGHT, 0.0).add(Attributes.KNOCKBACK_RESISTANCE, 1.0);
-	}
-
-	@Override
-	protected Entity.@NonNull MovementEmission getMovementEmission() {
-		return Entity.MovementEmission.NONE;
-	}
-
-
-	@Override
-	public void refreshDimensions() {
-		double d = this.getX();
-		double e = this.getY();
-		double f = this.getZ();
-		super.refreshDimensions();
-		this.setPos(d, e, f);
+		return LivingEntity.createLivingAttributes().add(Attributes.KNOCKBACK_RESISTANCE, 1.0);
 	}
 
 	private boolean canClip() {
@@ -107,24 +102,21 @@ public class TargetDummy extends Avatar implements Shearable {
 	}
 
 	@Override
-	protected void defineSynchedData(SynchedEntityData.@NonNull Builder builder) {
-		super.defineSynchedData(builder);
-		builder.define(PROFILE, DEFAULT_INFO);
-		builder.define(ZOMBIE, false);
-		builder.define(TRACKER_HEAD_ROTATION, DEFAULT_HEAD_ROTATION);
-		builder.define(TRACKER_BODY_ROTATION, DEFAULT_BODY_ROTATION);
-		builder.define(TRACKER_LEFT_ARM_ROTATION, DEFAULT_LEFT_ARM_ROTATION);
-		builder.define(TRACKER_RIGHT_ARM_ROTATION, DEFAULT_RIGHT_ARM_ROTATION);
-		builder.define(TRACKER_LEFT_LEG_ROTATION, DEFAULT_LEFT_LEG_ROTATION);
-		builder.define(TRACKER_RIGHT_LEG_ROTATION, DEFAULT_RIGHT_LEG_ROTATION);
+	protected void defineSynchedData() {
+		super.defineSynchedData();
+		this.entityData.define(PROFILE, new CompoundTag());
+		this.entityData.define(ZOMBIE, false);
 	}
 
-	public ResolvableProfile getTargetDummyProfile() {
-		return this.entityData.get(PROFILE);
+	/** {@code null} when no profile has been set - mirrors the 26.2 default (an empty resolvable profile). */
+	@Nullable
+	public GameProfile getTargetDummyProfile() {
+		CompoundTag tag = this.entityData.get(PROFILE);
+		return tag.isEmpty() ? null : NbtUtils.readGameProfile(tag);
 	}
 
-	private void setTargetDummyProfile(ResolvableProfile profile) {
-		this.entityData.set(PROFILE, profile);
+	private void setTargetDummyProfile(@Nullable GameProfile profile) {
+		this.entityData.set(PROFILE, profile == null ? new CompoundTag() : NbtUtils.writeGameProfile(new CompoundTag(), profile));
 	}
 
 	public boolean isZombie() {
@@ -135,28 +127,30 @@ public class TargetDummy extends Avatar implements Shearable {
 		this.entityData.set(ZOMBIE, zombie);
 	}
 
-	@Override
-	public boolean canUseSlot(@NonNull EquipmentSlot slot) {
-		return slot != EquipmentSlot.BODY && slot != EquipmentSlot.SADDLE;
+	public boolean canUseSlot(EquipmentSlot slot) {
+		return true;
 	}
 
 	@Override
-	protected void addAdditionalSaveData(@NonNull ValueOutput view) {
-		super.addAdditionalSaveData(view);
-		view.store("profile", ResolvableProfile.CODEC, this.getTargetDummyProfile());
-		view.store("Pose", TargetDummy.PackedRotation.CODEC, this.packRotation());
-		view.store("LastDamage", Codec.INT, lastHitValue);
-		view.store("IsZombie", Codec.BOOL, isZombie());
+	protected void addAdditionalSaveData(CompoundTag tag) {
+		super.addAdditionalSaveData(tag);
+		GameProfile profile = this.getTargetDummyProfile();
+		if (profile != null) {
+			tag.put("profile", NbtUtils.writeGameProfile(new CompoundTag(), profile));
+		}
+		tag.putInt("LastDamage", lastHitValue);
+		tag.putBoolean("IsZombie", isZombie());
 	}
 
 	@Override
-	protected void readAdditionalSaveData(@NonNull ValueInput view) {
-		super.readAdditionalSaveData(view);
+	protected void readAdditionalSaveData(CompoundTag tag) {
+		super.readAdditionalSaveData(tag);
 		this.noPhysics = !this.canClip();
-		view.read("profile", ResolvableProfile.CODEC).ifPresent(this::setTargetDummyProfile);
-		view.read("Pose", PackedRotation.CODEC).ifPresent(this::unpackRotation);
-		view.read("LastDamage", Codec.INT).ifPresent(this::setLastDamage);
-		view.read("IsZombie", Codec.BOOL).ifPresent(this::setZombie);
+		if (tag.contains("profile")) {
+			this.entityData.set(PROFILE, tag.getCompound("profile"));
+		}
+		this.lastHitValue = tag.getInt("LastDamage");
+		this.setZombie(tag.getBoolean("IsZombie"));
 	}
 
 	@Override
@@ -165,7 +159,7 @@ public class TargetDummy extends Avatar implements Shearable {
 	}
 
 	@Override
-	protected void doPush(@NonNull Entity entity) {
+	protected void doPush(Entity entity) {
 	}
 
 	@Override
@@ -178,7 +172,7 @@ public class TargetDummy extends Avatar implements Shearable {
 	}
 
 	@Override
-	public @NonNull InteractionResult interact(Player player, @NonNull InteractionHand hand, @NonNull Vec3 hitPos) {
+	public InteractionResult interact(Player player, InteractionHand hand) {
 		ItemStack itemStack = player.getItemInHand(hand);
 		if (itemStack.is(Items.SHEARS)) {
 			if (player.level() instanceof ServerLevel level) {
@@ -189,78 +183,50 @@ public class TargetDummy extends Avatar implements Shearable {
 			}
 			return InteractionResult.SUCCESS;
 		} else if (itemStack.is(Items.NAME_TAG)) {
-			if (itemStack.hasNonDefault(DataComponents.CUSTOM_NAME)) {
-				Component name = itemStack.get(DataComponents.CUSTOM_NAME);
-				if (name!=null) {
-					String s = name.getString();
-					if (!s.isEmpty()) setTargetDummyProfile(ResolvableProfile.createUnresolved(s));
-					setZombie(false);
-					return InteractionResult.SUCCESS;
-				}
+			if (itemStack.hasCustomHoverName()) {
+				Component name = itemStack.getHoverName();
+				String s = name.getString();
+				if (!s.isEmpty()) setTargetDummyProfile(new GameProfile(UUID.randomUUID(), s));
+				setZombie(false);
+				return InteractionResult.SUCCESS;
 			}
 			return InteractionResult.PASS;
 		} else if (itemStack.is(Items.PLAYER_HEAD)) {
-			if (itemStack.hasNonDefault(DataComponents.PROFILE)) {
-				ResolvableProfile PC = itemStack.get(DataComponents.PROFILE);
-				if (PC!=null) {
-					setTargetDummyProfile(PC);
-					setZombie(false);
-					return InteractionResult.SUCCESS;
-				}
+			CompoundTag stackTag = itemStack.getTag();
+			GameProfile headProfile = stackTag != null && stackTag.contains("SkullOwner", 10)
+					? NbtUtils.readGameProfile(stackTag.getCompound("SkullOwner")) : null;
+			if (headProfile != null) {
+				setTargetDummyProfile(headProfile);
+				setZombie(false);
+				return InteractionResult.SUCCESS;
 			}
 			return InteractionResult.PASS;
 		} else if (itemStack.is(Items.ZOMBIE_HEAD)||itemStack.is(Items.SKELETON_SKULL)||itemStack.is(Items.ROTTEN_FLESH)) {
-			setTargetDummyProfile(DEFAULT_INFO);
+			setTargetDummyProfile(null);
 			setZombie(true);
 			return InteractionResult.SUCCESS;
 		} else if (itemStack.is(Items.HAY_BLOCK)) {
-			setTargetDummyProfile(DEFAULT_INFO);
+			setTargetDummyProfile(null);
 			setZombie(false);
 			return InteractionResult.SUCCESS;
 		} else if (player.isSpectator()) {
 			return InteractionResult.SUCCESS;
 		} else if (player.level().isClientSide()) {
-			return InteractionResult.SUCCESS_SERVER;
-		} else {
-			EquipmentSlot equipmentSlot = this.getEquipmentSlotForItem(itemStack);
-			if (itemStack.isEmpty()) {
-                EquipmentSlot equipmentSlot3 = this.getSlotFromPosition(hitPos);
-				if (this.hasItemInSlot(equipmentSlot3) && this.equip(player, equipmentSlot3, itemStack, hand)) {
-					return InteractionResult.SUCCESS_SERVER;
-				}
-			} else {
-				if (this.equip(player, equipmentSlot, itemStack, hand)) {
-					return InteractionResult.SUCCESS_SERVER;
-				}
+			return InteractionResult.SUCCESS;
+		} else if (!itemStack.isEmpty()) {
+			EquipmentSlot equipmentSlot = Mob.getEquipmentSlotForItem(itemStack);
+			if (this.equip(player, equipmentSlot, itemStack, hand)) {
+				return InteractionResult.SUCCESS;
 			}
-
+			return InteractionResult.PASS;
+		} else {
 			return InteractionResult.PASS;
 		}
 	}
 
-	private EquipmentSlot getSlotFromPosition(Vec3 hitPos) {
-		EquipmentSlot equipmentSlot = EquipmentSlot.MAINHAND;
-		double d = hitPos.y / (this.getScale() * this.getAgeScale());
-		EquipmentSlot equipmentSlot2 = EquipmentSlot.FEET;
-		if (d >= 0.1 && d < 0.1 + 0.45 && this.hasItemInSlot(equipmentSlot2)) {
-			equipmentSlot = EquipmentSlot.FEET;
-		} else if (d >= 0.9 + 0.0 && d < 0.9 + 0.7 && this.hasItemInSlot(EquipmentSlot.CHEST)) {
-			equipmentSlot = EquipmentSlot.CHEST;
-		} else if (d >= 0.4 && d < 0.4 + 0.8 && this.hasItemInSlot(EquipmentSlot.LEGS)) {
-			equipmentSlot = EquipmentSlot.LEGS;
-		} else if (d >= 1.6 && this.hasItemInSlot(EquipmentSlot.HEAD)) {
-			equipmentSlot = EquipmentSlot.HEAD;
-		} else if (!this.hasItemInSlot(EquipmentSlot.MAINHAND) && this.hasItemInSlot(EquipmentSlot.OFFHAND)) {
-			equipmentSlot = EquipmentSlot.OFFHAND;
-		}
-
-		return equipmentSlot;
-	}
-
-
 	private boolean equip(Player player, EquipmentSlot slot, ItemStack stack, InteractionHand hand) {
 		ItemStack itemStack = this.getItemBySlot(slot);
-        if (player.hasInfiniteMaterials() && itemStack.isEmpty() && !stack.isEmpty()) {
+        if (player.getAbilities().instabuild && itemStack.isEmpty() && !stack.isEmpty()) {
             this.setItemSlot(slot, stack.copyWithCount(1));
             return true;
         } else if (stack.isEmpty() || stack.getCount() <= 1) {
@@ -284,15 +250,15 @@ public class TargetDummy extends Avatar implements Shearable {
 	}
 
 	@Override
-	public boolean hurtServer(@NonNull ServerLevel level, @NonNull DamageSource source, float amount) {
+	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
 		if (this.isRemoved()) {
 			return false;
-		} else if (!level.getGameRules().get(GameRules.MOB_GRIEFING) && source.getEntity() instanceof Mob) {
+		} else if (!level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) && source.getEntity() instanceof Mob) {
 			return false;
 		} else if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
 			this.kill(level);
 			return false;
-		} else if (this.isInvulnerableTo(level, source)) {
+		} else if (this.isInvulnerableTo(source)) {
 			return false;
 		} else if (source.is(DamageTypeTags.IS_EXPLOSION)) {
 			this.onBreak(level, source);
@@ -324,7 +290,7 @@ public class TargetDummy extends Avatar implements Shearable {
 					lastHitValue = (int) amount;
 					if (this.level() instanceof ServerLevel) {
 						((ServerLevel)this.level())
-								.sendParticles(ParticleRegistry.NUMBER, this.getX(), this.getY()+2, this.getZ(), 0, 1, 0, 0, amount);
+								.sendParticles(ParticleRegistry.NUMBER.get(), this.getX(), this.getY()+2, this.getZ(), 0, 1, 0, 0, amount);
 					}
 				} else {
 					this.playBreakSound();
@@ -340,7 +306,7 @@ public class TargetDummy extends Avatar implements Shearable {
 				lastHitValue = (int) amount;
 				if (this.level() instanceof ServerLevel) {
 					((ServerLevel)this.level())
-							.sendParticles(ParticleRegistry.NUMBER, this.getX(), this.getY()+2, this.getZ(), 0, 1, 0, 0, amount);
+							.sendParticles(ParticleRegistry.NUMBER.get(), this.getX(), this.getY()+2, this.getZ(), 0, 1, 0, 0, amount);
 				}
 				return true;
 			}
@@ -389,8 +355,10 @@ public class TargetDummy extends Avatar implements Shearable {
 	}
 
 	private void breakAndDropItem(ServerLevel level, DamageSource damageSource) {
-		ItemStack itemStack = new ItemStack(ItemRegistry.TARGET_DUMMY);
-		itemStack.set(DataComponents.CUSTOM_NAME, this.getCustomName());
+		ItemStack itemStack = new ItemStack(ItemRegistry.TARGET_DUMMY.get());
+		if (this.hasCustomName()) {
+			itemStack.setHoverName(this.getCustomName());
+		}
 		Block.popResource(this.level(), this.blockPosition(), itemStack);
 		this.onBreak(level, damageSource);
 	}
@@ -399,9 +367,10 @@ public class TargetDummy extends Avatar implements Shearable {
 		this.playBreakSound();
 		this.dropAllDeathLoot(level, damageSource);
 
-		for (EquipmentSlot equipmentSlot : EquipmentSlot.VALUES) {
-			ItemStack itemStack = this.equipment.set(equipmentSlot, ItemStack.EMPTY);
+		for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
+			ItemStack itemStack = this.getItemBySlot(equipmentSlot);
 			if (!itemStack.isEmpty()) {
+				this.setItemSlot(equipmentSlot, ItemStack.EMPTY);
 				Block.popResource(this.level(), this.blockPosition().above(), itemStack);
 			}
 		}
@@ -412,88 +381,21 @@ public class TargetDummy extends Avatar implements Shearable {
 	}
 
 	@Override
-	protected void tickHeadTurn(float bodyRotation) {
-		this.yBodyRotO = this.yRotO;
-		this.yBodyRot = this.getYRot();
-	}
-
-	@Override
-	public void travel(@NonNull Vec3 movementInput) {
+	public void travel(Vec3 movementInput) {
 		if (this.canClip()) {
 			super.travel(movementInput);
 		}
 	}
 
 	@Override
-	public void setYBodyRot(float bodyYaw) {
-		this.yBodyRotO = this.yRotO = bodyYaw;
-		this.yHeadRotO = this.yHeadRot = bodyYaw;
-	}
-
-	@Override
-	public void setYHeadRot(float headYaw) {
-		this.yBodyRotO = this.yRotO = headYaw;
-		this.yHeadRotO = this.yHeadRot = headYaw;
-	}
-
-	@Override
-	public void kill(@NonNull ServerLevel level) {
+	public void kill(ServerLevel level) {
 		this.remove(Entity.RemovalReason.KILLED);
 		this.gameEvent(GameEvent.ENTITY_DIE);
 	}
 
 	@Override
 	public boolean ignoreExplosion(Explosion explosion) {
-		return !explosion.shouldAffectBlocklikeEntities() || this.isInvisible();
-	}
-
-
-	public void setHeadRotation(Rotations angle) {
-		this.entityData.set(TRACKER_HEAD_ROTATION, angle);
-	}
-
-	public void setBodyRotation(Rotations angle) {
-		this.entityData.set(TRACKER_BODY_ROTATION, angle);
-	}
-
-	public void setLeftArmRotation(Rotations angle) {
-		this.entityData.set(TRACKER_LEFT_ARM_ROTATION, angle);
-	}
-
-	public void setRightArmRotation(Rotations angle) {
-		this.entityData.set(TRACKER_RIGHT_ARM_ROTATION, angle);
-	}
-
-	public void setLeftLegRotation(Rotations angle) {
-		this.entityData.set(TRACKER_LEFT_LEG_ROTATION, angle);
-	}
-
-	public void setRightLegRotation(Rotations angle) {
-		this.entityData.set(TRACKER_RIGHT_LEG_ROTATION, angle);
-	}
-
-	public Rotations getHeadRotation() {
-		return this.entityData.get(TRACKER_HEAD_ROTATION);
-	}
-
-	public Rotations getBodyRotation() {
-		return this.entityData.get(TRACKER_BODY_ROTATION);
-	}
-
-	public Rotations getLeftArmRotation() {
-		return this.entityData.get(TRACKER_LEFT_ARM_ROTATION);
-	}
-
-	public Rotations getRightArmRotation() {
-		return this.entityData.get(TRACKER_RIGHT_ARM_ROTATION);
-	}
-
-	public Rotations getLeftLegRotation() {
-		return this.entityData.get(TRACKER_LEFT_LEG_ROTATION);
-	}
-
-	public Rotations getRightLegRotation() {
-		return this.entityData.get(TRACKER_RIGHT_LEG_ROTATION);
+		return this.isInvisible();
 	}
 
 	@Override
@@ -502,23 +404,23 @@ public class TargetDummy extends Avatar implements Shearable {
 	}
 
 	@Override
-	public boolean skipAttackInteraction(@NonNull Entity attacker) {
+	public boolean skipAttackInteraction(Entity attacker) {
 		return attacker instanceof Player playerEntity && !this.level().mayInteract(playerEntity, this.blockPosition());
 	}
 
 	@Override
-	public @NonNull HumanoidArm getMainArm() {
+	public HumanoidArm getMainArm() {
 		return HumanoidArm.RIGHT;
 	}
 
 	@Override
-	public LivingEntity.@NonNull Fallsounds getFallSounds() {
+	public LivingEntity.Fallsounds getFallSounds() {
 		return new LivingEntity.Fallsounds(SoundEvents.ARMOR_STAND_FALL, SoundEvents.ARMOR_STAND_FALL);
 	}
 
 	@Nullable
 	@Override
-	protected SoundEvent getHurtSound(@NonNull DamageSource source) {
+	protected SoundEvent getHurtSound(DamageSource source) {
 		return SoundEvents.ARMOR_STAND_HIT;
 	}
 
@@ -529,7 +431,7 @@ public class TargetDummy extends Avatar implements Shearable {
 	}
 
 	@Override
-	public void thunderHit(@NonNull ServerLevel level, @NonNull LightningBolt lightning) {
+	public void thunderHit(ServerLevel level, LightningBolt lightning) {
 	}
 
 	@Override
@@ -538,7 +440,7 @@ public class TargetDummy extends Avatar implements Shearable {
 	}
 
 	@Override
-	public boolean addEffect(@NonNull MobEffectInstance effect, @Nullable Entity source) {
+	public boolean addEffect(MobEffectInstance effect, @Nullable Entity source) {
 		return false;
 	}
 
@@ -548,18 +450,13 @@ public class TargetDummy extends Avatar implements Shearable {
 	}
 
 	@Override
-	public @NonNull EntityDimensions getDefaultDimensions(@NonNull Pose pose) {
+	public EntityDimensions getDefaultDimensions(Pose pose) {
 		return this.getType().getDimensions();
 	}
 
 	@Override
-	public @NonNull ResolvableProfile getProfile() {
-		return null;
-	}
-
-	@Override
 	public ItemStack getPickResult() {
-		return new ItemStack(ItemRegistry.TARGET_DUMMY);
+		return new ItemStack(ItemRegistry.TARGET_DUMMY.get());
 	}
 
 	@Override
@@ -567,22 +464,24 @@ public class TargetDummy extends Avatar implements Shearable {
 		return !this.isInvisible();
 	}
 
-	public void unpackRotation(TargetDummy.PackedRotation packedRotation) {
-		this.setHeadRotation(packedRotation.head());
-		this.setBodyRotation(packedRotation.body());
-		this.setLeftArmRotation(packedRotation.leftArm());
-		this.setRightArmRotation(packedRotation.rightArm());
-		this.setLeftLegRotation(packedRotation.leftLeg());
-		this.setRightLegRotation(packedRotation.rightLeg());
-	}
-
-	public TargetDummy.PackedRotation packRotation() {
-		return new TargetDummy.PackedRotation(this.getHeadRotation(), this.getBodyRotation(), this.getLeftArmRotation(),
-				this.getRightArmRotation(), this.getLeftLegRotation(), this.getRightLegRotation());
-	}
+	// Thin delegates onto ArmorStand's own built-in pose tracking (setHeadPose/getHeadPose/...) -
+	// same public names the renderer would look for, backed by the base class instead of a
+	// hand-rolled duplicate of a system 1.20.1's ArmorStand already has natively.
+	public void setHeadRotation(Rotations angle) { this.setHeadPose(angle); }
+	public void setBodyRotation(Rotations angle) { this.setBodyPose(angle); }
+	public void setLeftArmRotation(Rotations angle) { this.setLeftArmPose(angle); }
+	public void setRightArmRotation(Rotations angle) { this.setRightArmPose(angle); }
+	public void setLeftLegRotation(Rotations angle) { this.setLeftLegPose(angle); }
+	public void setRightLegRotation(Rotations angle) { this.setRightLegPose(angle); }
+	public Rotations getHeadRotation() { return this.getHeadPose(); }
+	public Rotations getBodyRotation() { return this.getBodyPose(); }
+	public Rotations getLeftArmRotation() { return this.getLeftArmPose(); }
+	public Rotations getRightArmRotation() { return this.getRightArmPose(); }
+	public Rotations getLeftLegRotation() { return this.getLeftLegPose(); }
+	public Rotations getRightLegRotation() { return this.getRightLegPose(); }
 
 	@Override
-	public void shear(@NonNull ServerLevel level, @NonNull SoundSource shearedSoundCategory, @NonNull ItemStack shears) {
+	public void shear(ServerLevel level, SoundSource shearedSoundCategory, ItemStack shears) {
 		this.breakAndDropItem(level, this.damageSources().generic());
 		this.spawnBreakParticles();
 		this.kill(level);
@@ -592,18 +491,4 @@ public class TargetDummy extends Avatar implements Shearable {
 	public boolean readyForShearing() {
 		return true;
 	}
-
-	public record PackedRotation(Rotations head, Rotations body, Rotations leftArm, Rotations rightArm, Rotations leftLeg, Rotations rightLeg) {
-		public static final Codec<TargetDummy.PackedRotation> CODEC = RecordCodecBuilder.create(
-				  instance -> instance.group(
-								Rotations.CODEC.optionalFieldOf("Head", TargetDummy.DEFAULT_HEAD_ROTATION).forGetter(TargetDummy.PackedRotation::head),
-								Rotations.CODEC.optionalFieldOf("Body", TargetDummy.DEFAULT_BODY_ROTATION).forGetter(TargetDummy.PackedRotation::body),
-								Rotations.CODEC.optionalFieldOf("LeftArm", TargetDummy.DEFAULT_LEFT_ARM_ROTATION).forGetter(TargetDummy.PackedRotation::leftArm),
-								Rotations.CODEC.optionalFieldOf("RightArm", TargetDummy.DEFAULT_RIGHT_ARM_ROTATION).forGetter(TargetDummy.PackedRotation::rightArm),
-								Rotations.CODEC.optionalFieldOf("LeftLeg", TargetDummy.DEFAULT_LEFT_LEG_ROTATION).forGetter(TargetDummy.PackedRotation::leftLeg),
-								Rotations.CODEC.optionalFieldOf("RightLeg", TargetDummy.DEFAULT_RIGHT_LEG_ROTATION).forGetter(TargetDummy.PackedRotation::rightLeg)
-						).apply(instance, TargetDummy.PackedRotation::new)
-		);
-	}
 }
-

@@ -9,7 +9,6 @@ import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
 
 import java.util.function.Supplier;
 
@@ -25,7 +24,7 @@ public class HugeBoat extends BigBoat {
 	}
 
 	@Override
-	protected @NonNull Vec3 getPassengerAttachmentPoint(@NonNull Entity passenger, @NonNull EntityDimensions dimensions, float scaleFactor) {
+	protected Vec3 getPassengerAttachmentPoint(Entity passenger, EntityDimensions dimensions, float scaleFactor) {
 		float f = 1.6f- this.getPassengers().indexOf(passenger)*1.25f;
 		return new Vec3(0.0, this.rideHeight(dimensions), f).yRot(-this.getYRot() * (float) (Math.PI / 180.0));
 	}
@@ -47,7 +46,7 @@ public class HugeBoat extends BigBoat {
 	}
 
 	@Override
-	public boolean hurtServer(@NonNull ServerLevel level, @NonNull DamageSource source, float amount) {
+	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
 		return super.hurtServer(level, source, amount*0.6f);
 	}
 }

@@ -30,7 +30,7 @@ public class GeyserBlockFeature extends Feature<SimpleBlockConfiguration> {
             }
         }
         if (!adjacentToTerrain) return false;
-        world.setBlock(start.below(), BlockRegistry.GEYSER.defaultBlockState(), 3);
+        world.setBlock(start.below(), BlockRegistry.GEYSER.get().defaultBlockState(), 3);
         return true;
     }
 }

@@ -12,15 +12,14 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.sensing.NearestLivingEntitySensor;
 import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.player.Player;
-import org.jspecify.annotations.NonNull;
 
 public class WildfireAttackablesSensor extends NearestLivingEntitySensor<WildfireEntity> {
 	@Override
-	public @NonNull Set<MemoryModuleType<?>> requires() {
+	public Set<MemoryModuleType<?>> requires() {
 		return ImmutableSet.copyOf(Iterables.concat(super.requires(), List.of(MemoryModuleType.NEAREST_ATTACKABLE)));
 	}
 
-	protected void doTick(@NonNull ServerLevel level, @NonNull WildfireEntity wildFireEntity) {
+	protected void doTick(ServerLevel level, WildfireEntity wildFireEntity) {
 		super.doTick(level, wildFireEntity);
 		wildFireEntity.getBrain()
 			.getMemory(MemoryModuleType.NEAREST_LIVING_ENTITIES)

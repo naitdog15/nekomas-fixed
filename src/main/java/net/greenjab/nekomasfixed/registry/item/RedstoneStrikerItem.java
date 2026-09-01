@@ -15,7 +15,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ObserverBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import org.jspecify.annotations.NonNull;
 
 public class RedstoneStrikerItem extends FlintAndSteelItem {
     public static final Map<GlobalPos, Long> STRUCK_WIRES = new HashMap<>();
@@ -24,7 +23,7 @@ public class RedstoneStrikerItem extends FlintAndSteelItem {
     }
 
     @Override
-    public @NonNull InteractionResult useOn(UseOnContext context) {
+    public InteractionResult useOn(UseOnContext context) {
         Player player = context.getPlayer();
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();

@@ -1,68 +1,58 @@
 package net.greenjab.nekomasfixed.mixin;
 
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntityTypes;
-import org.objectweb.asm.Opcodes;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.Slice;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(BlockEntityTypes.class)
-public abstract class BlockEntityTypeMixin{
+/**
+ * 1.20.1 delta: the target class is {@code BlockEntityType} itself (singular) — vanilla constants
+ * live directly on it (VERIFIED forge-1.20.1-mapped-src BlockEntityType.java:23-61), the same
+ * "no separate plural holder class" shape as {@code EntityType}/{@code Item}. There is no
+ * {@code BlockEntityTypeIds}-slice {@code <clinit>} indirection to widen via {@code @ModifyArg}
+ * either way: each constant's valid-block set is baked into an immutable-by-construction private
+ * final {@code Set<Block> validBlocks} (line 65) at {@code <clinit>} time, before any mod block is
+ * registered, with no public mutator.
+ * <p>
+ * Retargeted onto {@code isValid(BlockGetter, BlockPos, EntityType<?>)}... no — onto
+ * {@code isValid(BlockState)} (VERIFIED BlockEntityType.java:93: {@code return
+ * this.validBlocks.contains(p_155263_.getBlock());}) instead of trying to mutate that set: a HEAD
+ * injection that returns {@code true} for this mod's own blocks achieves the identical observable
+ * effect (this block entity type accepts that block) without needing to touch a private final field
+ * at all — no AT, no {@code @Shadow}, no timing dependency on mod-block registration having already
+ * run before some setup hook fires.
+ * <p>
+ * NAMED GAP, not a feature cut: there is no {@code BlockEntityType.SHELF} (or any single-item
+ * display-shelf analogue) on 1.20.1 — only {@code CHISELED_BOOKSHELF}, a different block entirely
+ * (VERIFIED: zero matches for {@code SHELF} in BlockEntityType.java). {@code BAOBAB_SHELF} has no
+ * vanilla block entity type to attach to; giving it one is new block-entity construction (its own
+ * class), not a mixin retarget, and is out of this mixin's scope to invent unreviewed. Cross-package
+ * dependency on whoever owns {@code BlockRegistry.BAOBAB_SHELF.get()}/the block-entity registry: this
+ * block needs its own dedicated {@code BlockEntityType}+{@code BlockEntity} pair on this port, or the
+ * feature needs to be reconsidered for this Minecraft version.
+ */
+@Mixin(BlockEntityType.class)
+public abstract class BlockEntityTypeMixin {
 
-    @ModifyArg(method="<clinit>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypes;register(Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/world/level/block/entity/BlockEntityType$BlockEntitySupplier;[Lnet/minecraft/world/level/block/Block;)Lnet/minecraft/world/level/block/entity/BlockEntityType;", ordinal = 0), slice = @Slice(from =
-    @At(value = "FIELD", target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypeIds;SIGN:Lnet/minecraft/resources/ResourceKey;", opcode = Opcodes.GETSTATIC), to =
-    @At(value = "FIELD",target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypes;SIGN:Lnet/minecraft/world/level/block/entity/BlockEntityType;", opcode = Opcodes.PUTSTATIC)), index = 2)
-    private static Block[] sign(Block[] validBlocks) {
-        ArrayList<Block> newBlocks = new ArrayList<>(Arrays.asList(validBlocks));
-        newBlocks.add(BlockRegistry.BAOBAB_SIGN);
-        newBlocks.add(BlockRegistry.BAOBAB_WALL_SIGN);
-        Block[] newBlocksArray = new Block[newBlocks.size()];
-        for (int i = 0;i<newBlocksArray.length;i++) { newBlocksArray[i]=newBlocks.get(i); }
-        return newBlocksArray;
+    @Inject(method = "isValid", at = @At("HEAD"), cancellable = true)
+    private void nekomasfixed$acceptCustomBlocks(BlockState state, CallbackInfoReturnable<Boolean> cir) {
+        BlockEntityType<?> self = (BlockEntityType<?>) (Object) this;
+        if (self == BlockEntityType.SIGN) {
+            if (state.is(BlockRegistry.BAOBAB_SIGN.get()) || state.is(BlockRegistry.BAOBAB_WALL_SIGN.get())) {
+                cir.setReturnValue(true);
+            }
+        } else if (self == BlockEntityType.HANGING_SIGN) {
+            if (state.is(BlockRegistry.BAOBAB_HANGING_SIGN.get()) || state.is(BlockRegistry.BAOBAB_WALL_HANGING_SIGN.get())) {
+                cir.setReturnValue(true);
+            }
+        } else if (self == BlockEntityType.SHULKER_BOX) {
+            if (state.is(BlockRegistry.AMBER_SHULKER_BOX.get()) || state.is(BlockRegistry.AQUA_SHULKER_BOX.get())
+                    || state.is(BlockRegistry.INDIGO_SHULKER_BOX.get()) || state.is(BlockRegistry.MAROON_SHULKER_BOX.get())) {
+                cir.setReturnValue(true);
+            }
+        }
     }
-
-    @ModifyArg(method="<clinit>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypes;register(Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/world/level/block/entity/BlockEntityType$BlockEntitySupplier;[Lnet/minecraft/world/level/block/Block;)Lnet/minecraft/world/level/block/entity/BlockEntityType;", ordinal = 0), slice = @Slice(from =
-    @At(value = "FIELD", target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypeIds;HANGING_SIGN:Lnet/minecraft/resources/ResourceKey;", opcode = Opcodes.GETSTATIC), to =
-    @At(value = "FIELD",target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypes;HANGING_SIGN:Lnet/minecraft/world/level/block/entity/BlockEntityType;", opcode = Opcodes.PUTSTATIC)), index = 2)
-    private static Block[] hanging_sign(Block[] validBlocks) {
-        ArrayList<Block> newBlocks = new ArrayList<>(Arrays.asList(validBlocks));
-        newBlocks.add(BlockRegistry.BAOBAB_HANGING_SIGN);
-        newBlocks.add(BlockRegistry.BAOBAB_WALL_HANGING_SIGN);
-        Block[] newBlocksArray = new Block[newBlocks.size()];
-        for (int i = 0;i<newBlocksArray.length;i++) { newBlocksArray[i]=newBlocks.get(i); }
-        return newBlocksArray;
-    }
-
-    @ModifyArg(method="<clinit>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypes;register(Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/world/level/block/entity/BlockEntityType$BlockEntitySupplier;[Lnet/minecraft/world/level/block/Block;)Lnet/minecraft/world/level/block/entity/BlockEntityType;", ordinal = 0), slice = @Slice(from =
-    @At(value = "FIELD", target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypeIds;SHELF:Lnet/minecraft/resources/ResourceKey;", opcode = Opcodes.GETSTATIC), to =
-    @At(value = "FIELD",target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypes;SHELF:Lnet/minecraft/world/level/block/entity/BlockEntityType;", opcode = Opcodes.PUTSTATIC)), index = 2)
-    private static Block[] shelf(Block[] validBlocks) {
-        ArrayList<Block> newBlocks = new ArrayList<>(Arrays.asList(validBlocks));
-        newBlocks.add(BlockRegistry.BAOBAB_SHELF);
-        Block[] newBlocksArray = new Block[newBlocks.size()];
-        for (int i = 0;i<newBlocksArray.length;i++) { newBlocksArray[i]=newBlocks.get(i); }
-        return newBlocksArray;
-    }
-
-    @ModifyArg(method="<clinit>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypes;register(Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/world/level/block/entity/BlockEntityType$BlockEntitySupplier;Ljava/util/List;)Lnet/minecraft/world/level/block/entity/BlockEntityType;", ordinal = 0), slice = @Slice(from =
-    @At(value = "FIELD", target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypeIds;SHULKER_BOX:Lnet/minecraft/resources/ResourceKey;", opcode = Opcodes.GETSTATIC), to =
-    @At(value = "FIELD",target = "Lnet/minecraft/world/level/block/entity/BlockEntityTypes;SHULKER_BOX:Lnet/minecraft/world/level/block/entity/BlockEntityType;", opcode = Opcodes.PUTSTATIC)), index = 2)
-    private static List<Block> shulker(List<Block> validBlocks) {
-        ArrayList<Block> newBlocks = new ArrayList<>(validBlocks);
-        newBlocks.add(BlockRegistry.AMBER_SHULKER_BOX);
-        newBlocks.add(BlockRegistry.AQUA_SHULKER_BOX);
-        newBlocks.add(BlockRegistry.INDIGO_SHULKER_BOX);
-        newBlocks.add(BlockRegistry.MAROON_SHULKER_BOX);
-        //Block[] newBlocksArray = new Block[newBlocks.size()];
-        //for (int i = 0;i<newBlocksArray.length;i++) { newBlocksArray[i]=newBlocks.get(i); }
-        return newBlocks.stream().toList();
-    }
-
-
 }

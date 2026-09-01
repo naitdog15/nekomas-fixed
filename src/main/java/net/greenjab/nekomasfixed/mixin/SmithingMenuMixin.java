@@ -1,27 +1,38 @@
 package net.greenjab.nekomasfixed.mixin;
 
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.llamalad7.mixinextras.sugar.Local;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
-import net.minecraft.world.inventory.*;
+import net.minecraft.world.Container;
+import net.minecraft.world.inventory.ResultContainer;
+import net.minecraft.world.inventory.SmithingMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.SmithingRecipe;
-import net.minecraft.world.item.crafting.SmithingRecipeInput;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import java.util.Optional;
-import java.util.function.Consumer;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * 1.20.1's {@code SmithingMenu#createResult()} has no {@code SmithingRecipeInput}/{@code
+ * RecipeHolder}/{@code Optional.ifPresentOrElse} pattern at all — it queries
+ * {@code List<SmithingRecipe>} directly and populates {@code resultSlots} imperatively (VERIFIED
+ * forge-1.20.1-mapped-src SmithingMenu.java:88-102), so this retargets from a
+ * {@code @WrapOperation} on that (absent) call to a cancellable {@code @Inject} at {@code HEAD}
+ * instead, reproducing the "no result" branch's own {@code resultSlots.setItem(0, ItemStack.EMPTY)}
+ * so no stale item is left showing.
+ */
 @Mixin(SmithingMenu.class)
 public class SmithingMenuMixin {
 
-    @WrapOperation(method = "createResult", at = @At(value = "INVOKE", target = "Ljava/util/Optional;ifPresentOrElse(Ljava/util/function/Consumer;Ljava/lang/Runnable;)V"))
-    private <T> void initCustomDataTracker(Optional<RecipeHolder<SmithingRecipe>> instance, Consumer<? super T> action, Runnable emptyAction, Operation<Void> original, @Local SmithingRecipeInput input) {
-        ItemStack gear = input.getItem(1);
-        if (gear.is(ItemRegistry.TURTLE_CHESTPLATE) || gear.is(ItemRegistry.TURTLE_LEGGINGS)
-                || gear.is(ItemRegistry.TURTLE_BOOTS))  instance = Optional.empty();
-        original.call(instance, action, emptyAction);
+    @Shadow protected Container inputSlots;
+    @Shadow protected ResultContainer resultSlots;
+
+    @Inject(method = "createResult", at = @At("HEAD"), cancellable = true)
+    private void nekomasfixed$noTurtleUpgrade(CallbackInfo ci) {
+        ItemStack gear = inputSlots.getItem(1);
+        if (gear.is(ItemRegistry.TURTLE_CHESTPLATE.get()) || gear.is(ItemRegistry.TURTLE_LEGGINGS.get())
+                || gear.is(ItemRegistry.TURTLE_BOOTS.get())) {
+            resultSlots.setItem(0, ItemStack.EMPTY);
+            ci.cancel();
+        }
     }
 }

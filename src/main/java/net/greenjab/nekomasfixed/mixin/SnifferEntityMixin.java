@@ -3,7 +3,7 @@ package net.greenjab.nekomasfixed.mixin;
 import net.greenjab.nekomasfixed.mixin.accessor.SnifferAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -34,7 +34,7 @@ public class SnifferEntityMixin {
                 Biome biome = serverWorld.getBiome(blockPos).value();
                 String biomeName = serverWorld.getBiome(blockPos)
                         .unwrapKey()
-                        .map(key -> key.identifier().toString())
+                        .map(key -> key.location().toString())
                         .orElse("unknown");
                 float temperature = biome.getBaseTemperature();
 
@@ -42,16 +42,16 @@ public class SnifferEntityMixin {
 
                 if (temperature <= 0.15f) {
                     lootTableKey = ResourceKey.create(Registries.LOOT_TABLE,
-                            Identifier.withDefaultNamespace("gameplay/sniffer_digging_snowy"));
+                            ResourceLocation.withDefaultNamespace("gameplay/sniffer_digging_snowy"));
                 }
                 else {
                     if (biomeName.contains("des")) {
                         lootTableKey = ResourceKey.create(Registries.LOOT_TABLE,
-                                Identifier.withDefaultNamespace("gameplay/sniffer_digging_desert"));
+                                ResourceLocation.withDefaultNamespace("gameplay/sniffer_digging_desert"));
                     }
                     else if (biomeName.contains("badlands")) {
                         lootTableKey = ResourceKey.create(Registries.LOOT_TABLE,
-                                Identifier.withDefaultNamespace("gameplay/sniffer_digging_badlands"));
+                                ResourceLocation.withDefaultNamespace("gameplay/sniffer_digging_badlands"));
                     }
                     else {
                         lootTableKey = BuiltInLootTables.SNIFFER_DIGGING;

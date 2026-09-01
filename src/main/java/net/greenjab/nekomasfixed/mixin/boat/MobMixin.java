@@ -3,19 +3,23 @@ package net.greenjab.nekomasfixed.mixin.boat;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
+// EntitySpawnReason (26.2) is MobSpawnType on 1.20.1 (VERIFIED forge-1.20.1-mapped-src
+// MobSpawnType.java has PATROL). checkMobSpawnRules(EntityType,LevelAccessor,MobSpawnType,BlockPos,
+// RandomSource) does call BlockState#isValidSpawn(BlockGetter,BlockPos,EntityType) internally
+// (VERIFIED Mob.java:831-834), so this injection point survives unchanged.
 @Mixin(Mob.class)
 public class MobMixin {
 
     @ModifyExpressionValue(method = "checkMobSpawnRules", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;isValidSpawn(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/EntityType;)Z"))
-    private static boolean allowPirateSpawning(boolean original, @Local(argsOnly = true) LevelAccessor level, @Local(argsOnly = true) EntitySpawnReason spawnReason, @Local(argsOnly = true) BlockPos pos) {
-        if (spawnReason == EntitySpawnReason.PATROL) {
+    private static boolean allowPirateSpawning(boolean original, @Local(argsOnly = true) LevelAccessor level, @Local(argsOnly = true) MobSpawnType spawnReason, @Local(argsOnly = true) BlockPos pos) {
+        if (spawnReason == MobSpawnType.PATROL) {
             if (level.getBlockState(pos).is(Blocks.AIR)) return true;
         }
         return original;

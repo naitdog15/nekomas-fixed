@@ -1,7 +1,8 @@
 {
   "required": true,
   "package": "net.greenjab.nekomasfixed.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
   "mixins": [
     "AbstractArrowMixin",
     "AbstractCauldronBlockMixin",
@@ -37,8 +38,6 @@
     "PistonBaseBlockMixin",
     "PlayerMixin",
     "PoiTypesMixin",
-    "RecipeManagerMixin",
-    "RecipeSerializersMixin",
     "RedstoneWireEvaluatorMixin",
     "ServerLevelMixin",
     "SheepMixin",
@@ -47,7 +46,6 @@
     "SmithingMenuMixin",
     "SnifferEntityMixin",
     "ZombieMixin",
-    "accessor.FlowerPotBlockAccessor",
     "accessor.SnifferAccessor",
     "boat.AbstractBoatMixin",
     "boat.BodyRotationControlMixin",
@@ -72,6 +70,6 @@
   "overwrites": {
     "requireAnnotations": true
   },
-  "client": [
-  ]
+  "client": [],
+  "refmap": "nekomasfixed.refmap.json"
 }

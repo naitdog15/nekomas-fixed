@@ -2,7 +2,7 @@ package net.greenjab.nekomasfixed.registry.entity.Moobloom;
 
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
 import net.greenjab.nekomasfixed.util.ModTags;
-import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -15,7 +15,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.AnimationState;
 import net.minecraft.world.entity.EntityDimensions;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.SpawnGroupData;
@@ -28,22 +28,16 @@ import net.minecraft.world.entity.ai.goal.PanicGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.TemptGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
-import net.minecraft.world.entity.animal.cow.AbstractCow;
-import net.minecraft.world.entity.animal.cow.Cow;
+import net.minecraft.world.entity.animal.Cow;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.SuspiciousStewEffects;
+import net.minecraft.world.item.SuspiciousStewItem;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
-
-import java.util.List;
 
 public class Moobloom extends Cow {
     public final AnimationState idleAnimationState = new AnimationState();
@@ -59,7 +53,7 @@ public class Moobloom extends Cow {
     }
 
     @Override
-    public @NonNull SpawnGroupData finalizeSpawn(@NonNull ServerLevelAccessor level, @NonNull DifficultyInstance difficulty, @NonNull EntitySpawnReason spawnReason, @Nullable SpawnGroupData entityData) {
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnReason, SpawnGroupData entityData) {
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnReason, entityData);
         this.entityData.set(VARIANT, MoobloomVariants.getRandomVariant().path);
 
@@ -78,8 +72,8 @@ public class Moobloom extends Cow {
         this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
     }
 
-    public static AttributeSupplier.@NonNull Builder createAttributes(){
-        return AbstractCow.createAttributes();
+    public static AttributeSupplier.Builder createAttributes(){
+        return Cow.createAttributes();
     }
 
     public void setLastFlowerEaten(ItemStack stack) {
@@ -90,29 +84,29 @@ public class Moobloom extends Cow {
     }
 
     @Override
-    protected void addAdditionalSaveData(@NonNull ValueOutput view) {
-        super.addAdditionalSaveData(view);
-        view.putBoolean("Sheared", this.entityData.get(SHEARED));
-        view.putInt("FlowerRegrowTimer", this.flowerRegrowTimer);
-        view.putString("VariantPath", this.entityData.get(VARIANT));
+    protected void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putBoolean("Sheared", this.entityData.get(SHEARED));
+        tag.putInt("FlowerRegrowTimer", this.flowerRegrowTimer);
+        tag.putString("VariantPath", this.entityData.get(VARIANT));
 
         if (!LastFlowerEaten.isEmpty()) {
-            view.store("Item", ItemStack.CODEC, LastFlowerEaten);
+            tag.put("Item", LastFlowerEaten.save(new CompoundTag()));
         }
     }
 
     @Override
-    protected void readAdditionalSaveData(@NonNull ValueInput view) {
-        super.readAdditionalSaveData(view);
-        this.setSheared(view.getBooleanOr("Sheared", false));
-        this.flowerRegrowTimer = view.getIntOr("FlowerRegrowTimer", 20 * 60 * 5);
-        this.entityData.set(VARIANT, view.getStringOr("VariantPath", "ancient_cow_1"));
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        this.setSheared(tag.getBoolean("Sheared"));
+        this.flowerRegrowTimer = tag.contains("FlowerRegrowTimer") ? tag.getInt("FlowerRegrowTimer") : 20 * 60 * 5;
+        this.entityData.set(VARIANT, tag.contains("VariantPath") ? tag.getString("VariantPath") : "ancient_cow_1");
 
-        LastFlowerEaten = view.read("Item", ItemStack.CODEC).orElse(ItemStack.EMPTY);
+        LastFlowerEaten = tag.contains("Item") ? ItemStack.of(tag.getCompound("Item")) : ItemStack.EMPTY;
     }
 
     @Override
-    public @NonNull InteractionResult mobInteract(Player player, @NonNull InteractionHand hand) {
+    public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemStack = player.getItemInHand(hand);
         if (itemStack.is(Items.SHEARS) && !this.isBaby()) {
             Level level = this.level();
@@ -121,17 +115,22 @@ public class Moobloom extends Cow {
                     this.sheared(serverLevel, SoundSource.PLAYERS, itemStack);
                     this.gameEvent(GameEvent.SHEAR, player);
                     itemStack.hurtAndBreak(1, player, hand.asEquipmentSlot());
-                    return InteractionResult.SUCCESS_SERVER;
+                    return InteractionResult.SUCCESS;
                 }
             }
             return InteractionResult.SUCCESS;
         } else if (itemStack.is(Items.BOWL) && !this.isBaby()) {
             Level level = this.level();
             if (!level.isClientSide() && level instanceof ServerLevel) {
+                // PORT: 1.20.1 has no DataComponents.SUSPICIOUS_STEW_EFFECTS component; the pre-component
+                // API is SuspiciousStewItem.saveMobEffect(stack, MobEffect, durationTicks) (NBT-backed).
                 ItemStack stew = new ItemStack(Items.SUSPICIOUS_STEW);
-                stew.set(DataComponents.SUSPICIOUS_STEW_EFFECTS, new SuspiciousStewEffects(List.of(MoobloomVariants.fromPath(this.entityData.get(VARIANT)).effect)));
-                player.getItemInHand(InteractionHand.MAIN_HAND).consume(1, player);
-                player.handleExtraItemsCreatedOnUse( stew);
+                MoobloomVariants variant = MoobloomVariants.fromPath(this.entityData.get(VARIANT));
+                SuspiciousStewItem.saveMobEffect(stew, variant.effectHolder.value(), variant.effectDuration);
+                player.getItemInHand(InteractionHand.MAIN_HAND).shrink(1);
+                if (!player.getInventory().add(stew)) {
+                    player.drop(stew, false);
+                }
             }
             return InteractionResult.SUCCESS;
         } else {
@@ -143,7 +142,7 @@ public class Moobloom extends Cow {
         level.playSound(null, this, SoundEvents.SHEEP_SHEAR, shearedSoundCategory, 1.0F, 1.0F);
 
             for(int i = 0; i < shears.getCount(); ++i) {
-                ItemEntity itemEntity = this.spawnAtLocation(level, MoobloomVariants.fromPath(this.entityData.get(VARIANT)).flower, 1.0F);
+                ItemEntity itemEntity = this.spawnAtLocation(MoobloomVariants.fromPath(this.entityData.get(VARIANT)).flower, 1.0F);
                 if (itemEntity != null) {
                     itemEntity.setDeltaMovement(itemEntity.getDeltaMovement().add((this.random.nextFloat() - this.random.nextFloat()) * 0.1F, this.random.nextFloat() * 0.05F, (this.random.nextFloat() - this.random.nextFloat()) * 0.1F));
                 }
@@ -153,14 +152,14 @@ public class Moobloom extends Cow {
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.@NonNull Builder builder) {
-        super.defineSynchedData(builder);
-        builder.define(SHEARED, false);
-        builder.define(VARIANT, "ancient_cow_1");
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(SHEARED, false);
+        this.entityData.define(VARIANT, "ancient_cow_1");
     }
     @Override
-    public Moobloom getBreedOffspring(@NonNull ServerLevel level, @NonNull AgeableMob other) {
-        Moobloom child = EntityTypeRegistry.MOOBLOOM.create(level, EntitySpawnReason.BREEDING);
+    public Moobloom getBreedOffspring(ServerLevel level, AgeableMob other) {
+        Moobloom child = EntityTypeRegistry.MOOBLOOM.get().create(level, MobSpawnType.BREEDING);
         assert child != null;
 
         MoobloomVariants thisVariant = MoobloomVariants.fromPath(this.entityData.get(VARIANT));
@@ -202,8 +201,8 @@ public class Moobloom extends Cow {
     }
 
     @Override
-    public void customServerAiStep(@NonNull ServerLevel level) {
-        super.customServerAiStep(level);
+    public void customServerAiStep() {
+        super.customServerAiStep();
         if (this.entityData.get(SHEARED)) {
             if (this.flowerRegrowTimer > 0) this.flowerRegrowTimer--;
             else this.regrowFlowers();
@@ -225,11 +224,11 @@ public class Moobloom extends Cow {
     }
 
     @Override
-    public @NonNull EntityDimensions getDefaultDimensions(@NonNull Pose pose) {
+    public EntityDimensions getDefaultDimensions(Pose pose) {
         return this.isBaby() ? BABY_BASE_DIMENSIONS : super.getDefaultDimensions(pose);
     }
 
     static {
-        BABY_BASE_DIMENSIONS = EntityTypeRegistry.MOOBLOOM.getDimensions().scale(0.5F).withEyeHeight(0.665F);
+        BABY_BASE_DIMENSIONS = EntityTypeRegistry.MOOBLOOM.get().getDimensions().scale(0.5F).withEyeHeight(0.665F);
     }
 }

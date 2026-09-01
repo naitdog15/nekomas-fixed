@@ -12,10 +12,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 
+// 1.20.1 delta: isPrimaryItem/isSupportedItem (1.21+ data-driven enchantment predicates) do not
+// exist here — enchantability is a single check, canEnchant(ItemStack) (VERIFIED
+// forge-1.20.1-mapped-src Enchantment.java:114), which internally tests the EquipmentCategory this
+// enchantment was constructed with. Both pristine branches already only called canEnchant/checked
+// description text, so retargeting onto that one method loses no behaviour.
 @Mixin(Enchantment.class)
 public class EnchantmentMixin {
 
-    @Inject(method = {"isPrimaryItem", "canEnchant", "isSupportedItem"}, at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "canEnchant", at = @At(value = "HEAD"), cancellable = true)
     private void otherChecks(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
         Enchantment enchantment = (Enchantment)(Object)this;
         Item item = stack.getItem();

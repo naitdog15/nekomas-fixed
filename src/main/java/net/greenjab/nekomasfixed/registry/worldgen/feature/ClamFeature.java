@@ -50,16 +50,20 @@ public class ClamFeature extends Feature<CountConfiguration> {
 					level.getBlockState(blockPos2.below()).is(Blocks.SAND) &&
 					blockState.canSurvive(level, blockPos2)) {
 				level.setBlock(blockPos2, blockState, Block.UPDATE_CLIENTS);
-				level.getBlockEntity(blockPos2, BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY)
+				level.getBlockEntity(blockPos2, BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY.get())
 						.ifPresent(blockEntity -> {
+							// PORT: 1.20.1 has no ReloadableServerRegistries (that's the 1.21+ registry-
+							// backed loot-table system); the pre-refactor accessor is
+							// MinecraftServer#getLootData()#getLootTable(ResourceLocation), returning the
+							// LootTable directly (not Optional).
 							LootTable lootTable = level.getServer()
-									.reloadableRegistries()
+									.getLootData()
 									.getLootTable(LootTableRegistry.CLAM_LOOT_TABLE);
 
 							LootParams lootContextParameterSet = (new LootParams.Builder(level.getLevel())).withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(blockPos2)).withParameter(LootContextParams.TOOL, null).withParameter(LootContextParams.THIS_ENTITY, null).withLuck(getLuck(clamType)).create(LootContextParamSets.FISHING);
 
 							ObjectArrayList<ItemStack> loots = lootTable.getRandomItems(lootContextParameterSet);
-							if (!loots.isEmpty()) blockEntity.setHeldStack(loots.getFirst());
+							if (!loots.isEmpty()) blockEntity.setHeldStack(loots.get(0));
 						});
 				i++;
 			}
@@ -70,18 +74,18 @@ public class ClamFeature extends Feature<CountConfiguration> {
 
 	@Unique
 	private Block getClam(float rarity) {
-		if (rarity>0.5) return BlockRegistry.CLAM;
-		if (rarity>0.25) return BlockRegistry.CLAM_BLUE;
-		if (rarity>0.125) return BlockRegistry.CLAM_PINK;
-		if (rarity>0.0625) return BlockRegistry.CLAM_PURPLE;
-		return BlockRegistry.CLAM;
+		if (rarity>0.5) return BlockRegistry.CLAM.get();
+		if (rarity>0.25) return BlockRegistry.CLAM_BLUE.get();
+		if (rarity>0.125) return BlockRegistry.CLAM_PINK.get();
+		if (rarity>0.0625) return BlockRegistry.CLAM_PURPLE.get();
+		return BlockRegistry.CLAM.get();
 	}
 
 	public static int getLuck(Block clamType) {
-		if (clamType==BlockRegistry.CLAM) return 0;
-		if (clamType==BlockRegistry.CLAM_BLUE) return 1;
-		if (clamType==BlockRegistry.CLAM_PINK) return 2;
-		if (clamType==BlockRegistry.CLAM_PURPLE) return 3;
+		if (clamType==BlockRegistry.CLAM.get()) return 0;
+		if (clamType==BlockRegistry.CLAM_BLUE.get()) return 1;
+		if (clamType==BlockRegistry.CLAM_PINK.get()) return 2;
+		if (clamType==BlockRegistry.CLAM_PURPLE.get()) return 3;
 		return 0;
 	}
 }

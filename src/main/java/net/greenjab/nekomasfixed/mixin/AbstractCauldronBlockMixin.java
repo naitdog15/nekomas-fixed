@@ -20,19 +20,23 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+// 1.20.1 delta: the 26.2 split useItemOn(ItemStack, ...) does not exist (see BlockBehaviourMixin's
+// header) — retargeted onto the combined use(BlockState, Level, BlockPos, Player, InteractionHand,
+// BlockHitResult), with the item read via player.getItemInHand(hand).
 @Mixin(AbstractCauldronBlock.class)
 public class AbstractCauldronBlockMixin {
 
-    @Inject(method = "useItemOn", at = @At("HEAD"), cancellable = true)
-    private void onCauldronUse(ItemStack itemStack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
+    @Inject(method = "use", at = @At("HEAD"), cancellable = true)
+    private void onCauldronUse(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
+        ItemStack itemStack = player.getItemInHand(hand);
         if (state.getBlock() == Blocks.WATER_CAULDRON) {
             if (state.getBlock() instanceof LayeredCauldronBlock leveledCauldronBlock && leveledCauldronBlock.isFull(state)) {
                 if (level.getBlockState(pos.below()).is(BlockTags.FIRE) || level.getBlockState(pos.below()).is(BlockTags.CAMPFIRES)) {
                     if (SoupCauldronBlock.FOOD_COLORS.containsKey(itemStack.getItem())) {
-                        level.setBlockAndUpdate(pos, BlockRegistry.SOUP_CAULDRON.defaultBlockState());
+                        level.setBlockAndUpdate(pos, BlockRegistry.SOUP_CAULDRON.get().defaultBlockState());
                         if (level.getBlockEntity(pos) instanceof SoupCauldronBlockEntity soup ) {
                             if (soup.addInput(itemStack.copyWithCount(1)))
-                                itemStack.consume(1, player);
+                                itemStack.shrink(1);
                             cir.setReturnValue(InteractionResult.SUCCESS);
                         }
                     }

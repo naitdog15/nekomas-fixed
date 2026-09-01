@@ -1,108 +1,110 @@
 package net.greenjab.nekomasfixed.registry.other;
 
-import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.greenjab.nekomasfixed.util.EntityNbtHelper;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponentGetter;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.TooltipProvider;
-import net.minecraft.world.item.component.TypedEntityData;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.TagValueOutput;
-import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
-import org.slf4j.Logger;
+import javax.annotation.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.Set;
 
-public record AnimalComponent(List<AnimalComponent.StoredEntityData> animal) implements TooltipProvider {
-	private static final Logger LOGGER = LogUtils.getLogger();
+/**
+ * REWRITTEN, not ported: {@code TypedEntityData}, {@code
+ * ProblemReporter.ScopedCollector}, {@code TagValueOutput}, {@code TooltipProvider}, {@code
+ * DataComponentGetter} do not exist on 1.20.1. Holds a full serialized entity NBT blob (minus the
+ * denylist below, plus the {@code EntityType} key written by {@link EntityNbtHelper#store}); the
+ * entity is genuinely reconstructed and spawned by the two live callers (nautilus-block item
+ * destroyed -> animal released, and the nautilus block entity) — a tooltip-only record is not an
+ * option.
+ * <p>
+ * Read/written through {@code StackData} under key {@code "animal"}, never a 1.21+ data component.
+ */
+public record AnimalComponent(List<AnimalComponent.StoredEntityData> animal) {
+    /**
+     * The 26.2 source's list carried
+     * post-1.21 snake_case key names that simply do not appear in a 1.20.1 entity tag, so pruning
+     * them removed nothing and captured animals kept stale fall/sleep/leash/hive/drop-chance state.
+     * Every replacement name below was re-verified against forge-1.20.1-mapped-src:
+     * <ul>
+     *   <li>{@code fall_distance} -> {@code FallDistance} — Entity.java:1609</li>
+     *   <li>{@code sleeping_pos} -> {@code SleepingX}/{@code SleepingY}/{@code SleepingZ} (three
+     *       separate int fields on 1.20.1, not one compound) — LivingEntity.java:687-689</li>
+     *   <li>{@code drop_chances} -> {@code ArmorDropChances} + {@code HandDropChances} (two lists)
+     *       — Mob.java:399,406</li>
+     *   <li>{@code leash} -> {@code Leash} — Mob.java:419-421 ({@code Mob.LEASH_TAG}, line 85)</li>
+     *   <li>{@code hive_pos} -> {@code HivePos} — Bee.java:184 ({@code Bee.TAG_HIVE_POS}, line 116)</li>
+     * </ul>
+     * Names already correct for 1.20.1 and kept verbatim: Air, Brain, CanPickUpLoot, DeathTime,
+     * FallFlying, Fire, HurtByTimestamp, HurtTime, LeftHanded, Motion, NoGravity, OnGround,
+     * PortalCooldown, Pos, Rotation, CannotEnterHiveTicks (Bee.java:111), Passengers, UUID.
+     */
+    public static final List<String> IRRELEVANT_ANIMAL_NBT_KEYS = Arrays.asList(
+            "Air", "ArmorDropChances", "HandDropChances", "Brain", "CanPickUpLoot", "DeathTime",
+            "FallDistance", "FallFlying", "Fire", "HurtByTimestamp", "HurtTime", "LeftHanded", "Motion",
+            "NoGravity", "OnGround", "PortalCooldown", "Pos", "Rotation",
+            "SleepingX", "SleepingY", "SleepingZ", "CannotEnterHiveTicks", "HivePos", "Passengers",
+            "Leash", "UUID"
+    );
 
-	public static final List<String> IRRELEVANT_ANIMAL_NBT_KEYS = Arrays.asList(
-			"Air", "drop_chances", "Brain", "CanPickUpLoot", "DeathTime", "fall_distance", "FallFlying",
-			"Fire", "HurtByTimestamp", "HurtTime", "LeftHanded", "Motion", "NoGravity", "OnGround", "PortalCooldown",
-			"Pos", "Rotation", "sleeping_pos", "CannotEnterHiveTicks", "hive_pos", "Passengers", "leash", "UUID"
-	);
+    public record StoredEntityData(CompoundTag entityData, long tickEnteredHive) {
 
-	public record StoredEntityData(TypedEntityData<EntityType<?>> entityData, long tickEnteredHive) {
+        public static final Codec<StoredEntityData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                CompoundTag.CODEC.fieldOf("entity_data").forGetter(StoredEntityData::entityData),
+                Codec.LONG.fieldOf("tick_entered_hive").forGetter(StoredEntityData::tickEnteredHive)
+        ).apply(instance, StoredEntityData::new));
 
-		public static final Codec<StoredEntityData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-				TypedEntityData.codec(EntityType.CODEC).fieldOf("entity_data").forGetter(StoredEntityData::entityData),
-				Codec.LONG.fieldOf("tick_entered_hive").forGetter(StoredEntityData::tickEnteredHive)
-				).apply(instance, StoredEntityData::new));
+        public static final Codec<List<StoredEntityData>> LIST_CODEC = CODEC.listOf();
 
-		public static final StreamCodec<RegistryFriendlyByteBuf, StoredEntityData> PACKET_CODEC = StreamCodec.composite(
-				TypedEntityData.streamCodec(EntityType.STREAM_CODEC), StoredEntityData::entityData,
-				ByteBufCodecs.VAR_LONG, StoredEntityData::tickEnteredHive,
-				StoredEntityData::new
-		);
+        public static StoredEntityData of(Entity entity) {
+            CompoundTag tag = EntityNbtHelper.store(entity, Set.copyOf(IRRELEVANT_ANIMAL_NBT_KEYS));
+            return new StoredEntityData(tag, entity.level().getGameTime());
+        }
 
-		public static final Codec<List<StoredEntityData>> LIST_CODEC = CODEC.listOf();
+        @Nullable
+        public Entity loadEntity(Level level) {
+            return EntityNbtHelper.load(this.entityData.copy(), level);
+        }
+    }
 
-		public static StoredEntityData of(Entity entity) {
-			StoredEntityData data;
-			try (ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(entity.problemPath(), LOGGER)) {
-				TagValueOutput nbtWriteView = TagValueOutput.createWithContext(logging, entity.registryAccess());
-				entity.save(nbtWriteView);
-				IRRELEVANT_ANIMAL_NBT_KEYS.forEach(nbtWriteView::discard);
-				CompoundTag nbtCompound = nbtWriteView.buildResult();
-				data = new StoredEntityData(TypedEntityData.of(entity.getType(), nbtCompound),
-						entity.level().getGameTime());
-			}
-			return data;
-		}
+    public static final Codec<AnimalComponent> CODEC = StoredEntityData.LIST_CODEC
+            .xmap(AnimalComponent::new, AnimalComponent::animal);
 
-		@Nullable
-		public Entity loadEntity(Level level) {
-			CompoundTag nbtCompound = this.entityData.copyTagWithoutId();
-			IRRELEVANT_ANIMAL_NBT_KEYS.forEach(nbtCompound::remove);
-			return EntityType.loadEntityRecursive(this.entityData.type(), nbtCompound, level, EntitySpawnReason.LOAD, entity -> entity);
-		}
-	}
+    public static final AnimalComponent DEFAULT = new AnimalComponent(List.of());
 
-	public static final Codec<AnimalComponent> CODEC = StoredEntityData.LIST_CODEC
-			.xmap(AnimalComponent::new, AnimalComponent::animal);
-
-	public static final StreamCodec<RegistryFriendlyByteBuf, AnimalComponent> PACKET_CODEC = StoredEntityData.PACKET_CODEC
-			.apply(ByteBufCodecs.list())
-			.map(AnimalComponent::new, AnimalComponent::animal);
-
-	public static final AnimalComponent DEFAULT = new AnimalComponent(List.of());
-
-	@Override
-	public void addToTooltip(Item.@NonNull TooltipContext context, @NonNull Consumer<Component> textConsumer, @NonNull TooltipFlag type, @NonNull DataComponentGetter components) {
-		if (!this.animal.isEmpty()) {
-			TypedEntityData<EntityType<?>> entityData = this.animal.getFirst().entityData();
-			CompoundTag nbt = entityData.copyTagWithoutId();
-			Optional<String> name = nbt.getString("CustomName");
-			Optional<Integer> age = nbt.getInt("Age");
-			Optional<String> variant = nbt.getString("variant");
-			if (variant.isPresent()) {
-				String s = variant.get().split(":")[1];
-				String s1 = s.substring(0, 1).toUpperCase();
-				String s2 = s.substring(1);
-				variant = Optional.of(s1+s2);
-			}
-			textConsumer.accept(Component.translatable("container.nautilus",
-					(age.isPresent() && age.get()<0?"Baby ":""),
-							variant.map(s -> s + " ").orElse(""),
-							Component.translatable(entityData.type().getDescriptionId()),
-							name.map(s -> ": \"" + s + "\"").orElse("")
-			).withStyle(ChatFormatting.GRAY));
-		}
-	}
+    /**
+     * Mirrors the deleted {@code addToTooltip}'s single-line summary, for whichever mixin/item
+     * override re-homes it into {@code appendHoverText}.
+     */
+    public Optional<Component> tooltipLine() {
+        if (this.animal.isEmpty()) {
+            return Optional.empty();
+        }
+        CompoundTag nbt = this.animal.get(0).entityData();
+        String name = nbt.contains("CustomName") ? nbt.getString("CustomName") : null;
+        boolean hasAge = nbt.contains("Age");
+        int age = hasAge ? nbt.getInt("Age") : 0;
+        String variant = null;
+        if (nbt.contains("variant")) {
+            String raw = nbt.getString("variant");
+            String[] parts = raw.split(":");
+            String s = parts.length > 1 ? parts[1] : parts[0];
+            variant = s.isEmpty() ? s : s.substring(0, 1).toUpperCase() + s.substring(1);
+        }
+        String typeDescriptionId = EntityType.by(nbt).map(EntityType::getDescriptionId).orElse("entity.unknown");
+        String finalVariant = variant;
+        return Optional.of(Component.translatable("container.nautilus",
+                (hasAge && age < 0 ? "Baby " : ""),
+                finalVariant != null ? finalVariant + " " : "",
+                Component.translatable(typeDescriptionId),
+                name != null ? ": \"" + name + "\"" : ""
+        ).withStyle(ChatFormatting.GRAY));
+    }
 }

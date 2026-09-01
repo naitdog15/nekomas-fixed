@@ -1,0 +1,14 @@
+{
+  "type": "forge:add_spawns",
+  "biomes": "#nekomasfixed:spawns_rime",
+  "spawners": {
+    "monster": [
+      {
+        "type": "nekomasfixed:rime",
+        "weight": 100,
+        "minCount": 4,
+        "maxCount": 4
+      }
+    ]
+  }
+}

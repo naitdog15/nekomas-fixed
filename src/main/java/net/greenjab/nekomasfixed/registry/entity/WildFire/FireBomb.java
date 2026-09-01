@@ -17,19 +17,18 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.NonNull;
 
 public class FireBomb extends Projectile {
 
     private static final ExplosionDamageCalculator EXPLOSION_BEHAVIOR = new ExplosionDamageCalculator()  {
         @Override
-        public boolean shouldBlockExplode(@NonNull Explosion explosion, @NonNull BlockGetter world, @NonNull BlockPos pos, BlockState state, float power) {
+        public boolean shouldBlockExplode(Explosion explosion, BlockGetter world, BlockPos pos, BlockState state, float power) {
             return state.is(Blocks.AIR);
         }
     };
 
     public FireBomb(Level level, LivingEntity owner) {
-        this(EntityTypeRegistry.FIRE_BOMB, level);
+        this(EntityTypeRegistry.FIRE_BOMB.get(), level);
         this.setOwner(owner);
         this.snapTo(owner.getX(), owner.getY(), owner.getZ(), this.getYRot(), this.getXRot());
         this.reapplyPosition();
@@ -40,7 +39,7 @@ public class FireBomb extends Projectile {
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.@NonNull Builder builder) {
+    protected void defineSynchedData() {
     }
 
     @Override
@@ -80,7 +79,7 @@ public class FireBomb extends Projectile {
     }
 
     @Override
-    protected void onHit(@NonNull HitResult hitResult) {
+    protected void onHit(HitResult hitResult) {
         super.onHit(hitResult);
         if (!this.level().isClientSide()) {
             this.level().explode(this, Explosion.getDefaultDamageSource(this.level(), this), EXPLOSION_BEHAVIOR, this.getX(), this.getY(), this.getZ(), 1, true, Level.ExplosionInteraction.MOB);

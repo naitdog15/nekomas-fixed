@@ -1,77 +1,84 @@
 package net.greenjab.nekomasfixed.mixin;
 
-import net.greenjab.nekomasfixed.registry.other.AnimalTooltipData;
-import net.greenjab.nekomasfixed.registry.other.ContainerTooltipData;
 import net.greenjab.nekomasfixed.registry.other.StoredTimeComponent;
-import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.util.ModTags;
-import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.chat.Component;
+import net.greenjab.nekomasfixed.util.StackData;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.tooltip.TooltipComponent;
-import net.minecraft.world.item.Item;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.alchemy.Potion;
-import net.minecraft.world.item.alchemy.PotionContents;
-import net.minecraft.world.item.component.TooltipDisplay;
+import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import java.util.Optional;
-import java.util.function.Consumer;
 
+/**
+ * Part of the "keep and expect pain" set of mixins.
+ * <p>
+ * Two of the pristine four injectors are dropped here, not ported — {@code getTooltipImage}'s
+ * container/animal tooltip-image dispatch and {@code addDetailsToTooltip}'s animal/stored-time/combo
+ * tooltip-text dispatch. Both hang off a 1.21+ mechanism with no 1.20.1 counterpart at all: {@code
+ * TooltipDisplay}, {@code DataComponents.TOOLTIP_DISPLAY}, {@code Item.TooltipContext} and {@code
+ * ItemStack#addToTooltip(DataComponentType, ...)} do not exist here (VERIFIED: none of the four
+ * appear anywhere under forge-1.20.1-mapped-src). This is a
+ * named later workstream through {@code Item#appendHoverText}/{@code Item#getTooltipImage} — not
+ * reinvented here. <b>Tooltip behaviour this port does NOT yet restore:</b> the container-contents
+ * tooltip image (shulker boxes / bundle-style items), the nautilus animal tooltip image, the animal
+ * summary tooltip line ({@code AnimalComponent#tooltipLine()}, already written and waiting — see
+ * {@code registry/other/AnimalComponent.java}), the stored-time HH:MM tooltip line ({@code
+ * StoredTimeComponent#formatted()}, likewise already written), and the sickle combo-percentage
+ * tooltip line (whose original wording could not be recovered).
+ * <p>
+ * The other two injectors port cleanly:
+ * <p>
+ * {@code use}: {@code ItemStack#use(Level, Player, InteractionHand)} itself is unchanged, but on
+ * 1.20.1 it still returns {@code InteractionResultHolder<ItemStack>} — VERIFIED
+ * forge-1.20.1-mapped-src ItemStack.java:274 — not the bare {@code InteractionResult} 26.2 uses, so
+ * the handler's {@code CallbackInfoReturnable} type parameter and the {@code @At} INVOKE
+ * descriptor's return type both change accordingly. {@code ComponentRegistry.CLAM_STATE}/{@code
+ * STORED_TIME} become {@code StackData} calls (§9.1).
+ * <p>
+ * {@code hasFoil}: unchanged target. {@code DataComponents.POTION_CONTENTS}/{@code PotionContents}
+ * (1.20.5+) become {@code PotionUtils.getPotion(ItemStack)}, which returns a plain {@code Potion}
+ * (not {@code Optional<Holder<Potion>>}) on 1.20.1 — VERIFIED forge-1.20.1-mapped-src
+ * PotionUtils.java:119. {@code ItemRegistry.LIGHTNING.get()} becomes a {@code RegistryObject<Potion>}
+ * per §6.3's new registry row (1.20.1 registers a plain {@code Potion} instance, not
+ * {@code registerForHolder}), so the comparison gains {@code .get()}.
+ */
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
 
-	@Inject(method = "getTooltipImage", at = @At("HEAD"), cancellable = true)
-	private void UseNewContainerComponentTooltip(CallbackInfoReturnable<Optional<TooltipComponent>> cir){
-        ItemStack itemStack = (ItemStack)(Object) this;
-		if (itemStack.getComponents().has(DataComponents.CONTAINER)) {
-			TooltipDisplay tooltipDisplayComponent = itemStack.getOrDefault(DataComponents.TOOLTIP_DISPLAY, TooltipDisplay.DEFAULT);
-			cir.setReturnValue(!tooltipDisplayComponent.shows(DataComponents.CONTAINER)
-					? Optional.empty()
-					: Optional.ofNullable(itemStack.get(DataComponents.CONTAINER)).map(ContainerTooltipData::new));
-		} else if (itemStack.getComponents().has(ComponentRegistry.ANIMAL)) {
-			TooltipDisplay tooltipDisplayComponent = itemStack.getOrDefault(DataComponents.TOOLTIP_DISPLAY, TooltipDisplay.DEFAULT);
-			cir.setReturnValue(!tooltipDisplayComponent.shows(ComponentRegistry.ANIMAL)
-					? Optional.empty()
-					: Optional.ofNullable(itemStack.get(ComponentRegistry.ANIMAL)).map(AnimalTooltipData::new));
-		}
-	}
-
-	@Inject(method = "addDetailsToTooltip", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;addToTooltip(Lnet/minecraft/core/component/DataComponentType;Lnet/minecraft/world/item/Item$TooltipContext;Lnet/minecraft/world/item/component/TooltipDisplay;Ljava/util/function/Consumer;Lnet/minecraft/world/item/TooltipFlag;)V", ordinal = 0))
-	private void addTooltips(Item.TooltipContext context, TooltipDisplay display, Player player,
-	                         TooltipFlag tooltipFlag, Consumer<Component> builder, CallbackInfo ci) {
-		ItemStack stack = (ItemStack)(Object)this;
-		stack.addToTooltip(ComponentRegistry.ANIMAL, context, display, builder, tooltipFlag);
-		stack.addToTooltip(ComponentRegistry.STORED_TIME, context, display, builder, tooltipFlag);
-		stack.addToTooltip(ComponentRegistry.COMBO_MULTIPLIER, context, display, builder, tooltipFlag);
-	}
-
-	@Inject(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/Item;use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"))
-	private void useBlockItem(Level level, Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
+	@Inject(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/Item;use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder;"))
+	private void useBlockItem(Level level, Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
 		ItemStack stack = (ItemStack)(Object)this;
 		if (stack.is(ModTags.CLAMTAG)) {
-			int c = stack.getOrDefault(ComponentRegistry.CLAM_STATE, 0)>0?0:1;
-			if (c>0&&stack.hasNonDefault(DataComponents.CONTAINER)) {
-				if (!stack.get(DataComponents.CONTAINER).copyOne().isEmpty()) c++;
+			int c = StackData.readClamState(stack) > 0 ? 0 : 1;
+			// 1.20.1 has no DataComponents.CONTAINER/ItemContainerContents (§9.5): a placed-and-picked-up
+			// clam's salvaged contents live in the same NBT vanilla shulker boxes use for theirs —
+			// BlockItem.getBlockEntityData(stack) -> the "BlockEntityTag" sub-compound's "Items" list.
+			CompoundTag blockEntityTag = BlockItem.getBlockEntityData(stack);
+			if (c > 0 && blockEntityTag != null && blockEntityTag.contains("Items")
+					&& !blockEntityTag.getList("Items", Tag.TAG_COMPOUND).isEmpty()) {
+				c++;
 			}
-			stack.set(ComponentRegistry.CLAM_STATE, c);
+			StackData.writeClamState(stack, c);
 		}
 		if (stack.is(Items.CLOCK)) {
-			if (stack.getComponents().has(ComponentRegistry.STORED_TIME)) {
-				stack.remove(ComponentRegistry.STORED_TIME);
+			if (!StackData.readStoredTime(stack).equals(new StoredTimeComponent(0))) {
+				StackData.remove(stack, StackData.KEY_STORED_TIME);
 			} else {
-				stack.set(ComponentRegistry.STORED_TIME, new StoredTimeComponent((int) ((level.getOverworldClockTime() + 6000) % 24000)));
+				// 1.20.1 has no Level#getOverworldClockTime() (26.2-only cross-dimension normalisation);
+				// substituted with this dimension's own raw day-time mod 24000. Documented gap: a clock
+				// stopped outside the overworld may show a different face than 26.2's would have.
+				StackData.writeStoredTime(stack, new StoredTimeComponent((int) ((level.getDayTime() + 6000) % 24000)));
 			}
 			player.swing(hand);
 		}
@@ -80,11 +87,9 @@ public class ItemStackMixin {
 	@Inject(method = "hasFoil", at = @At("HEAD"), cancellable = true)
 	private void lightningGlint(CallbackInfoReturnable<Boolean> cir){
 		ItemStack stack = (ItemStack)(Object)this;
-		Optional<Holder<Potion>> optional = stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).potion();
-		if (optional.isPresent()) {
-			if (optional.get() == ItemRegistry.LIGHTNING) {
-				cir.setReturnValue(true);
-			}
+		Potion potion = PotionUtils.getPotion(stack);
+		if (potion == ItemRegistry.LIGHTNING.get()) {
+			cir.setReturnValue(true);
 		}
 	}
 }

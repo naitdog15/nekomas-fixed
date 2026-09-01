@@ -4,7 +4,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.cauldron.CauldronInteraction;
-import net.minecraft.core.cauldron.CauldronInteractions;
+import net.minecraft.world.item.Item;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
@@ -24,7 +24,8 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jspecify.annotations.NonNull;
+
+import java.util.Map;
 
 public class IceCauldronBlock extends AbstractCauldronBlock {
     public static final MapCodec<IceCauldronBlock> CODEC = simpleCodec(IceCauldronBlock::new);
@@ -32,7 +33,7 @@ public class IceCauldronBlock extends AbstractCauldronBlock {
     private static final VoxelShape INSIDE_COLLISION_SHAPE = Shapes.or(AbstractCauldronBlock.SHAPE, ICE_SHAPE);
 
     @Override
-    public @NonNull MapCodec<IceCauldronBlock> codec() {
+    public MapCodec<IceCauldronBlock> codec() {
         return CODEC;
     }
 
@@ -40,15 +41,20 @@ public class IceCauldronBlock extends AbstractCauldronBlock {
         super(settings, createBehaviorMap());
     }
 
-    protected @NonNull ItemStack getCloneItemStack(@NonNull LevelReader level, @NonNull BlockPos pos, @NonNull BlockState state, boolean includeData) {
+    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         return Items.CAULDRON.getDefaultInstance();
     }
 
-    private static CauldronInteraction.Dispatcher createBehaviorMap() {
-        CauldronInteraction.Dispatcher map = new CauldronInteraction.Dispatcher();
-        CauldronInteractions.ID_MAPPER.put("ice", map);
+    // See HoneyCauldronBlock.java's javadoc on this exact pattern.
+    public static final Map<Item, CauldronInteraction> ICE = CauldronInteraction.newInteractionMap();
 
-        map.put(Items.AIR, (_, level, pos, player, hand, stack) -> {
+    private static Map<Item, CauldronInteraction> createBehaviorMap() {
+        return ICE;
+    }
+
+    /** See HoneyCauldronBlock.registerInteractions()'s javadoc. */
+    public static void registerInteractions() {
+        ICE.put(Items.AIR, (state, level, pos, player, hand, stack) -> {
             if (!level.isClientSide()) {
                 player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, new ItemStack(Items.ICE)));
                 level.setBlockAndUpdate(pos, Blocks.CAULDRON.defaultBlockState());
@@ -56,30 +62,29 @@ public class IceCauldronBlock extends AbstractCauldronBlock {
             }
             return InteractionResult.SUCCESS;
         });
-        return map;
     }
 
-    protected void entityInside(@NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull Entity entity, InsideBlockEffectApplier handler, boolean bl) {
+    protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity, InsideBlockEffectApplier handler, boolean bl) {
        handler.apply(InsideBlockEffectType.FREEZE);
     }
 
     @Override
-    protected double getContentHeight(@NonNull BlockState state) {
+    protected double getContentHeight(BlockState state) {
         return 0.9375;
     }
 
     @Override
-    public boolean isFull(@NonNull BlockState state) {
+    public boolean isFull(BlockState state) {
         return true;
     }
 
     @Override
-    protected @NonNull VoxelShape getEntityInsideCollisionShape(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull Entity entity) {
+    protected VoxelShape getEntityInsideCollisionShape(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {
         return INSIDE_COLLISION_SHAPE;
     }
 
     @Override
-    protected int getAnalogOutputSignal(@NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos, @NonNull Direction direction) {
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
         return 3;
     }
 }

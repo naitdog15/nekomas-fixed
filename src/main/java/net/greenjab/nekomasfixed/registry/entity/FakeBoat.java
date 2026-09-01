@@ -1,8 +1,7 @@
 package net.greenjab.nekomasfixed.registry.entity;
 
-import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -10,19 +9,15 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.WaterAnimal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
-import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 
 public class FakeBoat extends Entity {
-	@Nullable
 	public BigBoat owner = null;
 	private int counter = 0;
 
@@ -30,19 +25,22 @@ public class FakeBoat extends Entity {
         super(fakeBoatEntityEntityType, level);
     }
 
+	// PORT: Entity#defineSynchedData() is abstract - FakeBoat extends Entity directly (like vanilla's
+	// own Boat), so there is no concrete super implementation to call (verified: Boat.defineSynchedData()
+	// itself does not call super either). Entity's own shared flags register through a separate,
+	// unconditional internal mechanism, not through this override.
 	@Override
-	protected void defineSynchedData(SynchedEntityData.@NonNull Builder builder) {
+	protected void defineSynchedData() {
 	}
 
 	@Override
-	protected void readAdditionalSaveData(@NonNull ValueInput view) {
+	protected void readAdditionalSaveData(CompoundTag tag) {
 	}
 
 	@Override
-	protected void addAdditionalSaveData(@NonNull ValueOutput view) {
+	protected void addAdditionalSaveData(CompoundTag tag) {
 	}
 
-	@Nullable
 	@Override
 	public ItemStack getPickResult() {
 		return (owner!=null)?this.owner.getPickResult():null;
@@ -54,14 +52,14 @@ public class FakeBoat extends Entity {
 	}
 
 	@Override
-	public boolean hurtServer(@NonNull ServerLevel level, @NonNull DamageSource source, float amount) {
+	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
 		if (owner==null || owner.getPassengers().contains(source.getEntity())) return false;
 		return owner.hurtServer(level, source, amount);
 	}
 	@Override
-	public @NonNull InteractionResult interact(@NonNull Player player, @NonNull InteractionHand hand, @NonNull Vec3 location) {
+	public InteractionResult interact(Player player, InteractionHand hand) {
 		if (owner==null || owner.getPassengers().contains(player)) return InteractionResult.PASS;
-		return owner.interact(player, hand, location);
+		return owner.interact(player, hand);
 	}
 
 	@Override
@@ -70,7 +68,7 @@ public class FakeBoat extends Entity {
 	}
 
 	@Override
-	public boolean canBeCollidedWith(@Nullable Entity entity) {
+	public boolean canBeCollidedWith(Entity entity) {
 		return true;
 	}
 
@@ -98,12 +96,16 @@ public class FakeBoat extends Entity {
 
 			for (Entity entity : list) {
 				if (!entity.hasPassenger(owner) && !owner.getPassengers().contains(entity)) {
+					// PORT: EntityTypeTags.CANNOT_BE_PUSHED_ONTO_BOATS doesn't exist on 1.20.1; excluding
+					// WaterAnimal directly is the closest available equivalent (matches vanilla Boat's own
+					// pre-tag push filter). hasEnoughSpaceFor was part of the removed ChestVehicle
+					// interface - getMaxPassengers() already accounts for hasChest(), so the passenger-count
+					// check above covers the same "is there room" gate.
 					if (bl
 							&& owner.getPassengers().size() < owner.getMaxPassengers()
 							&& !entity.isPassenger()
-							&& owner.hasEnoughSpaceFor(entity)
 							&& entity instanceof LivingEntity
-							&& !entity.is(EntityTypeTags.CANNOT_BE_PUSHED_ONTO_BOATS)) {
+							&& !(entity instanceof WaterAnimal)) {
 						entity.startRiding(owner);
 					} else {
 						this.push(entity);

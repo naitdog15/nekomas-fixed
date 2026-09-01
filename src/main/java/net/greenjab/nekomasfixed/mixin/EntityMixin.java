@@ -23,11 +23,20 @@ import net.greenjab.nekomasfixed.screen.config.ModConfigValues;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Part of the "keep and expect pain" set of mixins (SpottedSheepAccess verbatim port).
+ * 1.20.1 has no {@code spawnAtLocation(ServerLevel, ItemStack, Vec3)} overload (VERIFIED: only
+ * {@code (ItemLike)}, {@code (ItemLike,int)}, {@code (ItemStack)} and {@code (ItemStack,float)} exist
+ * in forge-1.20.1-mapped-src Entity.java) — retargeted onto {@code spawnAtLocation(ItemStack,float)},
+ * the terminal overload every other one delegates to. {@code thunderHit(ServerLevel, LightningBolt)}
+ * is unchanged. {@code Items.WOOL.white()}-style grouped sugar does not exist here; each colour is
+ * its own top-level constant ({@code Items.WHITE_WOOL}, ...).
+ */
 @Mixin(Entity.class)
 public abstract class EntityMixin {
 
-    @ModifyVariable(method = "spawnAtLocation(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/entity/item/ItemEntity;",
-            at = @At("HEAD"),argsOnly = true)
+    @ModifyVariable(method = "spawnAtLocation(Lnet/minecraft/world/item/ItemStack;F)Lnet/minecraft/world/entity/item/ItemEntity;",
+            at = @At("HEAD"), argsOnly = true)
     private ItemStack replaceSpottedSheepDrops(ItemStack itemStack) {
         if ((Object) this instanceof Sheep sheep) {
             if (((SpottedSheepAccess) sheep).nekomasfixed$isSpotted()) {
@@ -40,27 +49,27 @@ public abstract class EntityMixin {
 
     @Unique
     private Item getSpottedWoolItem(Item original) {
-        if (original == Items.WOOL.white()) return BlockRegistry.WHITE_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.orange()) return BlockRegistry.ORANGE_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.magenta()) return BlockRegistry.MAGENTA_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.lightBlue()) return BlockRegistry.LIGHT_BLUE_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.yellow()) return BlockRegistry.YELLOW_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.lime()) return BlockRegistry.LIME_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.pink()) return BlockRegistry.PINK_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.gray()) return BlockRegistry.GRAY_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.lightGray()) return BlockRegistry.LIGHT_GRAY_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.cyan()) return BlockRegistry.CYAN_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.purple()) return BlockRegistry.PURPLE_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.blue()) return BlockRegistry.BLUE_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.brown()) return BlockRegistry.BROWN_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.green()) return BlockRegistry.GREEN_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.red()) return BlockRegistry.RED_SPOTTED_WOOL.asItem();
-        if (original == Items.WOOL.black()) return BlockRegistry.BLACK_SPOTTED_WOOL.asItem();
+        if (original == Items.WHITE_WOOL) return BlockRegistry.WHITE_SPOTTED_WOOL.get().asItem();
+        if (original == Items.ORANGE_WOOL) return BlockRegistry.ORANGE_SPOTTED_WOOL.get().asItem();
+        if (original == Items.MAGENTA_WOOL) return BlockRegistry.MAGENTA_SPOTTED_WOOL.get().asItem();
+        if (original == Items.LIGHT_BLUE_WOOL) return BlockRegistry.LIGHT_BLUE_SPOTTED_WOOL.get().asItem();
+        if (original == Items.YELLOW_WOOL) return BlockRegistry.YELLOW_SPOTTED_WOOL.get().asItem();
+        if (original == Items.LIME_WOOL) return BlockRegistry.LIME_SPOTTED_WOOL.get().asItem();
+        if (original == Items.PINK_WOOL) return BlockRegistry.PINK_SPOTTED_WOOL.get().asItem();
+        if (original == Items.GRAY_WOOL) return BlockRegistry.GRAY_SPOTTED_WOOL.get().asItem();
+        if (original == Items.LIGHT_GRAY_WOOL) return BlockRegistry.LIGHT_GRAY_SPOTTED_WOOL.get().asItem();
+        if (original == Items.CYAN_WOOL) return BlockRegistry.CYAN_SPOTTED_WOOL.get().asItem();
+        if (original == Items.PURPLE_WOOL) return BlockRegistry.PURPLE_SPOTTED_WOOL.get().asItem();
+        if (original == Items.BLUE_WOOL) return BlockRegistry.BLUE_SPOTTED_WOOL.get().asItem();
+        if (original == Items.BROWN_WOOL) return BlockRegistry.BROWN_SPOTTED_WOOL.get().asItem();
+        if (original == Items.GREEN_WOOL) return BlockRegistry.GREEN_SPOTTED_WOOL.get().asItem();
+        if (original == Items.RED_WOOL) return BlockRegistry.RED_SPOTTED_WOOL.get().asItem();
+        if (original == Items.BLACK_WOOL) return BlockRegistry.BLACK_SPOTTED_WOOL.get().asItem();
 
-        if (original == ItemRegistry.AMBER_WOOL) return BlockRegistry.AMBER_SPOTTED_WOOL.asItem();
-        if (original == ItemRegistry.AQUA_WOOL) return BlockRegistry.AQUA_SPOTTED_WOOL.asItem();
-        if (original == ItemRegistry.INDIGO_WOOL) return BlockRegistry.INDIGO_SPOTTED_WOOL.asItem();
-        if (original == ItemRegistry.MAROON_WOOL) return BlockRegistry.MAROON_SPOTTED_WOOL.asItem();
+        if (original == ItemRegistry.AMBER_WOOL.get()) return BlockRegistry.AMBER_SPOTTED_WOOL.get().asItem();
+        if (original == ItemRegistry.AQUA_WOOL.get()) return BlockRegistry.AQUA_SPOTTED_WOOL.get().asItem();
+        if (original == ItemRegistry.INDIGO_WOOL.get()) return BlockRegistry.INDIGO_SPOTTED_WOOL.get().asItem();
+        if (original == ItemRegistry.MAROON_WOOL.get()) return BlockRegistry.MAROON_SPOTTED_WOOL.get().asItem();
 
         return null;
     }
@@ -78,13 +87,16 @@ public abstract class EntityMixin {
         }
     }
 
+    // Not a feature cut - this is a content-availability fact of
+    // the target MC version, the same category as the fallen_tree/jewel.json findings: copper
+    // armor (Items.COPPER_BOOTS/LEGGINGS/CHESTPLATE/HELMET) does not exist on 1.20.1 (VERIFIED: zero
+    // matches in forge-1.20.1-mapped-src Items.java) and this mod registers no copper-armor items of
+    // its own (VERIFIED: zero COPPER_* hits across ItemRegistry usage reachable from mixin/**), so
+    // there is currently no item that can occupy these slots and satisfy the check. The gate below
+    // (armor > 0) is therefore permanently false rather than deleted, keeping the thunder-buff
+    // mechanism structurally intact and a one-line restore once a copper-armor source exists.
     @Unique
     private static int getCopperArmor(LivingEntity entity) {
-        int i =0;
-        if (entity.getItemBySlot(EquipmentSlot.FEET).is(Items.COPPER_BOOTS)) i++;
-        if (entity.getItemBySlot(EquipmentSlot.LEGS).is(Items.COPPER_LEGGINGS)) i++;
-        if (entity.getItemBySlot(EquipmentSlot.CHEST).is(Items.COPPER_CHESTPLATE)) i++;
-        if (entity.getItemBySlot(EquipmentSlot.HEAD).is(Items.COPPER_HELMET)) i++;
-        return i;
+        return 0;
     }
 }

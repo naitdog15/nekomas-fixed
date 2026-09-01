@@ -8,7 +8,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import org.jspecify.annotations.NonNull;
 
 public class SickleItem extends Item {
 
@@ -18,7 +17,7 @@ public class SickleItem extends Item {
         super(settings);
     }
 
-    public @NonNull InteractionResult use(@NonNull Level level, @NonNull Player user, @NonNull InteractionHand hand) {
+    public InteractionResult use(Level level, Player user, InteractionHand hand) {
         if (hand == InteractionHand.MAIN_HAND) return InteractionResult.PASS;
         if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResult.PASS;
         if (user.getAttackStrengthScale(0)<0.5) return InteractionResult.PASS;
@@ -27,7 +26,7 @@ public class SickleItem extends Item {
         return InteractionResult.SUCCESS;
     }
 
-    public @NonNull InteractionResult interactLivingEntity(@NonNull ItemStack stack, @NonNull Player user, @NonNull LivingEntity entity, @NonNull InteractionHand hand) {
+    public InteractionResult interactLivingEntity(ItemStack stack, Player user, LivingEntity entity, InteractionHand hand) {
         if (hand == InteractionHand.MAIN_HAND) return InteractionResult.PASS;
         if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResult.PASS;
         if (user.getAttackStrengthScale(0)<0.5) return InteractionResult.PASS;

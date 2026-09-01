@@ -1,0 +1,76 @@
+package net.greenjab.nekomasfixed.render.entity.model;
+
+import net.greenjab.nekomasfixed.registry.entity.Moobloom.Moobloom;
+import net.minecraft.client.model.*;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.model.geom.PartPose;
+import net.minecraft.client.model.geom.builders.CubeListBuilder;
+import net.minecraft.client.model.geom.builders.LayerDefinition;
+import net.minecraft.client.model.geom.builders.MeshDefinition;
+import net.minecraft.client.model.geom.builders.PartDefinition;
+
+/**
+ * Render-state collapse: {@code QuadrupedModel<MoobloomRenderState>} →
+ * {@code QuadrupedModel<Moobloom>}. No {@code setupAnim} override existed, so QuadrupedModel's own
+ * leg-swing animation is unchanged. 1.20.1's {@code QuadrupedModel} constructor has no 1-arg overload
+ * (unlike 26.2's); the extra six params are the vanilla young/baby auto-scale knobs — passed as
+ * identity values (scaleHead=false, offsets=0, scales=1) because this mod renders babies with its own
+ * dedicated {@link BabyMoobloomModel} mesh swapped in by {@code MoobloomRenderer}, not vanilla's
+ * generic scale-down, so the built-in young-branch must be a no-op rather than double-applying.
+ */
+public class MoobloomModel extends QuadrupedModel<Moobloom> {
+
+    public MoobloomModel(ModelPart root) {
+        super(root, false, 0.0F, 0.0F, 1.0F, 1.0F, 0);
+    }
+
+    public static LayerDefinition getTexturedModelData() {
+        return LayerDefinition.create(getModelData(), 64, 64);
+    }
+
+    public static MeshDefinition getModelData() {
+        MeshDefinition modelData = new MeshDefinition();
+        PartDefinition modelPartData = modelData.getRoot();
+
+        modelPartData.addOrReplaceChild("bone", CubeListBuilder.create(), PartPose.offset(0.0F, 24.0F, 2.0F));
+
+        PartDefinition head =
+                modelPartData.addOrReplaceChild(
+                "head",
+                CubeListBuilder.create()
+                        .texOffs(0, 0)
+                        .addBox(-4.0F, -4.0F, -6.0F, 8.0F, 8.0F, 6.0F)
+                        .texOffs(1, 33)
+                        .addBox(-3.0F, 1.0F, -7.0F, 6.0F, 3.0F, 1.0F)
+                        .texOffs(22, 0)
+                        .addBox("right_horn", -5.0F, -5.0F, -5.0F, 1.0F, 3.0F, 1.0F)
+                        .texOffs(22, 0)
+                        .addBox("left_horn", 4.0F, -5.0F, -5.0F, 1.0F, 3.0F, 1.0F),
+                PartPose.offset(0.0F, 4.0F, -8.0F)
+        );
+
+        PartDefinition body = modelPartData.addOrReplaceChild("body",CubeListBuilder.create(),PartPose.offset(0.0F, 5.0F, 2.0F));
+        modelPartData.addOrReplaceChild("right_hind_leg", CubeListBuilder.create().texOffs(0, 16)
+                        .addBox(-2.0F, 0.0F, -2.0F, 4, 12, 4),PartPose.offset(-4.0F, 12.0F, 7.0F));
+        modelPartData.addOrReplaceChild("left_hind_leg",CubeListBuilder.create().texOffs(0, 16)
+                        .addBox(-2.0F, 0.0F, -2.0F, 4, 12, 4),PartPose.offset(4.0F, 12.0F, 7.0F));
+        modelPartData.addOrReplaceChild("right_front_leg",CubeListBuilder.create().texOffs(0, 16)
+                        .addBox(-2.0F, 0.0F, -2.0F, 4, 12, 4),PartPose.offset(-4.0F, 12.0F, -5.0F));
+        modelPartData.addOrReplaceChild("left_front_leg",CubeListBuilder.create().texOffs(0, 16)
+                        .addBox(-2.0F, 0.0F, -2.0F, 4, 12, 4),PartPose.offset(4.0F, 12.0F, -5.0F));
+
+        PartDefinition rotation = body.addOrReplaceChild("rotation", CubeListBuilder.create().texOffs(18, 4).addBox(-6.0F, -10.0F, -7.0F, 12.0F, 18.0F, 10.0F)
+                .texOffs(52, 0).addBox(-2.0F, 2.0F, -8.0F, 4.0F, 6.0F, 1.0F), PartPose.offsetAndRotation(0.0F, 0.0F, 0.0F, 1.5708F, 0.0F, 0.0F));
+
+        PartDefinition flower1 = rotation.addOrReplaceChild("flower1", CubeListBuilder.create().texOffs(0, 42).addBox(-7.975F, -16.0F, 1.2F, 16.0F, 16.0F, 0.0F), PartPose.offsetAndRotation(-2.025F, -2.0F, 2.8F, -1.5708F, 0.0F, 0.0F));
+        flower1.addOrReplaceChild("cube_r1", CubeListBuilder.create().texOffs(0, 26).addBox(0.0F, -8.0F, -8.0F, 0.0F, 16.0F, 16.0F), PartPose.offsetAndRotation(0.025F, -8.0F, 1.2F, 0.0F, 3.1416F, 0.0F));
+
+        PartDefinition flower2 = rotation.addOrReplaceChild("flower2", CubeListBuilder.create().texOffs(0, 42).addBox(-5.95F, -16.0F, 0.0F, 16.0F, 16.0F, 0.0F), PartPose.offsetAndRotation(2.95F, 5.0F, 3.0F, -1.5708F, 0.0F, 0.7854F));
+        flower2.addOrReplaceChild("cube_r2", CubeListBuilder.create().texOffs(0, 26).addBox(0.0F, -8.0F, -8.0F, 0.0F, 16.0F, 16.0F), PartPose.offsetAndRotation(2.05F, -8.0F, 0.0F, 0.0F, 3.1416F, 0.0F));
+
+        PartDefinition flower3 = head.addOrReplaceChild("flower3", CubeListBuilder.create().texOffs(0, 42).addBox(-8.0F, -16.0F, 0.0F, 16.0F, 16.0F, 0.0F), PartPose.offsetAndRotation(0.0F, -4.0F, -3.2F, 0.0F, -0.576F, 0.0F));
+        flower3.addOrReplaceChild("cube_r3", CubeListBuilder.create().texOffs(0, 26).addBox(0.0F, -8.0F, -8.0F, 0.0F, 16.0F, 16.0F), PartPose.offsetAndRotation(0.0F, -8.0F, 0.0F, 0.0F, 3.1416F, 0.0F));
+
+        return modelData;
+    }
+}

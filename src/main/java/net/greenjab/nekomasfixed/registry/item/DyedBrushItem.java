@@ -27,7 +27,6 @@ import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
-import org.jspecify.annotations.NonNull;
 
 public class DyedBrushItem extends Item {
     AllDyes color;
@@ -42,7 +41,7 @@ public class DyedBrushItem extends Item {
     }
 
     @Override
-    public @NonNull InteractionResult useOn(UseOnContext context) {
+    public InteractionResult useOn(UseOnContext context) {
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
         BlockState state = level.getBlockState(pos);
@@ -124,7 +123,7 @@ public class DyedBrushItem extends Item {
                     if (level.getBlockEntity(pos) instanceof ShulkerBoxBlockEntity newshulkerBoxBlockEntity) {
                         for (int i = 0; i < shulkerBoxBlockEntity.getContainerSize(); i++)
                             newshulkerBoxBlockEntity.setItem(i, shulkerBoxBlockEntity.getItem(i));
-                        newshulkerBoxBlockEntity.name = shulkerBoxBlockEntity.getCustomName();
+                        newshulkerBoxBlockEntity.setCustomName(shulkerBoxBlockEntity.getCustomName());
                     }
                 }
                 used = true;

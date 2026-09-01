@@ -16,7 +16,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jspecify.annotations.NonNull;
 
 public class GeyserBlock extends Block {
 
@@ -25,13 +24,13 @@ public class GeyserBlock extends Block {
     }
 
     @Override
-    public @NonNull VoxelShape getInteractionShape(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos) {return Shapes.block();}
+    public VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos pos) {return Shapes.block();}
 
     @Override
-    public @NonNull VoxelShape getShape(@NonNull BlockState state, @NonNull BlockGetter level, @NonNull BlockPos pos, @NonNull CollisionContext context) {return Shapes.block();}
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {return Shapes.block();}
 
     @Override
-    public void stepOn(Level level, @NonNull BlockPos pos, @NonNull BlockState state, Entity entity) {
+    public void stepOn(Level level, BlockPos pos, BlockState state, Entity entity) {
             entity.igniteForSeconds(3);
             entity.setDeltaMovement(entity.getDeltaMovement().x, 1.2, entity.getDeltaMovement().z);
             if(level.isClientSide()){
@@ -44,14 +43,14 @@ public class GeyserBlock extends Block {
     }
 
     @Override
-    public void animateTick(@NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull RandomSource random) {
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         if (level.isClientSide()) {
             level.addAlwaysVisibleParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, true, pos.getX() + 0.5 + random.nextDouble()/2 * (random.nextBoolean()?1:-1), pos.getY() + random.nextDouble() + random.nextDouble(), pos.getZ() + 0.5 + random.nextDouble()/2 * (random.nextBoolean()?1:-1), 0.0, 0.07, 0.0);
         }
     }
 
     @Override
-    public @NonNull BlockState playerWillDestroy(Level level, @NonNull BlockPos pos, @NonNull BlockState state, @NonNull Player player) {
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide()) {
             ItemStack tool = player.getMainHandItem();
             boolean silkTouch =EnchantmentHelper.getItemEnchantmentLevel(level.registryAccess()

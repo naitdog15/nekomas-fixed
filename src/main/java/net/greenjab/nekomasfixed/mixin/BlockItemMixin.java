@@ -2,8 +2,8 @@ package net.greenjab.nekomasfixed.mixin;
 
 import net.greenjab.nekomasfixed.registry.block.ClamBlock;
 import net.greenjab.nekomasfixed.registry.other.AnimalComponent;
-import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
 import net.greenjab.nekomasfixed.util.ModTags;
+import net.greenjab.nekomasfixed.util.StackData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -18,14 +18,18 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+// onDestroyed(ItemEntity) and updateBlockStateFromTag(BlockPos, Level, ItemStack, BlockState) are
+// both unchanged (VERIFIED forge-1.20.1-mapped-src BlockItem.java:123,223). ComponentRegistry.ANIMAL/
+// CLAM_STATE (DataComponentTypes, 1.20.5+) become StackData calls (§9.1); .getFirst() -> .get(0)
+// (Java 17 sweep, §4.3 — a real java.util.List, not one of the 3 legitimate Mojang Pair.getFirst()s).
 @Mixin(BlockItem.class)
 public class BlockItemMixin {
 
     @Inject(method="onDestroyed", at = @At( value = "HEAD"), cancellable = true)
     private void releaseAnimalOnNautilusDestroyed(ItemEntity entity, CallbackInfo ci) {
-        AnimalComponent animalComponent = entity.getItem().get(ComponentRegistry.ANIMAL);
-        if (animalComponent != null && !animalComponent.animal().isEmpty()) {
-            AnimalComponent.StoredEntityData animal = animalComponent.animal().getFirst();
+        AnimalComponent animalComponent = StackData.readAnimal(entity.getItem());
+        if (!animalComponent.animal().isEmpty()) {
+            AnimalComponent.StoredEntityData animal = animalComponent.animal().get(0);
             Level level = entity.level();
             BlockPos pos = entity.blockPosition();
             Entity releasedEntity = animal.loadEntity(level);
@@ -43,7 +47,7 @@ public class BlockItemMixin {
     @Inject(method="updateBlockStateFromTag", at = @At( value = "HEAD"))
     private void placeOpenClam(BlockPos pos, Level level, ItemStack itemStack, BlockState placedState, CallbackInfoReturnable<BlockState> cir) {
         if (itemStack.is(ModTags.CLAMTAG)) {
-            Integer i = itemStack.getOrDefault(ComponentRegistry.CLAM_STATE, 0);
+            int i = StackData.readClamState(itemStack);
             if (i > 0) {
                 placedState = placedState.setValue(ClamBlock.OPEN, true);
                 level.setBlock(pos, placedState, Block.UPDATE_CLIENTS);

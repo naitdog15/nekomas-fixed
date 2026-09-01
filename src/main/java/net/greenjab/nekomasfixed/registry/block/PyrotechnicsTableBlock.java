@@ -15,7 +15,6 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.BlockHitResult;
-import org.jspecify.annotations.NonNull;
 
 public class PyrotechnicsTableBlock extends HorizontalDirectionalBlock {
 
@@ -27,11 +26,11 @@ public class PyrotechnicsTableBlock extends HorizontalDirectionalBlock {
     }
 
     @Override
-    protected @NonNull MapCodec<? extends HorizontalDirectionalBlock> codec() {
+    protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
         return CODEC;
     }
 
-    protected @NonNull InteractionResult useWithoutItem(@NonNull BlockState state, Level level, @NonNull BlockPos pos, @NonNull Player player, @NonNull BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (!level.isClientSide()) {
             player.openMenu(state.getMenuProvider(level, pos));
         }
@@ -40,8 +39,8 @@ public class PyrotechnicsTableBlock extends HorizontalDirectionalBlock {
     }
 
     @Override
-    protected MenuProvider getMenuProvider(@NonNull BlockState state, @NonNull Level level, @NonNull BlockPos pos) {
-        return new SimpleMenuProvider((syncId, inventory, _) -> new PyrotechnicsMenu(syncId, inventory), TITLE);
+    protected MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
+        return new SimpleMenuProvider((syncId, inventory, player) -> new PyrotechnicsMenu(syncId, inventory), TITLE);
     }
 
     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
