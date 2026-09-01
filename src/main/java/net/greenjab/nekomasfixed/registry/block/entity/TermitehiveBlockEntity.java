@@ -31,12 +31,10 @@ import java.util.Set;
 public class TermitehiveBlockEntity extends BlockEntity {
     static final Logger LOGGER = LogUtils.getLogger();
     /**
-     * The 1.20.1 key names, each
-     * re-verified against forge-1.20.1-mapped-src. See
+     * Entity NBT that means nothing once the termite is inside the hive, and would only bloat the
+     * stored tag. Mirrors
      * {@link net.greenjab.nekomasfixed.registry.other.AnimalComponent#IRRELEVANT_ANIMAL_NBT_KEYS}
-     * for the full mapping table; this list is that one plus the two pollination keys.
-     * {@code equipment} (26.2's single merged equipment component) splits into 1.20.1's two
-     * {@code ArmorItems}/{@code HandItems} lists — Mob.java:380,392.
+     * plus the two pollination counters.
      */
     static final List<String> IRRELEVANT_TERMITE_NBT_KEYS = Arrays.asList(
             "Air",
@@ -73,7 +71,7 @@ public class TermitehiveBlockEntity extends BlockEntity {
     private final List<TermitehiveBlockEntity.Termite> termites = Lists.newArrayList();
 
     public TermitehiveBlockEntity(BlockPos pos, BlockState state) {
-        super(BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY, pos, state);
+        super(BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY.get(), pos, state);
     }
 
     @Override
@@ -108,7 +106,7 @@ public class TermitehiveBlockEntity extends BlockEntity {
         if (this.termites.size() < 2) {
             entity.stopRiding();
             entity.ejectPassengers();
-            entity.dropLeash();
+            entity.dropLeash(true, true);
             this.addTermite(TermitehiveBlockEntity.TermiteData.of(entity));
             if (this.level != null) {
 
@@ -156,7 +154,7 @@ public class TermitehiveBlockEntity extends BlockEntity {
                     double e = pos.getX() + 0.5 + d * direction.getStepX();
                     double g = pos.getY() + 0.5 - entity.getBbHeight() / 2.0F;
                     double h = pos.getZ() + 0.5 + d * direction.getStepZ();
-                    entity.snapTo(e, g, h, entity.getYRot(), entity.getXRot());
+                    entity.moveTo(e, g, h, entity.getYRot(), entity.getXRot());
                 }
 
                 level.playSound(null, pos, SoundEvents.BEEHIVE_EXIT, SoundSource.BLOCKS, 1.0F, 1.0F);
@@ -198,11 +196,6 @@ public class TermitehiveBlockEntity extends BlockEntity {
         }
     }
 
-    // See NautilusBlockEntity.java's javadoc on this same pair - the
-    // ValueInput/ValueOutput + applyImplicitComponents/collectImplicitComponents/
-    // removeComponentsFromTag trio are all 1.21+; load/saveAdditional alone already cover both the
-    // world-save case and (via BlockEntity#saveToItem's own default, unmodified body) the
-    // item-carry case on 1.20.1.
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
@@ -213,9 +206,8 @@ public class TermitehiveBlockEntity extends BlockEntity {
         }
     }
 
-    // This is the second "unguarded even when the list is empty"
-    // site (26.2 source: TermitehiveBlockEntity.java:225's collectImplicitComponents). Guarded by
-    // the `if` below - an empty termite hive item/block writes no "termites" key at all.
+    // No key at all when the hive is empty, so nothing copying this block entity onto a stack
+    // stamps it with a leftover empty list.
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
@@ -226,7 +218,8 @@ public class TermitehiveBlockEntity extends BlockEntity {
         }
     }
 
-    private List<TermitehiveBlockEntity.TermiteData> createTermitesData() {
+    /** What a dropped or picked hive carries its occupants in. */
+    public List<TermitehiveBlockEntity.TermiteData> createTermitesData() {
         return this.termites.stream().map(TermitehiveBlockEntity.Termite::createData).toList();
     }
 
@@ -255,10 +248,9 @@ public class TermitehiveBlockEntity extends BlockEntity {
     }
 
     /**
-     * REWRITTEN like {@code AnimalComponent.StoredEntityData} (same
-     * dependency: {@code TypedEntityData}, {@code ProblemReporter.ScopedCollector}, {@code
-     * TagValueOutput} do not exist on 1.20.1). Wraps a plain {@link CompoundTag} carrying its own
-     * {@code "id"} key (via {@link EntityNbtHelper}) instead of a typed wrapper.
+     * One termite parked in the hive. The entity is kept as a plain {@link CompoundTag} that
+     * carries its own {@code "id"} key, written and read back through {@link EntityNbtHelper} -
+     * the same shape {@code AnimalComponent.StoredEntityData} uses.
      */
     public record TermiteData(CompoundTag entityData, int ticksInHive, int minTicksInHive) {
         public static final Codec<TermitehiveBlockEntity.TermiteData> CODEC = RecordCodecBuilder.create(
@@ -270,8 +262,6 @@ public class TermitehiveBlockEntity extends BlockEntity {
                         .apply(instance, TermitehiveBlockEntity.TermiteData::new)
         );
         public static final Codec<List<TermitehiveBlockEntity.TermiteData>> LIST_CODEC = CODEC.listOf();
-        // PACKET_CODEC deleted, not ported: 1.20.1 syncs the whole stack/block-entity tag to
-        // the client for free, so a dedicated network codec for this record is unnecessary.
 
         public static TermitehiveBlockEntity.TermiteData of(Entity entity) {
             CompoundTag tag = EntityNbtHelper.store(entity, Set.copyOf(TermitehiveBlockEntity.IRRELEVANT_TERMITE_NBT_KEYS));

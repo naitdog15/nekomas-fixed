@@ -24,11 +24,10 @@ import java.util.Map;
  * both mutate vanilla's non-thread-safe global maps ({@code CauldronInteraction}'s and
  * {@code DispenserBlock.DISPENSER_REGISTRY}) after all {@code RegisterEvent}s have run.
  * <p>
- * NOT wired here, deliberately: {@code EntityTypeRegistry.registerAttributes(event)}.
- * {@link net.greenjab.nekomasfixed.registry.entity.EntityAttributesAndSpawns} already carries a live
- * {@code EntityAttributeCreationEvent} handler covering the same 8 entity types; calling both would
- * double-{@code put} the same attribute suppliers. That method is currently dead code, left for a
- * later cleanup pass rather than a behaviour change.
+ * No {@code EntityAttributeCreationEvent} handler here, deliberately:
+ * {@link net.greenjab.nekomasfixed.registry.entity.EntityAttributesAndSpawns} is the mod's single
+ * handler for all 8 entity types, and a second one would double-{@code put} the same attribute
+ * suppliers.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ModBusEvents {

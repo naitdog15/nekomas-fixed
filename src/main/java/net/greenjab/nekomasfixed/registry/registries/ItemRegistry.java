@@ -4,10 +4,10 @@ import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.registry.item.*;
 import net.greenjab.nekomasfixed.util.*;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Util;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.food.FoodProperties;
@@ -15,9 +15,9 @@ import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.BoatItem;
 import net.minecraft.world.item.BundleItem;
 import net.minecraft.world.item.DoubleHighBlockItem;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.HangingSignItem;
 import net.minecraft.world.item.Item;
@@ -41,7 +41,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * DeferredRegister&lt;Item&gt; conversion, the largest single field in this mechanical change (roughly
+ * DeferredRegister&lt;Item&gt; conversion — by far the biggest file in the registry package (roughly
  * 580 fields / 370 call sites). Every {@code register(...)} overload below defers both the
  * block/entity-type cross-reference AND the id lookup into the supplier Forge invokes during
  * {@code RegisterEvent<Item>} - see BlockRegistry.java's javadoc for the exact trap
@@ -53,10 +53,10 @@ import java.util.function.Supplier;
  * every {@code .component(...)}/{@code .delayedComponent(...)} call in the 26.2 source had to be
  * either (a) dropped outright where it named this mod's OWN now-deleted {@code ComponentRegistry}
  * (StackData's read-time default already reproduces the "declared default" behaviour those calls
- * expressed - see StackData.java), or (b) dropped as a genuine, currently-unresolved parity gap
- * where it named a VANILLA post-1.20.1 component with no Properties-level substitute here
- * (Equippable, BlocksAttacks, Tool, Weapon, humanoidArmor). Each such drop is commented at its call
- * site with "DROPPED" and its own reason - not silently lost.
+ * expressed - see StackData.java), or (b) dropped as a real, still-unresolved parity gap where it
+ * named a VANILLA post-1.20.1 component with no Properties-level substitute here (Equippable,
+ * BlocksAttacks, Tool, Weapon, humanoidArmor). Each such drop is marked "DROPPED" at its call site
+ * with its own reason.
  */
 public class ItemRegistry {
 
@@ -83,11 +83,9 @@ public class ItemRegistry {
     public static final RegistryObject<Item> KILN = register(BlockRegistry.KILN);
     public static final RegistryObject<Item> PYROTECHNICS_TABLE = register(BlockRegistry.PYROTECHNICS_TABLE);
     // ENDERMAN_HEAD's factory reads WALL_ENDERMAN_HEAD.get() - single-lambda form (BlockRegistry.java
-    // javadoc). DROPPED (Sec9): Waypoint.addHideAttribute(...) (26.x waypoint system, no 1.20.1
-    // analogue) and .equippableUnswappable(EquipmentSlot.HEAD) (the "right-click to wear" behaviour
-    // that call gave for free is 1.20.5+ API; on 1.20.1 the equivalent is overriding
-    // Item#getEquipmentSlot(ItemStack), which needs a dedicated Item subclass this pass does not add -
-    // named gap, not silently dropped).
+    // javadoc). DROPPED: Waypoint.addHideAttribute(...) - 26.x waypoint system, no 1.20.1
+    // analogue. Wearing the head is not a Properties setting on this version: AbstractEndermanHeadBlock
+    // implements Equipable and reports the HEAD slot, exactly as vanilla's own skull blocks do.
     public static final RegistryObject<Item> ENDERMAN_HEAD = register(BlockRegistry.ENDERMAN_HEAD,
             (block, settings) -> new StandingAndWallBlockItem(block, BlockRegistry.WALL_ENDERMAN_HEAD.get(), settings, Direction.DOWN),
             new Item.Properties().rarity(Rarity.UNCOMMON));
@@ -97,7 +95,7 @@ public class ItemRegistry {
     public static final RegistryObject<Item> TARGET_DUMMY = register("target_dummy", TargetDummyItem::new, new Item.Properties().stacksTo(1));
     // TURTLE_CHESTPLATE/LEGGINGS/BOOTS: ArmorMaterials.TURTLE already carries real defense values
     // for all four slots on 1.20.1 (verified against forge-1.20.1-mapped-src), not just the vanilla
-    // Turtle Helmet's slot - so this is a straight retarget, not new construction. DROPPED (Sec9) on
+    // Turtle Helmet's slot - so this is a straight retarget, not new construction. DROPPED on
     // all three: .humanoidArmor(...) (1.20.5+ Properties convenience; 1.20.1 uses new ArmorItem(...)
     // directly instead).
     public static final RegistryObject<Item> TURTLE_CHESTPLATE = register("turtle_chestplate", settings -> new ArmorItem(ArmorMaterials.TURTLE, ArmorItem.Type.CHESTPLATE, settings), new Item.Properties());
@@ -105,9 +103,8 @@ public class ItemRegistry {
     public static final RegistryObject<Item> TURTLE_BOOTS = register("turtle_boots", settings -> new ArmorItem(ArmorMaterials.TURTLE, ArmorItem.Type.BOOTS, settings), new Item.Properties());
 
     // Sampled from each mob's own texture (background = most frequent opaque colour;
-    // highlight = most frequent colour >=60 Euclidean RGB distance from background), independently
-    // reproduced (sample_spawn_eggs.py) against the same source textures and confirmed to produce
-    // byte-identical hex values for all 14 ints. ForgeSpawnEggItem (not vanilla SpawnEggItem, which
+    // highlight = most frequent colour >=60 Euclidean RGB distance from background), so the hex
+    // values below fall straight out of the textures. ForgeSpawnEggItem (not vanilla SpawnEggItem, which
     // indexes a static BY_ID map at construction time before modded EntityTypes exist) takes the
     // EntityType RegistryObject directly as its Supplier - no .get() needed at this call site, the
     // one place RegistryObject's supplier-ness pays for itself.
@@ -115,16 +112,22 @@ public class ItemRegistry {
     public static final RegistryObject<Item> DRENCHED_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.DRENCHED, "drenched", 0x817F65, 0xBAAC9A);
     public static final RegistryObject<Item> RIME_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.RIME, "rime", 0x527D7E, 0x108C9B);
     public static final RegistryObject<Item> DERELICT_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.DERELICT, "derelict", 0x3E6A2A, 0x005B57);
-    public static final RegistryObject<Item> ANCHOR = register("anchor", AnchorItem::new, ModItemSettings.anchor(12.0f, -3.5f));
+    public static final RegistryObject<Item> ANCHOR = register("anchor", AnchorItem::new, ModItemSettings.anchor(AnchorItem.DAMAGE, AnchorItem.SPEED));
     public static final RegistryObject<Item> SUSPICIOUS_SPIDER_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.SUSPICIOUS_SPIDER, "suspicious_spider", 0x322B26, 0x605448);
     public static final RegistryObject<Item> WILDFIRE_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.WILDFIRE, "wildfire", 0x5F0201, 0xFFF847);
-    // DROPPED (Sec9): .delayedComponent(DataComponents.DAMAGE_RESISTANT, ctx -> new
-    // DamageResistant(ctx.getOrThrow(DamageTypeTags.IS_EXPLOSION))) on all three smithing templates
-    // below (NETHER_HEART/JEWEL_ARMOR_TRIM_SMITHING_TEMPLATE/CROWN_SMITHING_TEMPLATE) - granular
-    // per-damage-type resistance is 1.20.5+; .fireResistant() (kept) still protects against fire/lava
-    // as it always did, just not specifically against explosions as an item entity.
+    // All three smithing templates below (NETHER_HEART, JEWEL_ARMOR_TRIM_SMITHING_TEMPLATE,
+    // CROWN_SMITHING_TEMPLATE) lose their rarity and fire/explosion resistance: 1.20.1's
+    // SmithingTemplateItem bakes its own `new Item.Properties()` and has no Properties-taking
+    // constructor at all, so there is nowhere to hand those settings. They behave exactly like
+    // vanilla 1.20.1's own templates. That constructor also takes one Component more than the newer
+    // one - an "upgrade description" tooltip line that later versions replaced with the item's own
+    // name - and nothing in the source supplies that text, so it stays empty here.
+    // The empty-slot icons every template below passes are BLOCK-atlas sprite ids on 1.20.1 (Slot#
+    // getNoItemIcon pairs them with InventoryMenu.BLOCK_ATLAS), not GUI-atlas ones - there is no GUI
+    // sprite atlas until 1.20.2. The mod's own icons keep their container/slot/* ids and are stitched
+    // in by assets/minecraft/atlases/blocks.json; vanilla's ingot icon is item/empty_slot_ingot.
     public static final RegistryObject<Item> NETHER_HEART = register(
-            "nether_heart", settings -> new SmithingTemplateItem(
+            "nether_heart", () -> new SmithingTemplateItem(
                     Component.translatable(
                             Util.makeDescriptionId("item", NekomasFixed.id("smithing_template.ingredients_shield_trident"))
                     ).withStyle(ChatFormatting.BLUE),
@@ -133,40 +136,40 @@ public class ItemRegistry {
                     ).withStyle(ChatFormatting.BLUE),
                     Component.nullToEmpty(""),
                     Component.nullToEmpty(""),
+                    Component.nullToEmpty(""),
                     List.of(NekomasFixed.id("container/slot/trident"), NekomasFixed.id("container/slot/shield")),
-                    List.of(ResourceLocation.withDefaultNamespace("container/slot/ingot")),
-                    settings), new Item.Properties().rarity(Rarity.UNCOMMON).fireResistant()
+                    List.of(ResourceLocation.withDefaultNamespace("item/empty_slot_ingot")))
     );
-    // DROPPED (Sec9): .attributes(WildfireTridentItem.createAttributeModifiers()) and
-    // .component(DataComponents.TOOL, ...)/.component(DataComponents.WEAPON, ...) - attribute
-    // modifiers and mining/attack tool behaviour on 1.20.1 are expressed as overrides
-    // (Item#getDefaultAttributeModifiers(EquipmentSlot), TieredItem-style mining config) on the item
-    // class itself, not Properties builder calls. WildfireTridentItem.java (this package's own file)
-    // still defines createAttributeModifiers()/createToolComponent() as dead code pending that
-    // override being written - named gap, see pass-1 report.
+    // DROPPED: .attributes(...) and .component(DataComponents.TOOL, ...)/.component(
+    // DataComponents.WEAPON, ...) - attribute modifiers and mining/attack tool behaviour on 1.20.1
+    // are expressed as overrides on the item class, not Properties builder calls. The trident's
+    // modifiers live in WildfireTridentItem#getDefaultAttributeModifiers(EquipmentSlot).
     public static final RegistryObject<Item> WILDFIRE_TRIDENT = register("wildfire_trident", WildfireTridentItem::new, new Item.Properties()
             .rarity(Rarity.RARE).durability(1000).fireResistant());
-    // DROPPED: .equippableUnswappable(EquipmentSlot.OFFHAND) (see ENDERMAN_HEAD's note) and
-    // .delayedComponent(DataComponents.BLOCKS_ATTACKS, ...)/.component(DataComponents.BREAK_SOUND,
-    // ...) - the configurable shield-blocking-curve system is 1.21.2+ with no 1.20.1 analogue at
-    // all (a named cut candidate); WildfireShieldItem.java keeps whatever blocking behaviour it
-    // inherits from its existing shield-item base class.
+    // .equippableUnswappable(EquipmentSlot.OFFHAND) needs nothing here: 1.20.1's ShieldItem already
+    // implements Equipable and reports the OFFHAND slot, and its use() blocks rather than swapping.
+    // DROPPED: .delayedComponent(DataComponents.BLOCKS_ATTACKS, ...)/.component(DataComponents
+    // .BREAK_SOUND, ...) - the configurable shield-blocking-curve system is 1.21.2+ with no 1.20.1
+    // analogue at all; WildfireShieldItem keeps ShieldItem's own blocking instead.
     public static final RegistryObject<Item> WILDFIRE_SHIELD = register("wildfire_shield", WildfireShieldItem::new,
             new Item.Properties().rarity(Rarity.RARE).durability(336).fireResistant());
-    public static final RegistryObject<Item> JEWEL_ARMOR_TRIM_SMITHING_TEMPLATE = register("jewel_armor_trim_smithing_template", SmithingTemplateItem::createArmorTrimTemplate, new Item.Properties().rarity(Rarity.UNCOMMON).fireResistant());
+    // The trim pattern this template applies is data/nekomasfixed/trim_pattern/jewel.json.
+    public static final RegistryObject<Item> JEWEL_ARMOR_TRIM_SMITHING_TEMPLATE = register("jewel_armor_trim_smithing_template",
+            () -> SmithingTemplateItem.createArmorTrimTemplate(NekomasFixed.id("jewel")));
 
-    public static final RegistryObject<Item> CROWN_SMITHING_TEMPLATE = register("crown_smithing_template", settings ->
+    public static final RegistryObject<Item> CROWN_SMITHING_TEMPLATE = register("crown_smithing_template", () ->
             new SmithingTemplateItem(Component.translatable(Util.makeDescriptionId("item", NekomasFixed.id("helmets")))
                     .withStyle(ChatFormatting.BLUE), Component.translatable(Util.makeDescriptionId("item", NekomasFixed.id("nether_heart")))
-                    .withStyle(ChatFormatting.BLUE), Component.nullToEmpty(""), Component.nullToEmpty(""), List.of(NekomasFixed.id("container/slot/helmet")),
-                    List.of(NekomasFixed.id("container/slot/nether_heart")), settings), new Item.Properties().rarity(Rarity.UNCOMMON).fireResistant());
+                    .withStyle(ChatFormatting.BLUE), Component.nullToEmpty(""), Component.nullToEmpty(""), Component.nullToEmpty(""),
+                    List.of(NekomasFixed.id("container/slot/helmet")),
+                    List.of(NekomasFixed.id("container/slot/nether_heart"))));
     // Crowns: new ArmorItem(...) directly (1.20.1 has no .humanoidArmor(...) Properties method -
     // DROPPED on all five, along with .component(DataComponents.EQUIPPABLE, ...): the equip
     // SOUND now comes from each ArmorMaterial's own getEquipSound(), and the custom render layer is
     // EquipmentLayerRendererMixin (@ModifyExpressionValue on EquipmentAssetManager#get), not a
     // Properties declaration - so nothing here is actually lost, just relocated). COPPER has no
     // vanilla 1.20.1 ArmorMaterials constant (it is a new tier this mod adds) - see
-    // ModArmorMaterials.java for the placeholder values and why they are not a balance decision.
+    // ModArmorMaterials.java, whose COPPER numbers are provisional.
     public static final RegistryObject<Item> COPPER_CROWN = register("copper_crown", settings -> new ArmorItem(ModArmorMaterials.COPPER, ArmorItem.Type.HELMET, settings), new Item.Properties());
     public static final RegistryObject<Item> IRON_CROWN = register("iron_crown", settings -> new ArmorItem(ArmorMaterials.IRON, ArmorItem.Type.HELMET, settings), new Item.Properties());
     public static final RegistryObject<Item> GOLDEN_CROWN = register("golden_crown", settings -> new ArmorItem(ArmorMaterials.GOLD, ArmorItem.Type.HELMET, settings), new Item.Properties());
@@ -174,13 +177,13 @@ public class ItemRegistry {
     public static final RegistryObject<Item> NETHERITE_CROWN = register("netherite_crown", settings -> new ArmorItem(ArmorMaterials.NETHERITE, ArmorItem.Type.HELMET, settings), new Item.Properties());
 
     public static final RegistryObject<Item> SLINGSHOT = register("slingshot", SlingshotItem::new, new Item.Properties().durability(384));
-    public static final RegistryObject<Item> WOODEN_SICKLE = register("wooden_sickle", SickleItem::new, ModItemSettings.sickle(Tiers.WOOD, SickleItem.SPEED));
-    public static final RegistryObject<Item> STONE_SICKLE = register("stone_sickle", SickleItem::new, ModItemSettings.sickle(Tiers.STONE, SickleItem.SPEED));
-    public static final RegistryObject<Item> COPPER_SICKLE = register("copper_sickle", SickleItem::new, ModItemSettings.sickle(Tiers.STONE, SickleItem.SPEED));
-    public static final RegistryObject<Item> IRON_SICKLE = register("iron_sickle", SickleItem::new, ModItemSettings.sickle(Tiers.IRON, SickleItem.SPEED));
-    public static final RegistryObject<Item> GOLDEN_SICKLE = register("golden_sickle", SickleItem::new, ModItemSettings.sickle(Tiers.GOLD, SickleItem.SPEED));
-    public static final RegistryObject<Item> DIAMOND_SICKLE = register("diamond_sickle", SickleItem::new, ModItemSettings.sickle(Tiers.DIAMOND, SickleItem.SPEED));
-    public static final RegistryObject<Item> NETHERITE_SICKLE = register("netherite_sickle", SickleItem::new, ModItemSettings.sickle(Tiers.NETHERITE, SickleItem.SPEED).fireResistant());
+    public static final RegistryObject<Item> WOODEN_SICKLE = register("wooden_sickle", settings -> new SickleItem(Tiers.WOOD, settings), ModItemSettings.sickle(Tiers.WOOD, SickleItem.SPEED));
+    public static final RegistryObject<Item> STONE_SICKLE = register("stone_sickle", settings -> new SickleItem(Tiers.STONE, settings), ModItemSettings.sickle(Tiers.STONE, SickleItem.SPEED));
+    public static final RegistryObject<Item> COPPER_SICKLE = register("copper_sickle", settings -> new SickleItem(Tiers.STONE, settings), ModItemSettings.sickle(Tiers.STONE, SickleItem.SPEED));
+    public static final RegistryObject<Item> IRON_SICKLE = register("iron_sickle", settings -> new SickleItem(Tiers.IRON, settings), ModItemSettings.sickle(Tiers.IRON, SickleItem.SPEED));
+    public static final RegistryObject<Item> GOLDEN_SICKLE = register("golden_sickle", settings -> new SickleItem(Tiers.GOLD, settings), ModItemSettings.sickle(Tiers.GOLD, SickleItem.SPEED));
+    public static final RegistryObject<Item> DIAMOND_SICKLE = register("diamond_sickle", settings -> new SickleItem(Tiers.DIAMOND, settings), ModItemSettings.sickle(Tiers.DIAMOND, SickleItem.SPEED));
+    public static final RegistryObject<Item> NETHERITE_SICKLE = register("netherite_sickle", settings -> new SickleItem(Tiers.NETHERITE, settings), ModItemSettings.sickle(Tiers.NETHERITE, SickleItem.SPEED).fireResistant());
 
     public static final RegistryObject<Item> SWEETBERRY_CAKE = register(BlockRegistry.SWEETBERRY_CAKE, new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> PAN_CAKE = register(BlockRegistry.PAN_CAKE, new Item.Properties().stacksTo(1));
@@ -207,22 +210,23 @@ public class ItemRegistry {
     public static final RegistryObject<Item> BAOBAB_LEAVES = register(BlockRegistry.BAOBAB_LEAVES);
     public static final RegistryObject<Item> BAOBAB_SAPLING = register(BlockRegistry.BAOBAB_SAPLING);
     public static final RegistryObject<Item> BAOBAB_SEEDS = register("baobab_seeds", BaobabSeedsItem::new, new Item.Properties().stacksTo(64));
-    public static final FoodProperties BAOBAB_FRUIT_FOOD = new FoodProperties.Builder().nutrition(4).saturationModifier(0.3F).build();
+    public static final FoodProperties BAOBAB_FRUIT_FOOD = new FoodProperties.Builder().nutrition(4).saturationMod(0.3F).build();
     public static final RegistryObject<Item> BAOBAB_FRUIT = register("baobab_fruit", new Item.Properties().food(BAOBAB_FRUIT_FOOD));
     public static final RegistryObject<Item> ROPE = register(BlockRegistry.ROPE, RopeItem::new);
     public static final RegistryObject<Item> BAOBAB_SHELF = register(BlockRegistry.BAOBAB_SHELF);
     // BAOBAB_SIGN/BAOBAB_HANGING_SIGN reference their wall variants - single-lambda form.
     public static final RegistryObject<Item> BAOBAB_SIGN = register(BlockRegistry.BAOBAB_SIGN,
-            (block, settings) -> new SignItem(block, BlockRegistry.BAOBAB_WALL_SIGN.get(), settings), new Item.Properties().stacksTo(16));
+            (block, settings) -> new SignItem(settings, block, BlockRegistry.BAOBAB_WALL_SIGN.get()), new Item.Properties().stacksTo(16));
     public static final RegistryObject<Item> BAOBAB_HANGING_SIGN = register(BlockRegistry.BAOBAB_HANGING_SIGN,
             (block, settings) -> new HangingSignItem(block, BlockRegistry.BAOBAB_WALL_HANGING_SIGN.get(), settings), new Item.Properties().stacksTo(16));
-    // Boats/chest boats reference EntityTypeRegistry's RegistryObjects - already deferred (the
-    // factory lambda only calls .get() when Forge invokes it during RegisterEvent<Item>, and
-    // BoatItem's own constructor takes a resolved EntityType<? extends Boat>, not a supplier).
+    // Vanilla BoatItem can only place EntityType.BOAT/CHEST_BOAT with a Boat.Type variant stamped on
+    // top, which cannot express any of this mod's boat entity types - ModBoatItem is the same
+    // placement behaviour driven by a supplied entity type. The RegistryObject goes in as the
+    // supplier itself, so nothing is dereferenced during registration.
     public static final RegistryObject<Item> BAOBAB_BOAT = register("baobab_boat", settings ->
-            new BoatItem(EntityTypeRegistry.BAOBAB_BOAT.get(), settings), new Item.Properties().stacksTo(1));
+            new ModBoatItem(EntityTypeRegistry.BAOBAB_BOAT, settings), new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> BAOBAB_CHEST_BOAT = register("baobab_chest_boat", settings ->
-            new BoatItem(EntityTypeRegistry.BAOBAB_CHEST_BOAT.get(), settings), new Item.Properties().stacksTo(1));
+            new ModBoatItem(EntityTypeRegistry.BAOBAB_CHEST_BOAT, settings), new Item.Properties().stacksTo(1));
 
     public static final RegistryObject<Item> TERMITE_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.TERMITE, "termite", 0xBB7F3D, 0xE1C080);
     public static final RegistryObject<Item> TERMITE_BLOCK = register(BlockRegistry.TERMITE_BLOCK);
@@ -241,35 +245,36 @@ public class ItemRegistry {
     public static final RegistryObject<Item> HOLLOW_CRIMSON_STEM = register(BlockRegistry.HOLLOW_CRIMSON_STEM);
     public static final RegistryObject<Item> HOLLOW_BAOBAB_LOG = register(BlockRegistry.HOLLOW_BAOBAB_LOG);
 
-    public static final RegistryObject<Item> BOAT_UPGRADE_TEMPLATE = register("boat_upgrade_template", settings ->
+    public static final RegistryObject<Item> BOAT_UPGRADE_TEMPLATE = register("boat_upgrade_template", () ->
             new SmithingTemplateItem(Component.translatable(Util.makeDescriptionId("item", NekomasFixed.id("boat")))
                     .withStyle(ChatFormatting.BLUE), Component.translatable(Util.makeDescriptionId("item", NekomasFixed.id("planks")))
-                    .withStyle(ChatFormatting.BLUE), Component.nullToEmpty(""), Component.nullToEmpty(""), List.of(NekomasFixed.id("container/slot/boat")),
-                    List.of(NekomasFixed.id("container/slot/planks")), settings), new Item.Properties().rarity(Rarity.UNCOMMON));
-    public static final RegistryObject<Item> BIG_OAK_BOAT = register("big_oak_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_OAK_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_SPRUCE_BOAT = register("big_spruce_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_SPRUCE_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_BIRCH_BOAT = register("big_birch_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_BIRCH_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_JUNGLE_BOAT = register("big_jungle_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_JUNGLE_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_ACACIA_BOAT = register("big_acacia_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_ACACIA_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_DARK_OAK_BOAT = register("big_dark_oak_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_DARK_OAK_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_MANGROVE_BOAT = register("big_mangrove_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_MANGROVE_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_CHERRY_BOAT = register("big_cherry_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_CHERRY_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_PALE_OAK_BOAT = register("big_pale_oak_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_PALE_OAK_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_BAMBOO_BOAT = register("big_bamboo_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_BAMBOO_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_BAOBAB_BOAT = register("big_baobab_boat", settings -> new BoatItem(EntityTypeRegistry.BIG_BAOBAB_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_OAK_BOAT = register("huge_oak_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_OAK_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_SPRUCE_BOAT = register("huge_spruce_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_SPRUCE_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_BIRCH_BOAT = register("huge_birch_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_BIRCH_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_JUNGLE_BOAT = register("huge_jungle_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_JUNGLE_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_ACACIA_BOAT = register("huge_acacia_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_ACACIA_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_DARK_OAK_BOAT = register("huge_dark_oak_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_DARK_OAK_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_MANGROVE_BOAT = register("huge_mangrove_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_MANGROVE_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_CHERRY_BOAT = register("huge_cherry_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_CHERRY_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_PALE_OAK_BOAT = register("huge_pale_oak_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_PALE_OAK_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_BAMBOO_BOAT = register("huge_bamboo_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_BAMBOO_BOAT.get(), settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_BAOBAB_BOAT = register("huge_baobab_boat", settings -> new BoatItem(EntityTypeRegistry.HUGE_BAOBAB_BOAT.get(), settings), new Item.Properties().stacksTo(1));
+                    .withStyle(ChatFormatting.BLUE), Component.nullToEmpty(""), Component.nullToEmpty(""), Component.nullToEmpty(""),
+                    List.of(NekomasFixed.id("container/slot/boat")),
+                    List.of(NekomasFixed.id("container/slot/planks"))));
+    public static final RegistryObject<Item> BIG_OAK_BOAT = register("big_oak_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_OAK_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> BIG_SPRUCE_BOAT = register("big_spruce_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_SPRUCE_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> BIG_BIRCH_BOAT = register("big_birch_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_BIRCH_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> BIG_JUNGLE_BOAT = register("big_jungle_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_JUNGLE_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> BIG_ACACIA_BOAT = register("big_acacia_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_ACACIA_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> BIG_DARK_OAK_BOAT = register("big_dark_oak_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_DARK_OAK_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> BIG_MANGROVE_BOAT = register("big_mangrove_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_MANGROVE_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> BIG_CHERRY_BOAT = register("big_cherry_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_CHERRY_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> BIG_PALE_OAK_BOAT = register("big_pale_oak_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_PALE_OAK_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> BIG_BAMBOO_BOAT = register("big_bamboo_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_BAMBOO_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> BIG_BAOBAB_BOAT = register("big_baobab_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_BAOBAB_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_OAK_BOAT = register("huge_oak_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_OAK_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_SPRUCE_BOAT = register("huge_spruce_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_SPRUCE_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_BIRCH_BOAT = register("huge_birch_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_BIRCH_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_JUNGLE_BOAT = register("huge_jungle_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_JUNGLE_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_ACACIA_BOAT = register("huge_acacia_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_ACACIA_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_DARK_OAK_BOAT = register("huge_dark_oak_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_DARK_OAK_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_MANGROVE_BOAT = register("huge_mangrove_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_MANGROVE_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_CHERRY_BOAT = register("huge_cherry_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_CHERRY_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_PALE_OAK_BOAT = register("huge_pale_oak_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_PALE_OAK_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_BAMBOO_BOAT = register("huge_bamboo_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_BAMBOO_BOAT, settings), new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> HUGE_BAOBAB_BOAT = register("huge_baobab_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_BAOBAB_BOAT, settings), new Item.Properties().stacksTo(1));
 
-    public static final RegistryObject<Item> SPECIAL_STEW = register("special_stew", SpecialSoupItem::new, new Item.Properties().stacksTo(1).food((new FoodProperties.Builder()).nutrition(0).saturationModifier(0.0F).build()).craftRemainder(Items.BOWL));
+    public static final RegistryObject<Item> SPECIAL_STEW = register("special_stew", SpecialSoupItem::new, new Item.Properties().stacksTo(1).food((new FoodProperties.Builder()).nutrition(0).saturationMod(0.0F).build()).craftRemainder(Items.BOWL));
     // Potion: 1.20.1 registers a plain Potion instance (registerForHolder is post-1.20.5) -
     // a new registry entry with no 26.2 counterpart. DeferredRegister<Potion> on ForgeRegistries.POTIONS.
     public static final DeferredRegister<Potion> POTIONS =
@@ -315,7 +320,7 @@ public class ItemRegistry {
     public static final RegistryObject<Item> INDIGO_STAINED_GLASSS_PANE = register(BlockRegistry.INDIGO_STAINED_GLASS_PANE);
     public static final RegistryObject<Item> MAROON_STAINED_GLASSS_PANE = register(BlockRegistry.MAROON_STAINED_GLASS_PANE);
 
-    // DROPPED (Sec9) on all four shulker boxes: .component(DataComponents.CONTAINER,
+    // DROPPED on all four shulker boxes: .component(DataComponents.CONTAINER,
     // ItemContainerContents.EMPTY) - same "default = absence of NBT" reasoning as NAUTILUS_BLOCK
     // above; the block entity's own inventory (opened as a container in-world) is unaffected.
     public static final RegistryObject<Item> AMBER_SHULKER_BOX = register(BlockRegistry.AMBER_SHULKER_BOX, new Item.Properties().stacksTo(1));
@@ -336,8 +341,7 @@ public class ItemRegistry {
     // BUNDLE_CONTENTS component dropped (stored via ItemStack NBT directly on 1.20.1, no
     // Properties declaration needed). NOTE: on 1.20.1 bundles sit behind FeatureFlags.BUNDLE
     // (experimental); BundleItem is used as-is (no .requiredFeatures(...) added) so these register
-    // exactly like every other mod item - flagged here as needing a runtime check with Gradle
-    // available, which this pass could not perform.
+    // exactly like every other mod item. Worth confirming in-game that they behave.
     public static final RegistryObject<Item> AMBER_BUNDLE = register("amber_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> AQUA_BUNDLE = register("aqua_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> INDIGO_BUNDLE = register("indigo_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
@@ -345,18 +349,19 @@ public class ItemRegistry {
 
     // DROPPED on all four harnesses: .component(DataComponents.EQUIPPABLE,
     // HarnessHelper.ofHarness(...)) - Happy Ghast (the only entity a harness equips onto) does not
-    // exist on 1.20.1 at all (26.x-only mob), so the item is kept (obtainable, full-parity scope
-    // keeps it) but is currently unequippable on anything - a named, unavoidable parity gap, not an
-    // oversight.
+    // exist on 1.20.1 at all (26.x-only mob), so the items are still registered and obtainable but
+    // there is nothing on this version to equip them onto. See HarnessHelper.java.
     public static final RegistryObject<Item> AMBER_HARNESS = register("amber_harness", (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> AQUA_HARNESS = register("aqua_harness", (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> INDIGO_HARNESS = register("indigo_harness", (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> MAROON_HARNESS = register("maroon_harness", (new Item.Properties()).stacksTo(1));
 
-    public static final RegistryObject<Item> AMBER_DYE = registerDye("amber_dye");
-    public static final RegistryObject<Item> AQUA_DYE = registerDye("aqua_dye");
-    public static final RegistryObject<Item> INDIGO_DYE = registerDye("indigo_dye");
-    public static final RegistryObject<Item> MAROON_DYE = registerDye("maroon_dye");
+    // The DyeColor each one borrows is the same one its wool/carpet family uses in BlockRegistry -
+    // see ModDyeItems for why a real DyeColor is unavoidable here.
+    public static final RegistryObject<Item> AMBER_DYE = registerDye("amber_dye", DyeColor.YELLOW);
+    public static final RegistryObject<Item> AQUA_DYE = registerDye("aqua_dye", DyeColor.LIGHT_BLUE);
+    public static final RegistryObject<Item> INDIGO_DYE = registerDye("indigo_dye", DyeColor.MAGENTA);
+    public static final RegistryObject<Item> MAROON_DYE = registerDye("maroon_dye", DyeColor.RED);
 
 
     public static final RegistryObject<Item> WHITE_DYED_BRUSH = register("white_dyed_brush", (settings) -> new DyedBrushItem(AllDyes.WHITE, settings), new Item.Properties().stacksTo(1).durability(64));
@@ -565,8 +570,8 @@ public class ItemRegistry {
     private static RegistryObject<Item> register(String id, Supplier<? extends Item> factory) {
         return ITEMS.register(id, factory::get);
     }
-    private static RegistryObject<Item> registerDye(String id) {
-        return ITEMS.register(id, () -> new ModDyeItems(new Item.Properties()));
+    private static RegistryObject<Item> registerDye(String id, DyeColor nearestVanillaColor) {
+        return ITEMS.register(id, () -> new ModDyeItems(nearestVanillaColor, new Item.Properties()));
     }
 
     /**

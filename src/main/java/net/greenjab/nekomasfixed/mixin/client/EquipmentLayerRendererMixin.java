@@ -1,6 +1,6 @@
 package net.greenjab.nekomasfixed.mixin.client;
 
-import com.llamalad7.mixinextras.injector.v2.ModifyReturnValue;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
@@ -14,27 +14,14 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * 1.20.1 has no {@code EquipmentLayerRenderer}/{@code EquipmentClientInfo}/{@code
- * EquipmentAssetManager}/{@code EquipmentAsset} at all — that whole indirection is 1.21.4+
- * (VERIFIED: zero matches for any of the four anywhere in forge-1.20.1-mapped-src). Armor texture
- * resolution instead lives in {@code HumanoidArmorLayer#getArmorResource(Entity, ItemStack,
- * EquipmentSlot, String)} — a FORGE-added public method (VERIFIED HumanoidArmorLayer.java; the
- * vanilla class only has a deprecated, unused {@code getArmorLocation}), so {@code remap = false}
- * throughout.
- * <p>
- * Retargeted with MixinExtras {@code @ModifyReturnValue} rather than {@code @ModifyExpressionValue}
- * on an inner {@code EquipmentAssetManager#get} call, since there is no such call to wrap — the
- * whole computation is one expression this mixin now overrides at the very end, using item identity
- * (read from {@code ItemRegistry}, which the pristine mixin never needed since it worked from a
- * resolved asset-id string) in place of the substring match on that string.
- * <p>
- * {@code addHumanoidLayers(id)} (turtle armor — a full 3-slot set) built both
- * {@code <id>_layer_1.png} and {@code <id>_layer_2.png}; {@code addMainHumanoidLayer(id, false)}
- * (the 5 helmet-only crowns) built only {@code _layer_1}. {@code getArmorResource} is called once
- * per slot with no built-in "which layer" signal beyond the slot itself, so the layer suffix is
- * reproduced from the same rule {@code HumanoidArmorLayer#usesInnerModel} already uses on 1.20.1
- * (VERIFIED: {@code slot == EquipmentSlot.LEGS} is the only inner-model, i.e. layer-2, slot) — the
- * crowns never reach it since a helmet is never the LEGS slot.
+ * Points the turtle armour set and the five crowns at their own worn-armour textures.
+ *
+ * <p>Armour texture paths are built in Forge's {@code HumanoidArmorLayer#getArmorResource}, which is
+ * a Forge addition rather than a vanilla method - hence {@code remap = false} - and it is called once
+ * per slot with no hint of which layer image it is after beyond the slot itself. The layer suffix
+ * therefore follows the same rule the layer's own inner/outer model choice uses: the leggings slot
+ * draws layer 2, everything else layer 1. The crowns never hit that branch, a helmet never being the
+ * leggings slot.
  */
 @Mixin(HumanoidArmorLayer.class)
 public class EquipmentLayerRendererMixin {

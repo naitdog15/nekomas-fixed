@@ -6,7 +6,6 @@ import net.greenjab.nekomasfixed.registry.entity.BigBoat;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.util.RandomSource;
@@ -35,35 +34,16 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Not part of the core "keep and expect pain" set, but the pirate-patrol feature (BigBoat spawning)
- * touches several 26.2-only APIs at once.
- * <ul>
- * <li>{@code EntitySpawnReason} is {@code MobSpawnType} on 1.20.1 (matches boat.MobMixin's note).
- *     {@code EntityTypes.PILLAGER} is {@code EntityType.PILLAGER} — 1.20.1 keeps entity-type
- *     constants directly on {@code EntityType} itself, with no separate plural holder class
- *     (VERIFIED forge-1.20.1-mapped-src EntityType.java:243).</li>
- * <li>{@code PatrolSpawner#tick} is {@code int tick(ServerLevel, boolean, boolean)} on 1.20.1, not
- *     26.2's apparent {@code void tick(ServerLevel, boolean)} — VERIFIED
- *     forge-1.20.1-mapped-src PatrolSpawner.java:23 (a 3rd boolean param, and an int budget-count
- *     return instead of void). The {@code Math.ceil(double)} anchor and the {@code player}/
- *     {@code spawnPos} locals this injector captures both still exist at the identical point inside
- *     it (PatrolSpawner.java:57-58). Cancelling now means supplying a return value: 0, since this
- *     mod's spawns bypass vanilla's counted budget entirely via a direct
- *     {@code addFreshEntityWithPassengers} call, matching what an uncounted spawn should report.</li>
- * <li>{@code EntityType#create} has no 2-arg {@code (Level, MobSpawnType)} convenience overload on
- *     1.20.1 — only the bare {@code create(Level)} and a 7-arg full-context one (VERIFIED
- *     EntityType.java:402,524). Every call site here already calls {@code .setPos(...)} manually
- *     afterward, so {@code create(Level)} is the correct substitute. {@code Mob#finalizeSpawn} gains
- *     a 5th {@code @Nullable CompoundTag} parameter on 1.20.1 (VERIFIED Mob.java:1064) — passed
- *     {@code null} at every call site here, same as the {@code SpawnGroupData} before it.</li>
- * <li>{@code Raid.getOminousBannerInstance(RegistryAccess)} does not exist; 1.20.1's equivalent is
- *     the parameterless {@code Raid.getLeaderBannerInstance()} (VERIFIED Raid.java:608).</li>
- * <li>Loot tables are plain {@code ResourceLocation}s on 1.20.1, not registry-backed
- *     {@code ResourceKey<LootTable>} (VERIFIED: {@code Registries.LOOT_TABLE} does not exist; vanilla's
- *     own {@code ChestBoat} stores a bare {@code ResourceLocation} field). Note for whoever owns
- *     {@code BigBoat}: {@code BigBoat.setContainerLootTable} should take a {@code ResourceLocation},
- *     not a {@code ResourceKey<LootTable>}, on this port.</li>
- * </ul>
+ * Turns the vanilla pillager patrol roll into a pirate patrol when it lands on an ocean biome: a
+ * captain's big boat (a huge one on hard) with a banner and a chest, escorted by a few crewed boats.
+ *
+ * <p>The injector rides the {@code Math.ceil} the vanilla spawner uses to size a patrol, since both
+ * the chosen player and the candidate position are already settled there. Cancelling has to hand
+ * back a count, and 0 is right: these boats are added directly rather than through vanilla's counted
+ * budget.
+ *
+ * <p>The captain's chest is seeded from {@code nekomasfixed:chests/patrol_boat} and only rolled when
+ * a player actually opens it, which is how every other loot-table container works.
  */
 @Mixin(PatrolSpawner.class)
 public class PatrolSpawnerMixin {
@@ -95,7 +75,7 @@ public class PatrolSpawnerMixin {
                         }
                         spawnPos.offset(0, 2, 0);
                         int n = (int) Math.ceil(level.getCurrentDifficultyAt(spawnPos).getEffectiveDifficulty()) + 1;
-                        int boatType = random.nextInt(EntityTypeRegistry.bigBoats.size());
+                        int boatType = random.nextInt(EntityTypeRegistry.bigBoats().size());
                         for (int o = 0; o < n; o++) {
                             if (o == 0) {
                                 if (!this.spawnBoat(level, spawnPos, random, boatType, true))  break;
@@ -131,13 +111,13 @@ public class PatrolSpawnerMixin {
 
     @Unique boolean spawnCaptainBoat(ServerLevel level, BlockPos pos, RandomSource random, int boatType){
         BigBoat bigBoat = level.getDifficulty().getId()>2?
-                EntityTypeRegistry.hugeBoats.get(boatType).create(level):
-                EntityTypeRegistry.bigBoats.get(boatType).create(level);
+                EntityTypeRegistry.hugeBoats().get(boatType).get().create(level):
+                EntityTypeRegistry.bigBoats().get(boatType).get().create(level);
         if (bigBoat == null) return false;
         bigBoat.setBanner(Raid.getLeaderBannerInstance());
         bigBoat.setHasChest(true);
-        bigBoat.setContainerLootTable(NekomasFixed.id("chests/patrol_boat"));
-        bigBoat.setContainerLootTableSeed(random.nextLong());
+        bigBoat.setLootTable(NekomasFixed.id("chests/patrol_boat"));
+        bigBoat.setLootTableSeed(random.nextLong());
         bigBoat.setPos(Vec3.atCenterOf(pos));
         for (int i = 0; i < level.getDifficulty().getId(); i++) {
             PatrollingMonster patrolEntity = (PatrollingMonster) EntityType.PILLAGER.create(level);
@@ -151,7 +131,7 @@ public class PatrolSpawnerMixin {
     }
 
     @Unique boolean spawnSmallBoat(ServerLevel level, BlockPos pos, RandomSource random, int boatType){
-        Boat boatEntity = EntityTypeRegistry.boats.get(boatType).create(level);
+        Boat boatEntity = EntityTypeRegistry.vanillaBoats().get(boatType).create(level);
         if (boatEntity != null) {
             boatEntity.setPos(Vec3.atCenterOf(pos));
             PatrollingMonster patrolEntity = (PatrollingMonster) EntityType.PILLAGER.create(level);

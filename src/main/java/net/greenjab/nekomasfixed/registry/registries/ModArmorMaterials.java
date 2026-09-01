@@ -20,9 +20,8 @@ import java.util.Map;
  * real defense values for all four slots on 1.20.1, not just the helmet, so no new material is
  * needed there). COPPER is the one genuinely new tier this mod adds.
  * <p>
- * <b>Placeholder values, not a balance decision.</b> Durability/defense/toughness below sit between
- * IRON and GOLD by eyeballing vanilla's own progression; nothing here was play-tested or finalized.
- * Flagged for follow-up game-design review, not silently asserted as final.
+ * <b>The COPPER numbers are provisional.</b> Durability/defense/toughness below sit between IRON and
+ * GOLD by eyeballing vanilla's own progression; none of it is play-tested, so expect to rebalance.
  */
 public final class ModArmorMaterials {
     private ModArmorMaterials() {

@@ -24,8 +24,10 @@ public class BaobabSeedsItem extends Item {
         if(state.is(BlockTags.LEAVES)){
             BlockPos below = pos.below();
             if (level.getBlockState(below).isAir() || level.getBlockState(below).is(BlockTags.REPLACEABLE)) {
-                level.setBlockAndUpdate(below, BlockRegistry.BAOBAB_FRUIT.defaultBlockState());
-                context.getItemInHand().consume(1, player);
+                level.setBlockAndUpdate(below, BlockRegistry.BAOBAB_FRUIT.get().defaultBlockState());
+                if (player == null || !player.getAbilities().instabuild) {
+                    context.getItemInHand().shrink(1);
+                }
             }
             return InteractionResult.SUCCESS;
         }

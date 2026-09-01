@@ -15,9 +15,7 @@ import static net.minecraft.core.cauldron.CauldronInteraction.EMPTY;
  * map (an empty cauldron becoming a honey/magma/slime cauldron when the right item is used on it) -
  * a genuinely shared mutable vanilla structure, so this whole method (plus the 4 cauldron classes'
  * own {@code registerInteractions()}, called here too) must run inside
- * {@code FMLCommonSetupEvent#enqueueWork}. {@code ModBusEvents.java} needs
- * {@code ctx.enqueueWork(CauldronBehaviour::register)} (or equivalent) added to its
- * {@code FMLCommonSetupEvent} handler.
+ * {@code FMLCommonSetupEvent#enqueueWork} — which is where {@code ModBusEvents} calls it from.
  */
 public class CauldronBehaviour {
 
@@ -35,7 +33,9 @@ public class CauldronBehaviour {
 
         EMPTY.put(Items.MAGMA_CREAM, (state, level, pos, player, hand, stack) -> {
             if (!level.isClientSide()) {
-                stack.consume(1, player);
+                if (!player.getAbilities().instabuild) {
+                    stack.shrink(1);
+                }
                 level.setBlockAndUpdate(pos, BlockRegistry.MAGMA_CAULDRON.get().defaultBlockState()
                         .setValue(MagmaCauldronBlock.MAGMA_LEVEL, 1));
                 level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY,
@@ -46,7 +46,9 @@ public class CauldronBehaviour {
 
         EMPTY.put(Items.SLIME_BALL, (state, level, pos, player, hand, stack) -> {
             if (!level.isClientSide()) {
-                stack.consume(1, player);
+                if (!player.getAbilities().instabuild) {
+                    stack.shrink(1);
+                }
                 level.setBlockAndUpdate(pos, BlockRegistry.SLIME_CAULDRON.get().defaultBlockState()
                         .setValue(SlimeCauldronBlock.SLIME_LEVEL, 1));
                 level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY,
@@ -62,5 +64,9 @@ public class CauldronBehaviour {
         MagmaCauldronBlock.registerInteractions();
         SlimeCauldronBlock.registerInteractions();
         IceCauldronBlock.registerInteractions();
+
+        // The soup cauldron's ingredient palette needs this mod's own items resolved, which is
+        // only true once every registry has been filled.
+        SoupCauldronBlock.registerFoodColors();
     }
 }

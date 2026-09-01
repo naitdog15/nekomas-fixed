@@ -4,7 +4,6 @@ import net.greenjab.nekomasfixed.registry.entity.TargetDummy;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CarvedPumpkinBlock;
@@ -42,7 +41,7 @@ public abstract class CarvedPumpkinBlockMixin {
             this.targetDummyPattern = BlockPatternBuilder.start()
                     .aisle("^", "#")
                     .where('^', BlockInWorld.hasState(PUMPKINS_PREDICATE))
-                    .where('#', BlockInWorld.hasState(/* method_72574 */ state -> state.is(Blocks.HAY_BLOCK)))
+                    .where('#', BlockInWorld.hasState(state -> state.is(Blocks.HAY_BLOCK)))
                     .build();
         }
 
@@ -58,7 +57,7 @@ public abstract class CarvedPumpkinBlockMixin {
             if (targetDummy != null) {
                 spawnGolemInWorld(level, result3, targetDummy, result3.getBlock(0, 1, 0).getPos());
                 if (block.is(Blocks.CARVED_PUMPKIN)) {
-                    targetDummy.snapTo(result3.getBlock(0, 1, 0).getPos(), block.getValue(HorizontalDirectionalBlock.FACING).toYRot(),0);
+                    targetDummy.moveTo(result3.getBlock(0, 1, 0).getPos(), block.getValue(HorizontalDirectionalBlock.FACING).toYRot(), 0.0F);
                 }
                 ci.cancel();
             }

@@ -5,7 +5,6 @@
   "minVersion": "0.8",
   "client": [
     "AbstractMinecartEntityRendererMixin",
-    "ClientRecipeBookMixin",
     "ClientTooltipComponentMixin",
     "EquipmentLayerRendererMixin",
     "FlameFeatureRendererMixin",
@@ -16,10 +15,7 @@
     "MinecartModelMixin",
     "MinecraftMixin",
     "MultiPlayerGameModeMixin",
-    "NameTagFeatureRendererMixin",
-    "NameTagFeatureRendererStorageMixin",
     "ParticleEngineMixin",
-    "ParticleResourcesMixin",
     "SheepWoolLayerMixin",
     "ShulkerBoxRendererMixin"
   ],

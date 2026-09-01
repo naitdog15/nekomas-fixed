@@ -87,7 +87,8 @@ public class WildfireSlideTowardsTargetTask extends Behavior<WildfireEntity> {
 
 	protected void stop(ServerLevel level, WildfireEntity wildFireEntity, long l) {
 		int i = wildFireEntity.getRandom().nextInt(wildFireEntity.getShieldsActive()>1?3:2);
-		if (i == 0)	wildFireEntity.setPose(Pose.SHOOTING);
+		// ROARING stands in for 1.20.3+'s SHOOTING pose - see WildfireShootTask.
+		if (i == 0)	wildFireEntity.setPose(Pose.ROARING);
 		else if (i == 1) wildFireEntity.setPose(Pose.LONG_JUMPING);
 		else if (i == 2) wildFireEntity.setPose(Pose.SPIN_ATTACK);
 		wildFireEntity.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);

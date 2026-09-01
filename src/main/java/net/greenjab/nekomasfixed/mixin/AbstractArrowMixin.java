@@ -13,32 +13,29 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * 1.20.1 deltas (all VERIFIED against forge-1.20.1-mapped-src): {@code AbstractArrow}/{@code Arrow}
- * live directly under {@code net.minecraft.world.entity.projectile}, no {@code .arrow} subpackage.
- * {@code DataComponents.POTION_CONTENTS}/{@code PotionContents} do not exist (1.20.5+); the potion is
- * read via {@code PotionUtils.getPotion(ItemStack): Potion} and applied via
- * {@code AreaEffectCloud#setPotion(Potion)} (AreaEffectCloud.java:94), the same substitution
- * ItemStackMixin's {@code lightningGlint} already makes. {@code getPickupItemStackOrigin()} does not
- * exist; the one pickup-item accessor is {@code getPickupItem(): ItemStack}
- * (AbstractArrow.java:528), which is what {@code Arrow}'s own tipped-arrow pickup logic already
- * bakes potion data into. {@code setInGround(boolean)} does not exist — {@code inGround} is a plain
- * protected field written directly at several call sites, with no single method call standing in
- * for "just embedded in a block"; the closest true equivalent is {@code onHitBlock(BlockHitResult)}
- * (AbstractArrow.java:422), which this retargets onto instead.
+ * A tipped arrow leaves a lingering cloud of its own potion wherever it lands - on a mob or in a
+ * block - and loses that potion if it is picked back up.
+ *
+ * <p>The potion rides in the arrow's own pickup stack, which is where {@code Arrow} already keeps
+ * it, and {@code onHitBlock} stands in for "the arrow has just embedded itself" since being stuck is
+ * a plain field here rather than a setter call.
  */
 @Mixin(AbstractArrow.class)
 public abstract class AbstractArrowMixin {
 
+    @Shadow protected abstract ItemStack getPickupItem();
+
     @Inject(method = "doPostHurtEffects", at = @At("HEAD"))
     private void onHit(LivingEntity mob, CallbackInfo ci) {
         if (((AbstractArrow)(Object) this) instanceof Arrow arrowEntity && !arrowEntity.getTags().contains("areaEffect")) {
-            ItemStack arrow = arrowEntity.getPickupItem();
+            ItemStack arrow = this.getPickupItem();
             Potion potion = PotionUtils.getPotion(arrow);
             if (potion != null && potion != net.minecraft.world.item.alchemy.Potions.EMPTY) {
                 AreaEffectCloud areaEffectCloudEntity = makeAreaEffectCloudEntity(mob.level(), mob.getX(), mob.getY(), mob.getZ(), potion);
@@ -51,7 +48,7 @@ public abstract class AbstractArrowMixin {
     @Inject(method = "onHitBlock", at = @At("HEAD"))
     private void onHitBlock(BlockHitResult result, CallbackInfo ci) {
         if (((AbstractArrow)(Object) this) instanceof Arrow arrowEntity && !arrowEntity.getTags().contains("areaEffect")) {
-            ItemStack arrow = arrowEntity.getPickupItem();
+            ItemStack arrow = this.getPickupItem();
             Potion potion = PotionUtils.getPotion(arrow);
             if (potion != null && potion != net.minecraft.world.item.alchemy.Potions.EMPTY) {
                 AreaEffectCloud areaEffectCloudEntity = makeAreaEffectCloudEntity(arrowEntity.level(), arrowEntity.getX(), arrowEntity.getY(), arrowEntity.getZ(), potion);

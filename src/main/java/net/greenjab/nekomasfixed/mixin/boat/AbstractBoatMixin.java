@@ -18,8 +18,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * AbstractBoatMixin's 8 {@code @At} targets were the largest single cluster of unverified retargets
- * in the port; all 8 are now VERIFIED against forge-1.20.1-mapped-src Boat.java. The 26.2
+ * All 8 of this mixin's {@code @At} targets are VERIFIED against forge-1.20.1-mapped-src
+ * Boat.java. The 26.2
  * {@code AbstractBoat}/{@code Boat}/{@code ChestBoat} split (a raft-support refactor) does not exist
  * on 1.20.1: there is one {@code Boat} class, and — the good news — every method this mixin targets
  * exists on it under the identical name and, with two exceptions below, the identical call shape, so

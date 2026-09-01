@@ -2,7 +2,6 @@ package net.greenjab.nekomasfixed.render.entity.model;
 
 import net.greenjab.nekomasfixed.registry.entity.HugeBoat;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.model.geom.PartNames;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
@@ -67,8 +66,8 @@ public class HugeBoatModel<T extends HugeBoat> extends BigBoatModel<T> {
 		modelPartData.addOrReplaceChild("boat_37", CubeListBuilder.create().texOffs(0, 0).addBox(-5F, 0F, -43F, 10F, 3F, 1F), PartPose.ZERO);
 		modelPartData.addOrReplaceChild("boat_38", CubeListBuilder.create().texOffs(0, 0).addBox(-5F, 0F, 44F, 10F, 3F, 1F), PartPose.ZERO);
 
-		modelPartData.addOrReplaceChild("stand_1", CubeListBuilder.create().texOffs(48, 64).addBox(-1F, -45F, 5F, 2F, 45F, 2F), PartPose.ZERO.scaled(0.999f));
-		modelPartData.addOrReplaceChild("stand_2", CubeListBuilder.create().texOffs(48, 64).addBox(-1F, -35F, -18F, 2F, 35F, 2F), PartPose.ZERO.scaled(0.999f));
+		modelPartData.addOrReplaceChild("stand_1", CubeListBuilder.create().texOffs(48, 64).addBox(-1F, -45F, 5F, 2F, 45F, 2F, STAND_INSET), PartPose.ZERO);
+		modelPartData.addOrReplaceChild("stand_2", CubeListBuilder.create().texOffs(48, 64).addBox(-1F, -35F, -18F, 2F, 35F, 2F, STAND_INSET), PartPose.ZERO);
 
 		float dist = 23f;
 		modelPartData.addOrReplaceChild("left_paddle",
@@ -95,13 +94,13 @@ public class HugeBoatModel<T extends HugeBoat> extends BigBoatModel<T> {
 		MeshDefinition modelData = new MeshDefinition();
 		PartDefinition modelPartData = modelData.getRoot();
 		addParts(modelPartData);
-		modelPartData.addOrReplaceChild(PartNames.CHEST_BOTTOM,
+		modelPartData.addOrReplaceChild(CHEST_BOTTOM,
 				CubeListBuilder.create().texOffs(0, 92).addBox(0.0F, 0.0F, 0.0F, 12.0F, 8.0F, 12.0F),
 				PartPose.offsetAndRotation(-6.0F, -8.0F, 31.0F, 0.0F, 0, 0.0F));
-		modelPartData.addOrReplaceChild(PartNames.CHEST_LID,
+		modelPartData.addOrReplaceChild(CHEST_LID,
 				CubeListBuilder.create().texOffs(0, 75).addBox(0.0F, 0.0F, 0.0F, 12.0F, 4.0F, 12.0F),
 				PartPose.offsetAndRotation(-6.0F, -12.0F, 31.0F, 0f, 0, 0.0F));
-		modelPartData.addOrReplaceChild(PartNames.CHEST_LOCK,
+		modelPartData.addOrReplaceChild(CHEST_LOCK,
 				CubeListBuilder.create().texOffs(0, 75).addBox(0.0F, 0.0F, 0.0F, 2.0F, 4.0F, 1.0F),
 				PartPose.offsetAndRotation(-1.0F, -9.0F, 30.0F, 0.0F, 0, 0.0F));
 		return LayerDefinition.create(modelData, 128, 128);

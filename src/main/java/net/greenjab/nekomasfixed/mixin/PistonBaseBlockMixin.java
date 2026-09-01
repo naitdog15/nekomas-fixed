@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class PistonBaseBlockMixin {
     @Inject(method = "getNeighborSignal", at = @At("HEAD"), cancellable = true)
     protected void powerPiston(SignalGetter level, BlockPos pos, Direction pushDirection, CallbackInfoReturnable<Boolean> cir) {
-        if (RedstoneStrikerItem.STRUCK_WIRES.containsKey(new GlobalPos(((Level) level).dimension(), pos))) {
+        if (RedstoneStrikerItem.STRUCK_WIRES.containsKey(GlobalPos.of(((Level) level).dimension(), pos))) {
             cir.setReturnValue(true);
         }
     }

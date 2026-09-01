@@ -17,14 +17,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public interface SignalGetterMixin {
     @Inject(method = "getSignal(Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;)I", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;getSignal(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;)I"), cancellable = true)
     private void powerBlock(BlockPos pos, Direction direction, CallbackInfoReturnable<Integer> cir, @Local BlockState state) {
-        if (RedstoneStrikerItem.STRUCK_WIRES.containsKey(new GlobalPos(((Level)this).dimension(), pos)) && state.isRedstoneConductor((SignalGetter)this, pos)) {
+        if (RedstoneStrikerItem.STRUCK_WIRES.containsKey(GlobalPos.of(((Level)this).dimension(), pos)) && state.isRedstoneConductor((SignalGetter)this, pos)) {
             cir.setReturnValue(15);
         }
     }
 
     @Inject(method = "hasNeighborSignal", at = @At("HEAD"), cancellable = true)
     private void powerRedstoneComponents(BlockPos blockPos, CallbackInfoReturnable<Boolean> cir) {
-        if (RedstoneStrikerItem.STRUCK_WIRES.containsKey(new GlobalPos(((Level)this).dimension(), blockPos))) {
+        if (RedstoneStrikerItem.STRUCK_WIRES.containsKey(GlobalPos.of(((Level)this).dimension(), blockPos))) {
             cir.setReturnValue(true);
         }
     }

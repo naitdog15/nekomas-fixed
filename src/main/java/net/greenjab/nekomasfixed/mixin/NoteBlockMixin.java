@@ -11,13 +11,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// Identifier (26.2) is ResourceLocation on 1.20.1; getCustomSoundId(Level, BlockPos) itself is
-// unchanged (VERIFIED forge-1.20.1-mapped-src NoteBlock.java:144).
+// An enderman head sitting on a note block makes it moan instead of playing its note.
 @Mixin(NoteBlock.class)
 public abstract class NoteBlockMixin {
 
 	@Inject(method="getCustomSoundId", at = @At(value = "HEAD"), cancellable = true)
 	private void endermanHeadSound(Level level, BlockPos pos, CallbackInfoReturnable<ResourceLocation> cir) {
-		if (level.getBlockEntity(pos.above()) instanceof EndermanHeadBlockEntity) cir.setReturnValue(SoundEvents.ENDERMAN_AMBIENT.location());
+		if (level.getBlockEntity(pos.above()) instanceof EndermanHeadBlockEntity) cir.setReturnValue(SoundEvents.ENDERMAN_AMBIENT.getLocation());
 	}
 }

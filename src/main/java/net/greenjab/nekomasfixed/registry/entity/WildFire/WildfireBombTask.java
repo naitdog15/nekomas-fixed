@@ -4,17 +4,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Unit;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.behavior.Behavior;
-import net.minecraft.world.entity.ai.behavior.LongJumpUtil;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
-import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Optional;
@@ -86,7 +82,10 @@ public class WildfireBombTask extends Behavior<WildfireEntity> {
 				brain.getMemory(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get()).isEmpty()) {
 				brain.setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get(), Unit.INSTANCE, SHOOT_COOLDOWN_EXPIRY);
 
-				Optional<Vec3> optional = LongJumpUtil.calculateJumpVectorForAngle(wildFireEntity, livingEntity.position(), 1.11f, level.getRandom().nextInt(10) + 45, false);
+				// The lob is solved against the BOMB's gravity, not the mob's - that difference is the
+				// whole reason this can't just borrow vanilla's long-jump solver.
+				Optional<Vec3> optional = WildfireMovementUtil.calculateLaunchVector(
+						wildFireEntity.position(), livingEntity.position(), FireBomb.GRAVITY, 1.11f, level.getRandom().nextInt(10) + 45);
 				if (optional.isPresent()) {
 					int i = brain.getMemory(MemoryModuleType.LIKED_NOTEBLOCK_COOLDOWN_TICKS).orElse(-1);
 					brain.setMemoryWithExpiry(MemoryModuleType.LIKED_NOTEBLOCK_COOLDOWN_TICKS, i+1, 60);
@@ -98,7 +97,8 @@ public class WildfireBombTask extends Behavior<WildfireEntity> {
 
 						FireBomb fireBombEntity = new FireBomb(level, wildFireEntity);
 						fireBombEntity.setPos(fireBombEntity.getX(), wildFireEntity.getY(0.5) + 0.5, fireBombEntity.getZ());
-						Projectile.spawnProjectileUsingShoot(fireBombEntity, level, ItemStack.EMPTY, v.x, v.y, v.z, (float) v.length() * (1-i/20f), 0.0F);
+						fireBombEntity.shoot(v.x, v.y, v.z, (float) v.length() * (1-i/20f), 0.0F);
+						level.addFreshEntity(fireBombEntity);
 						wildFireEntity.playSound(WildfireRegistrations.BREEZE_SHOOT_SOUND.get(), 1.5F, 1.0F);
 					}
 				}

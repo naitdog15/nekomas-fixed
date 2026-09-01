@@ -8,10 +8,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.animal.sheep.Sheep;
+import net.minecraft.world.entity.animal.Sheep;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -24,13 +23,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Part of the "keep and expect pain" set of mixins (SpottedSheepAccess verbatim port).
- * 1.20.1 has no {@code spawnAtLocation(ServerLevel, ItemStack, Vec3)} overload (VERIFIED: only
- * {@code (ItemLike)}, {@code (ItemLike,int)}, {@code (ItemStack)} and {@code (ItemStack,float)} exist
- * in forge-1.20.1-mapped-src Entity.java) — retargeted onto {@code spawnAtLocation(ItemStack,float)},
- * the terminal overload every other one delegates to. {@code thunderHit(ServerLevel, LightningBolt)}
- * is unchanged. {@code Items.WOOL.white()}-style grouped sugar does not exist here; each colour is
- * its own top-level constant ({@code Items.WHITE_WOOL}, ...).
+ * Swaps a spotted sheep's wool drop for the matching spotted wool, and gives copper armour a
+ * lightning kick.
+ *
+ * <p>The drop hook sits on {@code spawnAtLocation(ItemStack, float)} - the overload every other one
+ * funnels into - so it catches the drop however the sheep produced it.
  */
 @Mixin(Entity.class)
 public abstract class EntityMixin {
@@ -80,21 +77,16 @@ public abstract class EntityMixin {
             if ((Entity)(Object)this instanceof ServerPlayer player) {
                 int armor = getCopperArmor(player);
                 if (armor > 0) {
-                    player.addEffect(new MobEffectInstance(MobEffects.SPEED, 3*armor * 20, armor, false, false, false));
-                    player.addEffect(new MobEffectInstance(MobEffects.INSTANT_HEALTH, 1, armor, false, false, false));
+                    player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 3*armor * 20, armor, false, false, false));
+                    player.addEffect(new MobEffectInstance(MobEffects.HEAL, 1, armor, false, false, false));
                 }
             }
         }
     }
 
-    // Not a feature cut - this is a content-availability fact of
-    // the target MC version, the same category as the fallen_tree/jewel.json findings: copper
-    // armor (Items.COPPER_BOOTS/LEGGINGS/CHESTPLATE/HELMET) does not exist on 1.20.1 (VERIFIED: zero
-    // matches in forge-1.20.1-mapped-src Items.java) and this mod registers no copper-armor items of
-    // its own (VERIFIED: zero COPPER_* hits across ItemRegistry usage reachable from mixin/**), so
-    // there is currently no item that can occupy these slots and satisfy the check. The gate below
-    // (armor > 0) is therefore permanently false rather than deleted, keeping the thunder-buff
-    // mechanism structurally intact and a one-line restore once a copper-armor source exists.
+    // Counts the copper armour pieces worn. There is no copper armour on this version - neither
+    // vanilla's nor any this mod registers - so nothing can occupy those slots yet and the count is
+    // always zero; the buff above wires straight back up once a copper set exists.
     @Unique
     private static int getCopperArmor(LivingEntity entity) {
         return 0;

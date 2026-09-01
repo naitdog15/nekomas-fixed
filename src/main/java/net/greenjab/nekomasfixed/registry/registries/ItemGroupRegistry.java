@@ -13,9 +13,9 @@ import net.minecraftforge.registries.RegistryObject;
  * on the vanilla Registries.CREATIVE_MODE_TAB key (no ForgeRegistries constant for it). Registered
  * by bare String key ("nekomasfixed"/"nekomasfixedcolours"), matching the Fabric code's own ids
  * exactly - DeferredRegister.register(String,...) takes the same shape.
- * NON-GOAL, and a real one: no BuildCreativeModeTabContentsEvent handler is added to surface items
- * missing from these two lists into vanilla tabs - that is existing shipped behaviour (no
- * vanilla-tab injection anywhere in the source), not an oversight to "helpfully" fix.
+ * Deliberately no BuildCreativeModeTabContentsEvent handler: items missing from these two lists do
+ * not get surfaced into vanilla tabs. That matches how the mod has always behaved (there is no
+ * vanilla-tab injection anywhere in the source), so it is not a bug to fix here.
  */
 public class ItemGroupRegistry {
 

@@ -9,7 +9,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * On {@code main} these were {@code ResourceKey<Enchantment>} constants only, with the real
+ * In the 26.2 source these were {@code ResourceKey<Enchantment>} constants only, with the real
  * enchantments living as datapack JSON (empty {@code "effects": {}} - the gameplay lives entirely
  * in mixins). 1.20.1 has no datapack-JSON enchantment registry at all: enchantments are a plain
  * Java {@code DeferredRegister<Enchantment>}, and {@code Enchantment} is abstract with a
@@ -30,9 +30,10 @@ import net.minecraftforge.registries.RegistryObject;
  * that implement the actual effects fire, since the effects blocks were already empty and no
  * behaviour moves.
  * <p>
- * {@code mixin/target_dummy/EnchantmentMixin}'s {@code Enchantment.applyEffects(List, LootContext,
- * GenericAction)} target has zero 1.20.1 counterpart, so that mixin's logic still needs to be
- * re-expressed as an override on the three subclasses below.
+ * The target dummy's "count Smite as if the dummy were undead" rule is not an enchantment concern
+ * on this version: it lives in {@code mixin/target_dummy/LivingEntityMobTypeMixin}, which reports
+ * the dummy's {@code MobType} instead, so 1.20.1's own {@code DamageEnchantment} damage bonus picks
+ * it up without any hook on the three subclasses below.
  */
 public class EnchantmentRegistry {
 

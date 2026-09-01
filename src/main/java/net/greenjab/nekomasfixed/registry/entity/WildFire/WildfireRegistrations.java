@@ -26,9 +26,9 @@ import java.util.Optional;
  * in the ported AI (7 are {@code Unit}-valued cooldown/flag memories, 1 - BREEZE_JUMP_TARGET - carries
  * a {@code BlockPos}) so call sites type-check without an unchecked cast.
  * <p>
- * The 6 sound registrations need a {@code sounds.json} entry each ({@code data/**} is not
- * in this package's scope) - mapped from the equivalent vanilla Blaze/fire sounds. Registering a
- * SoundEvent with no sounds.json mapping does not error; it plays silence.
+ * The 6 sound registrations each need a matching {@code sounds.json} entry, mapped from the
+ * equivalent vanilla Blaze/fire sounds. Registering a SoundEvent with no sounds.json mapping does
+ * not error; it plays silence.
  */
 public final class WildfireRegistrations {
     private WildfireRegistrations() {

@@ -1,35 +1,40 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import net.greenjab.nekomasfixed.registry.block.cauldron.HoneyCauldronBlock;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BeehiveBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import javax.annotation.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.List;
-
+/**
+ * A full hive lets its surplus honey drip into a cauldron sitting under it, filling an empty one and
+ * topping up a honey cauldron.
+ *
+ * <p>Anchored on the returning bee handing over its nectar, which is the one point in
+ * {@code releaseOccupant} that only runs for a honey delivery. The hive's stored-bee record is
+ * package-private and so cannot appear in this handler's signature - the three values it does need
+ * are captured instead.
+ */
 @Mixin(BeehiveBlockEntity.class)
 public class BeehiveBlockEntityMixin {
 
-    @Inject(method = "releaseOccupant", at = @At("HEAD"))
-    private static void onReleaseBee(Level level, BlockPos blockPos, BlockState state,
-                                     BeehiveBlockEntity.BeeData beeData, @Nullable List<Entity> spawned,
-                                     BeehiveBlockEntity.BeeReleaseStatus releaseStatus, @Nullable BlockPos savedFlowerPos,
-                                     CallbackInfoReturnable<Boolean> cir) {
-        if (releaseStatus != BeehiveBlockEntity.BeeReleaseStatus.HONEY_DELIVERED) return;
-        BlockPos belowPos = blockPos.below();
+    @Inject(method = "releaseOccupant", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/animal/Bee;dropOffNectar()V"))
+    private static void onReleaseBee(CallbackInfoReturnable<Boolean> cir,
+                                     @Local(argsOnly = true) Level level,
+                                     @Local(argsOnly = true, ordinal = 0) BlockPos hivePos,
+                                     @Local(argsOnly = true) BlockState state) {
+        BlockPos belowPos = hivePos.below();
         BlockState belowState = level.getBlockState(belowPos);
         int i = 0;
         while (belowState.is(Blocks.AIR) && i<3) {

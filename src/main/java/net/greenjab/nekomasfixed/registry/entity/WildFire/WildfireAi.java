@@ -49,7 +49,7 @@ public class WildfireAi {
 	}
 
 	private static void initCoreActivity(Brain<WildfireEntity> brain) {
-		brain.addActivity(Activity.CORE, 0, ImmutableList.of(new Swim<>(0.8F), new LookAtTargetSink(45, 90)));
+		brain.addActivity(Activity.CORE, 0, ImmutableList.of(new Swim(0.8F), new LookAtTargetSink(45, 90)));
 	}
 
 	private static void initIdleActivity(Brain<WildfireEntity> brain) {
@@ -63,7 +63,9 @@ public class WildfireAi {
 
 	private static void initFightActivity(WildfireEntity wildfire, Brain<WildfireEntity> brain) {
 		brain.addActivityWithConditions(Activity.FIGHT, ImmutableList.of(
-				Pair.of(0, StopAttackingIfTargetInvalid.create(Sensor.wasEntityAttackableLastNTicks(wildfire, 1).negate()::test)),
+				// 1.20.1's Sensor has no "was attackable for the last N ticks" memo, only the direct
+				// per-tick test, so the target is re-checked outright each tick instead.
+				Pair.of(0, StopAttackingIfTargetInvalid.create(target -> !Sensor.isEntityAttackable(wildfire, target))),
 				Pair.of(1, new WildfireShootTask()),
 				Pair.of(2, new WildfireMeleeTask()),
 				Pair.of(3, new WildfireJumpTask()),

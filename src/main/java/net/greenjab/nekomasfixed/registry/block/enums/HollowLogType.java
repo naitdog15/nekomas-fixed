@@ -8,6 +8,7 @@ import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 
 public enum HollowLogType {
@@ -20,30 +21,39 @@ public enum HollowLogType {
     DARK_OAK(Blocks.DARK_OAK_LOG, BlockRegistry.HOLLOW_DARK_OAK_LOG),
     MANGROVE(Blocks.CHERRY_LOG, BlockRegistry.HOLLOW_MANGROVE_LOG),
     CHERRY(Blocks.CHERRY_LOG, BlockRegistry.HOLLOW_CHERRY_LOG),
-    PALE_OAK(Blocks.PALE_OAK_LOG, BlockRegistry.HOLLOW_PALE_OAK_LOG),
-    BAMBOO(Blocks.PALE_OAK_LOG, BlockRegistry.HOLLOW_BAMBOO_BLOCK),
+    BAMBOO(Blocks.BAMBOO_BLOCK, BlockRegistry.HOLLOW_BAMBOO_BLOCK),
     CRIMSON(Blocks.CRIMSON_HYPHAE, BlockRegistry.HOLLOW_CRIMSON_STEM),
     WARPED(Blocks.WARPED_HYPHAE, BlockRegistry.HOLLOW_WARPED_STEM),
     BAOBAB(BlockRegistry.BAOBAB_LOG, BlockRegistry.HOLLOW_BAOBAB_LOG);
 
-    private final Block baseLog;
-    private final Block hollowLog;
+    private final Supplier<Block> baseLog;
+    private final Supplier<Block> hollowLog;
 
-    private static final Map<Block, Block> BASE_TO_HOLLOW = new HashMap<>();
+    /** Built on first lookup — the mod's own blocks are not resolvable while this enum class-loads. */
+    private static Map<Block, Block> baseToHollow;
 
-    static {
-        for (HollowLogType type : values()) {
-            BASE_TO_HOLLOW.put(type.baseLog, type.hollowLog);
-        }
+    HollowLogType(Block baseLog, Supplier<Block> hollowLog) {
+        this(() -> baseLog, hollowLog);
     }
 
-    HollowLogType(Block baseLog, Block hollowLog) {
+    HollowLogType(Supplier<Block> baseLog, Supplier<Block> hollowLog) {
         this.baseLog = baseLog;
         this.hollowLog = hollowLog;
     }
 
+    private static Map<Block, Block> baseToHollow() {
+        if (baseToHollow == null) {
+            Map<Block, Block> map = new HashMap<>();
+            for (HollowLogType type : values()) {
+                map.put(type.baseLog.get(), type.hollowLog.get());
+            }
+            baseToHollow = map;
+        }
+        return baseToHollow;
+    }
+
     public static Block getHollowBlock(Block baseLog) {
-        return BASE_TO_HOLLOW.getOrDefault(baseLog, Blocks.AIR);
+        return baseToHollow().getOrDefault(baseLog, Blocks.AIR);
     }
 
     public static BlockState getHollowState(BlockState baseLog) {

@@ -3,6 +3,7 @@ package net.greenjab.nekomasfixed.registry.entity;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -47,8 +48,8 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.level.pathfinder.Path;
-import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
@@ -60,7 +61,7 @@ public class Drenched extends AbstractSkeleton {
     public Drenched(EntityType<? extends Drenched> entityType, Level level) {
         super(entityType, level);
         this.moveControl = new Drenched.DrenchedMoveControl(this);
-        this.setPathfindingMalus(PathType.WATER, 0.0F);
+        this.setPathfindingMalus(BlockPathTypes.WATER, 0.0F);
         this.setMaxUpStep(1.0F);
     }
 
@@ -83,7 +84,7 @@ public class Drenched extends AbstractSkeleton {
         this.goalSelector.addGoal(6, new Drenched.TargetAboveWaterGoal(this, 1.0, this.level().getSeaLevel()));
         this.goalSelector.addGoal(7, new RandomStrollGoal(this, 1.0));
         this.targetSelector
-                .addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, (target, ignored) -> this.canDrenchedAttackTarget(target)));
+                .addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, this::canDrenchedAttackTarget));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, false));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, IronGolem.class, true));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Axolotl.class, true, false));
@@ -91,8 +92,8 @@ public class Drenched extends AbstractSkeleton {
     }
 
     @Override
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnReason, SpawnGroupData entityData) {
-        entityData = super.finalizeSpawn(level, difficulty, spawnReason, entityData);
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnReason, SpawnGroupData entityData, CompoundTag dataTag) {
+        entityData = super.finalizeSpawn(level, difficulty, spawnReason, entityData, dataTag);
         this.setVariant(this.random.nextInt(3));
         if (this.getItemBySlot(EquipmentSlot.OFFHAND).isEmpty() && level.getRandom().nextFloat() < 0.03F) {
             this.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(getClam(level.getRandom().nextFloat())));
@@ -112,8 +113,8 @@ public class Drenched extends AbstractSkeleton {
     // PORT: 1.20.1's MobSpawnType has no isSpawner()/ignoresLightRequirements() helpers (26.2-only
     // conveniences); replaced with direct enum comparison, mirroring vanilla Drowned.checkDrownedSpawnRules
     // (forge-1.20.1-mapped-src/.../monster/Drowned.java:95-100), which itself has no light-requirement
-    // bypass branch - so that OR-branch is dropped rather than invented (§ this is a forced, version-level
-    // simplification: darkness is always required to spawn on 1.20.1, matching vanilla Drowned exactly).
+    // bypass branch - so that OR-branch is dropped rather than invented: darkness is always required
+    // to spawn on 1.20.1, matching vanilla Drowned exactly.
     public static boolean canSpawn(EntityType<Drenched> type, ServerLevelAccessor level, MobSpawnType spawnReason, BlockPos pos, RandomSource random) {
         if (!level.getFluidState(pos.below()).is(FluidTags.WATER) && spawnReason != MobSpawnType.SPAWNER) return false;
         Holder<Biome> registryEntry = level.getBiome(pos);
@@ -185,7 +186,7 @@ public class Drenched extends AbstractSkeleton {
     }
 
     public boolean canDrenchedAttackTarget(LivingEntity target) {
-        return target != null && (!this.level().isBrightOutside() || target.isInWater());
+        return target != null && (!this.level().isDay() || target.isInWater());
     }
 
     @Override
@@ -199,14 +200,16 @@ public class Drenched extends AbstractSkeleton {
         return livingEntity != null && livingEntity.isInWater();
     }
 
+    // 1.20.1 has no separate in-water travel hook; the swim drive goes in travel() itself, the same
+    // place and the same shape vanilla Drowned uses.
     @Override
-    protected void travelInWater(Vec3 movementInput, double gravity, boolean falling, double y) {
-        if (this.isUnderWater() && this.isTargetingUnderwater()) {
+    public void travel(Vec3 movementInput) {
+        if (this.isEffectiveAi() && this.isUnderWater() && this.isTargetingUnderwater()) {
             this.moveRelative(0.01F, movementInput);
             this.move(MoverType.SELF, this.getDeltaMovement());
             this.setDeltaMovement(this.getDeltaMovement().scale(0.9));
         } else {
-            super.travelInWater(movementInput, gravity, falling, y);
+            super.travel(movementInput);
         }
     }
 
@@ -307,7 +310,7 @@ public class Drenched extends AbstractSkeleton {
         @Override
         public boolean canUse() {
             return super.canUse()
-                    && !this.drenched.level().isBrightOutside()
+                    && !this.drenched.level().isDay()
                     && this.drenched.isInWater()
                     && this.drenched.getY() >= this.drenched.level().getSeaLevel() - 3;
         }
@@ -349,7 +352,7 @@ public class Drenched extends AbstractSkeleton {
 
         @Override
         public boolean canUse() {
-            return !this.drenched.level().isBrightOutside() && this.drenched.isInWater() && this.drenched.getY() < this.minY - 2;
+            return !this.drenched.level().isDay() && this.drenched.isInWater() && this.drenched.getY() < this.minY - 2;
         }
 
         @Override
@@ -427,7 +430,7 @@ public class Drenched extends AbstractSkeleton {
 
         @Override
         public boolean canUse() {
-            if (!this.level.isBrightOutside()) {
+            if (!this.level.isDay()) {
                 return false;
             } else if (this.mob.isInWater()) {
                 return false;

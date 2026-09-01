@@ -1,9 +1,9 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.screen.PyrotechnicsMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleMenuProvider;
@@ -18,7 +18,6 @@ import net.minecraft.world.phys.BlockHitResult;
 
 public class PyrotechnicsTableBlock extends HorizontalDirectionalBlock {
 
-    public static final MapCodec<PyrotechnicsTableBlock> CODEC = simpleCodec(PyrotechnicsTableBlock::new);
     private static final Component TITLE = Component.translatable("container.nekomasfixed.pyrotechnics");
 
     public PyrotechnicsTableBlock(Properties settings) {
@@ -26,20 +25,16 @@ public class PyrotechnicsTableBlock extends HorizontalDirectionalBlock {
     }
 
     @Override
-    protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
-        return CODEC;
-    }
-
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (!level.isClientSide()) {
             player.openMenu(state.getMenuProvider(level, pos));
         }
 
-        return InteractionResult.SUCCESS;
+        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
     @Override
-    protected MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
+    public MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
         return new SimpleMenuProvider((syncId, inventory, player) -> new PyrotechnicsMenu(syncId, inventory), TITLE);
     }
 

@@ -17,13 +17,13 @@ import net.minecraft.world.level.Level;
  * extractImage(Font, x, y, w, h, GuiGraphicsExtractor)}. {@code TypedEntityData}/manual
  * {@code EntityType.loadEntityRecursive} reconstruction is replaced by the ready-made
  * {@code AnimalComponent.StoredEntityData#loadEntity(Level)}. The mouse-follow mob preview itself is
- * 1.20.1 vanilla's own {@code InventoryScreen.renderEntityInInventoryFollowsAngle} (a real,
+ * 1.20.1 vanilla's own {@code InventoryScreen.renderEntityInInventoryFollowsMouse} (a real,
  * long-standing method — 26.2 appears to have simply renamed it
- * {@code extractEntityInInventoryFollowsMouse}).
+ * {@code extractEntityInInventoryFollowsMouse} and switched it from an origin+scale to a rectangle).
  *
  * <p><b>This DOES restore</b> the animal-preview tooltip image (spinning live-entity render). It does
  * <b>not</b> restore anything about hover-text formatting — that is {@code AnimalComponent.tooltipLine()},
- * wired in by whichever {@code appendHoverText} override picks it up (not this class's concern).
+ * which belongs on an {@code appendHoverText} override rather than here.
  */
 public class AnimalTooltipComponent implements ClientTooltipComponent {
     private final AnimalComponent animalComponent;
@@ -56,7 +56,11 @@ public class AnimalTooltipComponent implements ClientTooltipComponent {
         float dy = 10 * (float) (Math.cos(5 * time) + Math.sin(2 * time));
         int width = this.getWidth(font);
         int height = this.getHeight();
-        InventoryScreen.renderEntityInInventoryFollowsAngle(guiGraphics, x, y - 20, x + width, y + height, 40,
-                0.25F, x - 15 + dx, y + 30 + dy, livingEntity);
+        int centerX = x + width / 2;
+        int bottomY = y + height;
+        // 1.20.1's helper wants the offset from the render origin to the "mouse", not the mouse
+        // position itself; feeding it the same wandering point keeps the slow turn the preview had.
+        InventoryScreen.renderEntityInInventoryFollowsMouse(guiGraphics, centerX, bottomY, 40,
+                centerX - (x - 15.0F + dx), (bottomY - 50.0F) - (y + 30.0F + dy), livingEntity);
     }
 }

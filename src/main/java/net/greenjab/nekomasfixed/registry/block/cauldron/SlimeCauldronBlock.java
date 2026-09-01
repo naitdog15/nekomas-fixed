@@ -1,8 +1,6 @@
 package net.greenjab.nekomasfixed.registry.block.cauldron;
 
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.world.item.Item;
 import net.minecraft.server.level.ServerLevel;
@@ -13,8 +11,8 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.AbstractCauldronBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -25,7 +23,6 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import java.util.Map;
 
 public class SlimeCauldronBlock extends AbstractCauldronBlock {
-    public static final MapCodec<SlimeCauldronBlock> CODEC = simpleCodec(SlimeCauldronBlock::new);
 
     public static final IntegerProperty SLIME_LEVEL = IntegerProperty.create("slime_level", 1, 4);
     public static final int MAX_LEVEL = 4;
@@ -36,13 +33,9 @@ public class SlimeCauldronBlock extends AbstractCauldronBlock {
                 .setValue(SLIME_LEVEL, MAX_LEVEL));
     }
 
-    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
-        return Items.CAULDRON.getDefaultInstance();
-    }
-
     @Override
-    protected MapCodec<? extends AbstractCauldronBlock> codec() {
-        return CODEC;
+    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
+        return Items.CAULDRON.getDefaultInstance();
     }
 
     @Override
@@ -68,14 +61,16 @@ public class SlimeCauldronBlock extends AbstractCauldronBlock {
                 }
                 return InteractionResult.SUCCESS;
             } else {
-                return InteractionResult.TRY_WITH_EMPTY_HAND;
+                return InteractionResult.PASS;
             }
         });
 
         SLIME.put(Items.SLIME_BALL, (state, level, pos, player, hand, stack) -> {
             if (state.getValue(SLIME_LEVEL) < MAX_LEVEL) {
                 if (!level.isClientSide()) {
-                    stack.consume(1, player);
+                    if (!player.getAbilities().instabuild) {
+                        stack.shrink(1);
+                    }
                     level.setBlockAndUpdate(pos, state.setValue(SLIME_LEVEL, state.getValue(SLIME_LEVEL) + 1));
                     level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY,
                             SoundSource.BLOCKS, 1.0F, 1.0F);
@@ -86,7 +81,7 @@ public class SlimeCauldronBlock extends AbstractCauldronBlock {
     }
 
     @Override
-    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (!level.isClientSide()) {
             if (state.getValue(SLIME_LEVEL) < MAX_LEVEL) {
                 level.setBlockAndUpdate(pos, state.setValue(SLIME_LEVEL, state.getValue(SLIME_LEVEL) + 1));
@@ -107,7 +102,7 @@ public class SlimeCauldronBlock extends AbstractCauldronBlock {
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         return state.getValue(SLIME_LEVEL);
     }
 }

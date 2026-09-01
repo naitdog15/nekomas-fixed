@@ -35,8 +35,6 @@ public class BedBlockMixin implements MessyBedAccessor {
         builder.add(MessyBedAccessor.MESSY);
     }
 
-    // 1.20.1 delta: no useWithoutItem split (see BlockBehaviourMixin's header) — retargeted onto the
-    // combined use(...), which gains an InteractionHand parameter useWithoutItem did not have.
     @Inject(method =  "use", at = @At("HEAD"), cancellable = true)
         protected void onUse(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
         if(!level.isClientSide()){
@@ -50,7 +48,7 @@ public class BedBlockMixin implements MessyBedAccessor {
                 return;
             }
 
-            if(level.isDarkOutside() && !state.getValue(MessyBedAccessor.MESSY) && !state.getValue(BedBlock.OCCUPIED)){
+            if(level.isNight() && !state.getValue(MessyBedAccessor.MESSY) && !state.getValue(BedBlock.OCCUPIED)){
                 BlockState otherState = level.getBlockState(otherPos);
                 level.setBlockAndUpdate(pos, state.setValue(MessyBedAccessor.MESSY, true));
                 level.setBlockAndUpdate(otherPos, otherState.setValue(MessyBedAccessor.MESSY, true));

@@ -24,7 +24,7 @@ public class NautilusBlockEntity extends BlockEntity {
 	private final List<AnimalComponent.StoredEntityData> animal = Lists.newArrayList();
 
 	public NautilusBlockEntity(BlockPos pos, BlockState state) {
-		super(BlockEntityTypeRegistry.NAUTILUS_BLOCK_ENTITY, pos, state);
+		super(BlockEntityTypeRegistry.NAUTILUS_BLOCK_ENTITY.get(), pos, state);
 	}
 
 	public boolean hasAnimal() {
@@ -35,7 +35,7 @@ public class NautilusBlockEntity extends BlockEntity {
 		if (this.animal.isEmpty()) {
 			animal.stopRiding();
 			animal.ejectPassengers();
-			animal.dropLeash();
+			animal.dropLeash(true, true);
 			this.animal.add(AnimalComponent.StoredEntityData.of(animal));
 			if (this.level != null) {
 
@@ -86,22 +86,18 @@ public class NautilusBlockEntity extends BlockEntity {
 			entity.setYBodyRot(direction.toYRot());
 			entity.setYHeadRot(direction.toYRot());
 			entity.yRotO =direction.toYRot();
-			entity.snapTo(e, g, h, direction.toYRot(), entity.getXRot());
+			entity.moveTo(e, g, h, direction.toYRot(), entity.getXRot());
 			level.playSound(null, pos, SoundEvents.BEEHIVE_EXIT, SoundSource.BLOCKS, 1.0F, 1.0F);
 			level.gameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Context.of(entity, level.getBlockState(pos)));
 			return level.addFreshEntity(entity);
 		} else return false;
 	}
 
-	// ValueInput/ValueOutput and the applyImplicitComponents/
-	// collectImplicitComponents/removeComponentsFromTag trio are all 1.21+ (the latter three exist
-	// specifically to sync a block entity's state into/out of a 1.21+ ItemStack data component when
-	// the block is mined/placed). On 1.20.1 that same "animal survives being mined and re-placed"
-	// behaviour is already covered by plain load/saveAdditional: BlockEntity#saveToItem(ItemStack)
-	// (uninherited, unmodified here) calls saveWithoutMetadata() -> saveAdditional() and stores the
-	// result under the dropped stack's own BlockEntityTag, and NautilusBlock#playerWillDestroy
-	// already builds the drop through that path - so one CompoundTag-based pair covers both the
-	// world-save case and the item-carry case, and no separate component sync method is needed.
+	/** What a dropped or picked shell carries its passenger in. */
+	public AnimalComponent getAnimalComponent() {
+		return new AnimalComponent(List.copyOf(this.animal));
+	}
+
 	@Override
 	public void load(CompoundTag tag) {
 		super.load(tag);
@@ -112,11 +108,8 @@ public class NautilusBlockEntity extends BlockEntity {
 		}
 	}
 
-	// This is the exact "unguarded even when the list is empty" site
-	// (26.2 source: NautilusBlockEntity.java:124's collectImplicitComponents) - an empty
-	// AnimalComponent elided for free under the old component system, but an NBT facade writes an
-	// empty compound unless guarded explicitly, which is a real on-disk/on-wire diff for every
-	// nautilus block in every world. Guarded by the `if` below.
+	// No key at all when the shell is empty, so an ordinary nautilus saves an empty tag and nothing
+	// copying this block entity onto a stack stamps it with a leftover empty list.
 	@Override
 	protected void saveAdditional(CompoundTag tag) {
 		super.saveAdditional(tag);

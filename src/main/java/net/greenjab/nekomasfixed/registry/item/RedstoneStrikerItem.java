@@ -27,17 +27,21 @@ public class RedstoneStrikerItem extends FlintAndSteelItem {
         Player player = context.getPlayer();
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
-        GlobalPos Gpos = new GlobalPos(level.dimension(), pos);
+        GlobalPos Gpos = GlobalPos.of(level.dimension(), pos);
         BlockState state = context.getLevel().getBlockState(pos);
         level.playSound(player, pos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
         if (player != null) {
             player.swing(player.getUsedItemHand(), true);
-            context.getItemInHand().hurtAndBreak(1, player, context.getHand().asEquipmentSlot());
+            context.getItemInHand().hurtAndBreak(1, player, p -> p.broadcastBreakEvent(context.getHand()));
             STRUCK_WIRES.put(Gpos, level.getGameTime() + (player.isShiftKeyDown() ? 1 : 16));
         } else STRUCK_WIRES.put(Gpos, level.getGameTime() + 16);
-        if (state.is(Blocks.OBSERVER) && level instanceof ServerLevel serverLevel)
-            if (state.getBlock() instanceof ObserverBlock observerBlock) observerBlock.startSignal(serverLevel, level, pos);
-        state.handleNeighborChanged(level, pos, Blocks.AIR, null, false);
+        if (state.is(Blocks.OBSERVER) && level instanceof ServerLevel serverLevel && state.getBlock() instanceof ObserverBlock observerBlock) {
+            // startSignal is private on ObserverBlock, so nudge it the same way it nudges itself: schedule its pulse if one isn't already queued
+            if (!serverLevel.getBlockTicks().hasScheduledTick(pos, observerBlock)) {
+                serverLevel.scheduleTick(pos, observerBlock, 2);
+            }
+        }
+        state.neighborChanged(level, pos, Blocks.AIR, pos, false);
         level.updateNeighborsAt(pos, state.getBlock());
         return InteractionResult.SUCCESS;
     }

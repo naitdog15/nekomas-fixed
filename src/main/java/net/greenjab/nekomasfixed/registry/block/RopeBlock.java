@@ -1,6 +1,5 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -27,19 +26,13 @@ public class RopeBlock extends Block implements SimpleWaterloggedBlock {
     public static final BooleanProperty ATTACHED = BlockStateProperties.ATTACHED;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
-    public static final MapCodec<RopeBlock> CODEC = simpleCodec(RopeBlock::new);
-    private static final VoxelShape SHAPE = Block.column(14.0, 0.0, 16.0);
+    private static final VoxelShape SHAPE = Block.box(1.0, 0.0, 1.0, 15.0, 16.0, 15.0);
 
     public RopeBlock(Properties settings) {
         super(settings);
         this.registerDefaultState(this.stateDefinition.any().setValue(ATTACHED, false).setValue(WATERLOGGED, false));
     }
 
-    @Override
-    public MapCodec<RopeBlock> codec() {
-        return CODEC;
-    }
-    
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(ATTACHED, WATERLOGGED);
@@ -49,13 +42,14 @@ public class RopeBlock extends Block implements SimpleWaterloggedBlock {
     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
         Level level = ctx.getLevel();
         BlockPos pos = ctx.getClickedPos();
-        boolean connected = level.getBlockState(pos.above()).is(BlockRegistry.ROPE)|| level.getBlockState(pos.above()).is(BlockTags.LEAVES);
+        boolean connected = level.getBlockState(pos.above()).is(BlockRegistry.ROPE.get())|| level.getBlockState(pos.above()).is(BlockTags.LEAVES);
         return this.defaultBlockState()
                 .setValue(WATERLOGGED, level.getFluidState(pos).getType() == Fluids.WATER)
                 .setValue(ATTACHED, connected);
     }
 
-    protected BlockState updateShape(
+    @Override
+    public BlockState updateShape(
             BlockState state, Direction direction, BlockState neighborState,
             LevelAccessor level, BlockPos pos, BlockPos neighborPos
     ) {
@@ -65,23 +59,23 @@ public class RopeBlock extends Block implements SimpleWaterloggedBlock {
     }
 
     @Override
-    protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         BlockState blockState = level.getBlockState(pos.above());
-        return blockState.is(BlockRegistry.ROPE) || blockState.is(BlockTags.LEAVES) || blockState.isFaceSturdy(level, pos, Direction.DOWN);
+        return blockState.is(BlockRegistry.ROPE.get()) || blockState.is(BlockTags.LEAVES) || blockState.isFaceSturdy(level, pos, Direction.DOWN);
     }
 
     @Override
-    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (!state.canSurvive(level, pos)) level.destroyBlock(pos, true);
     }
 
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
     @Override
-    protected FluidState getFluidState(BlockState state) {
+    public FluidState getFluidState(BlockState state) {
         return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 

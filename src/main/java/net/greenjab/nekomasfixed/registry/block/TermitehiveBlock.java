@@ -1,72 +1,75 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.registry.block.entity.TermitehiveBlockEntity;
 import net.greenjab.nekomasfixed.registry.entity.Termite;
+import net.greenjab.nekomasfixed.registry.other.TermitesComponent;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
-import net.minecraft.advancements.triggers.CriteriaTriggers;
+import net.greenjab.nekomasfixed.util.StackData;
+import net.minecraft.Util;
+import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.EnchantmentTags;
-import net.minecraft.util.Util;
-import net.minecraft.world.Containers;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.hurtingprojectile.WitherSkull;
-import net.minecraft.world.entity.vehicle.minecart.MinecartTNT;
+import net.minecraft.world.entity.projectile.WitherSkull;
+import net.minecraft.world.entity.vehicle.MinecartTNT;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.BlockItemStateProperties;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.FireBlock;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
-import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
 import javax.annotation.Nullable;
 
 import java.util.List;
-import java.util.function.BiConsumer;
 
 public class TermitehiveBlock extends BaseEntityBlock {
-    public static final MapCodec<TermitehiveBlock> CODEC = simpleCodec(TermitehiveBlock::new);
     public static IntegerProperty TERMITES = IntegerProperty.create("termites", 0, 2);
+    /** BlockItem reads placement overrides out of this tag, so a picked hive keeps its count. */
+    private static final String BLOCK_STATE_TAG = "BlockStateTag";
+
     public TermitehiveBlock(Properties settings) {
         super(settings);
         this.registerDefaultState(this.defaultBlockState().setValue(TERMITES, 0));
     }
 
     @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {return CODEC;}
-
-    @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(TERMITES);
+    }
+
+    /** The hive is a plain baked model; the block entity only tracks the colony. */
+    @Override
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
     @Override
     public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         if (level.isClientSide()) return null;
 
-        if (type == BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY) {
+        if (type == BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY.get()) {
             return (level1, pos, state1, blockEntity) -> {
                 if (blockEntity instanceof TermitehiveBlockEntity hive) {
                     TermitehiveBlockEntity.serverTick(level1, pos, state1, hive);
@@ -80,33 +83,35 @@ public class TermitehiveBlock extends BaseEntityBlock {
     }
 
     @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (level instanceof ServerLevel serverLevel
-                && player.preventsBlockDrops()
-                && serverLevel.getGameRules().get(GameRules.BLOCK_DROPS)
+                && player.getAbilities().instabuild
+                && serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)
                 && level.getBlockEntity(pos) instanceof TermitehiveBlockEntity termitehiveBlockEntity) {
             boolean bl = !termitehiveBlockEntity.hasNoTermites();
             if (bl) {
                 ItemStack itemStack = new ItemStack(this);
-                itemStack.applyComponents(termitehiveBlockEntity.collectComponents());
+                StackData.write(itemStack, StackData.KEY_TERMITES, TermitesComponent.CODEC,
+                        new TermitesComponent(termitehiveBlockEntity.createTermitesData()));
                 ItemEntity itemEntity = new ItemEntity(level, pos.getX(), pos.getY(), pos.getZ(), itemStack);
                 itemEntity.setDefaultPickUpDelay();
                 level.addFreshEntity(itemEntity);
             }
         }
-        return super.playerWillDestroy(level, pos, state, player);
+        super.playerWillDestroy(level, pos, state, player);
     }
 
 
     @Override
-    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
-        ItemStack itemStack = super.getCloneItemStack(level, pos, state, includeData);
-        if (includeData) itemStack.set(DataComponents.BLOCK_STATE, BlockItemStateProperties.EMPTY.with(TERMITES, state.getValue(TERMITES)));
+    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
+        ItemStack itemStack = super.getCloneItemStack(level, pos, state);
+        itemStack.getOrCreateTagElement(BLOCK_STATE_TAG)
+                .putString(TERMITES.getName(), Integer.toString(state.getValue(TERMITES)));
         return itemStack;
     }
 
     @Override
-    protected List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
         Entity entity = builder.getOptionalParameter(LootContextParams.THIS_ENTITY);
         if (entity instanceof PrimedTnt
                 || entity instanceof Creeper
@@ -123,7 +128,7 @@ public class TermitehiveBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected BlockState updateShape(
+    public BlockState updateShape(
             BlockState state, Direction direction, BlockState neighborState,
             LevelAccessor level, BlockPos pos, BlockPos neighborPos
     ) {
@@ -143,9 +148,10 @@ public class TermitehiveBlock extends BaseEntityBlock {
     public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack tool) {
         super.playerDestroy(level, player, pos, state, blockEntity, tool);
         if (!level.isClientSide() && blockEntity instanceof TermitehiveBlockEntity termitehiveBlockEntity) {
-            if (!EnchantmentHelper.hasTag(tool, EnchantmentTags.PREVENTS_BEE_SPAWNS_WHEN_MINING)) {
+            // silk touch is what keeps the colony inside, same as a bee nest
+            if (EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool) == 0) {
                 termitehiveBlockEntity.angerTermites(TermitehiveBlockEntity.TermiteState.EMERGENCY);
-                Containers.updateNeighboursAfterDestroy(state, level, pos);
+                level.updateNeighbourForOutputSignal(pos, this);
                 this.angerNearbyTermites(level, pos);
             }
             CriteriaTriggers.BEE_NEST_DESTROYED.trigger((ServerPlayer)player, state, tool, termitehiveBlockEntity.getTermiteCount());
@@ -153,8 +159,8 @@ public class TermitehiveBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected void onExplosionHit(BlockState state, ServerLevel level, BlockPos pos, Explosion explosion, BiConsumer<ItemStack, BlockPos> stackMerger) {
-        super.onExplosionHit(state, level, pos, explosion, stackMerger);
+    public void wasExploded(Level level, BlockPos pos, Explosion explosion) {
+        super.wasExploded(level, pos, explosion);
         this.angerNearbyTermites(level, pos);
     }
 

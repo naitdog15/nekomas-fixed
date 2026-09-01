@@ -70,10 +70,10 @@ public class DyedBrushItem extends Item {
             } else if (state.is(ModTags.DYED_BRICK_WALLS) || state.is(Blocks.BRICK_WALL) && !state.is(getBrickWalls(color))) {
                 level.setBlockAndUpdate(pos, getBrickWalls(color).defaultBlockState()
                         .setValue(WallBlock.WATERLOGGED, state.getValue(WallBlock.WATERLOGGED))
-                        .setValue(WallBlock.NORTH, state.getValue(WallBlock.NORTH))
-                        .setValue(WallBlock.EAST, state.getValue(WallBlock.EAST))
-                        .setValue(WallBlock.SOUTH, state.getValue(WallBlock.SOUTH))
-                        .setValue(WallBlock.WEST, state.getValue(WallBlock.WEST))
+                        .setValue(WallBlock.NORTH_WALL, state.getValue(WallBlock.NORTH_WALL))
+                        .setValue(WallBlock.EAST_WALL, state.getValue(WallBlock.EAST_WALL))
+                        .setValue(WallBlock.SOUTH_WALL, state.getValue(WallBlock.SOUTH_WALL))
+                        .setValue(WallBlock.WEST_WALL, state.getValue(WallBlock.WEST_WALL))
                         .setValue(WallBlock.UP, state.getValue(WallBlock.UP)));
                 used = true;
             } else if (state.is(ModTags.STAINED_GLASSES) || state.is(Blocks.GLASS) && !state.is(getStainedGlass(color))) {
@@ -158,7 +158,7 @@ public class DyedBrushItem extends Item {
     private void afterUse( UseOnContext context){
         Player player = context.getPlayer();
         if (player != null) {
-            context.getItemInHand().hurtAndBreak(1, player, context.getHand());
+            context.getItemInHand().hurtAndBreak(1, player, entity -> entity.broadcastBreakEvent(context.getHand()));
             context.getLevel().playSound(null, context.getClickedPos(), SoundEvents.SLIME_SQUISH, SoundSource.BLOCKS, 1.0F, 1.0F);
         }
     }

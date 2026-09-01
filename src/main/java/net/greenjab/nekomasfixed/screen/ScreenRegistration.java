@@ -10,10 +10,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
  * {@code MenuScreens.register(KILN / PYROTECHNICS, ...)}, from {@code
- * FMLClientSetupEvent#enqueueWork}. Client-only self-registering handler, in this package's own
- * {@code screen/**} package (see EntityAttributesAndSpawns.java's javadoc for why a dedicated
- * {@code @Mod.EventBusSubscriber} class is used instead of editing {@code
- * ModBusClientEvents.java} directly - same reasoning applies here).
+ * FMLClientSetupEvent#enqueueWork}. A client-only self-registering handler kept beside the screens
+ * it registers, for the same reason {@code EntityAttributesAndSpawns} sits beside its entities.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ScreenRegistration {

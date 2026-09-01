@@ -14,22 +14,11 @@ import net.minecraftforge.registries.RegistryObject;
  * fails to parse. {@code RecipePropertySet}/{@code RecipeBookCategory} (both 1.21.4+) are DROPPED
  * ("no 1.20.1 registry"); both {@code KilnMenu} constructors take
  * {@code RecipeType<? extends AbstractCookingRecipe>} in place of the dropped
- * {@code RecipePropertySet} key - that reshape is {@code screen/KilnMenu.java}'s (outside this
- * package).
+ * {@code RecipePropertySet} key - see {@code screen/KilnMenu.java} for that end of it.
  * <p>
- * <b>Cross-file dependency, uncommitted.</b> {@code registry/recipe/KilnRecipe.java} is outside this
- * package's scope ({@code registry/registries/**}/{@code registry/block/**}/
- * {@code registry/item/**} only) but is the recipe {@link #KILN} and {@link #KILN_SERIALIZER} below
- * assume exists in 1.20.1-compatible form. As things stand it is written entirely in 26.2-only
- * API: its constructor takes {@code Recipe.CommonInfo}/{@code AbstractCookingRecipe.CookingBookInfo}/
- * {@code ItemStackTemplate} (none exist on 1.20.1), {@code SERIALIZER} is built from a
- * {@code StreamCodec}-based generic {@code RecipeSerializer<>(MapCodec, StreamCodec)} constructor
- * (1.20.5+; 1.20.1 needs a {@code SimpleCookingSerializer}-style class with
- * {@code fromNetwork(FriendlyByteBuf)}/{@code toNetwork(FriendlyByteBuf, T)}), and
- * {@code recipeBookCategory()} returns the now-dropped {@code RecipeRegistry.KILNING_BLOCK}/
- * {@code KILNING_MISC}. Whoever owns {@code registry/recipe/**} needs to rewrite that class in
- * parallel with this one; until then this file's own reference to {@code KilnRecipe.SERIALIZER}
- * will not compile - an expected, named cross-file error, not a defect in this file.
+ * {@link #KILN_SERIALIZER}'s actual instance lives on {@code registry/recipe/KilnRecipe.java} as a
+ * {@code SimpleCookingSerializer}-shaped class of its own, vanilla's not being reusable from another
+ * package (its factory interface is package-private).
  */
 public class RecipeRegistry {
 
@@ -46,8 +35,7 @@ public class RecipeRegistry {
                 }
             });
 
-    // id "kilning" (not "kiln") preserved verbatim - see class javadoc; KilnRecipe.SERIALIZER is the
-    // one field whoever converts KilnRecipe.java must keep resolvable to a real RecipeSerializer.
+    // id "kilning" (not "kiln") preserved verbatim - see class javadoc.
     public static final RegistryObject<RecipeSerializer<KilnRecipe>> KILN_SERIALIZER =
             RECIPE_SERIALIZERS.register("kilning", () -> KilnRecipe.SERIALIZER);
 }

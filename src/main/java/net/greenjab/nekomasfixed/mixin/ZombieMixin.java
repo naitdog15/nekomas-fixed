@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 // (plural holder) is EntityType (see boat.PatrolSpawnerMixin's note). Mob#convertTo has one overload,
 // convertTo(EntityType<T>, boolean): T (see SkeletonMixin's matching note) — no ConversionParams, no
 // callback. The unnamed `_` lambda parameter (JEP 456, Java 21+) is not legal at this mod's Java 17
-// compatibility level (§4.3's Java 17 sweep) and is given a name instead.
+// compatibility level and is given a name instead.
 @Mixin(Zombie.class)
 public abstract class ZombieMixin extends Monster {
 

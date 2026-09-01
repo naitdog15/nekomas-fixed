@@ -22,12 +22,8 @@ import org.joml.Quaternionf;
  * that enum is closed on 1.20.1. This is a minimal, type-agnostic stand-in built directly on
  * vanilla's {@link BoatModel}: it renders any {@link Boat} (or {@code ChestBoat}, which extends it)
  * using one baked model and one texture derived from the layer id, exactly mirroring
- * {@link BigBoatRenderer}'s own texture-derivation trick. Once
- * {@code EntityTypeRegistry.BAOBAB_BOAT}/{@code BAOBAB_CHEST_BOAT}'s real Java shape is confirmed,
- * this registration in {@code ModEntityRendererRegistry} may need to change to a no-op (if they turn
- * out to just be aliases for {@code EntityType.BOAT}/{@code CHEST_BOAT}, which already renders
- * without any mod registration) or to a dedicated model class (if the chest variant needs its own
- * mesh).
+ * {@link BigBoatRenderer}'s own texture-derivation trick. If the chest variant ever needs its own
+ * mesh, this is the place to swap in a dedicated model class.
  */
 public class SimpleBoatRenderer extends EntityRenderer<Boat> {
     private final ResourceLocation texture;
@@ -36,7 +32,7 @@ public class SimpleBoatRenderer extends EntityRenderer<Boat> {
     public SimpleBoatRenderer(EntityRendererProvider.Context context, ModelLayerLocation layer, BoatModel model) {
         super(context);
         this.shadowRadius = 0.8F;
-        this.texture = new ResourceLocation(layer.model().getNamespace(), "textures/entity/" + layer.model().getPath() + ".png");
+        this.texture = new ResourceLocation(layer.getModel().getNamespace(), "textures/entity/" + layer.getModel().getPath() + ".png");
         this.model = model;
     }
 

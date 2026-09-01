@@ -7,9 +7,9 @@ import com.mojang.serialization.Codec;
  * through {@code StackData} under key {@code "stored_time"}, never a 1.21+ data component.
  * <p>
  * {@code TooltipProvider}/{@code DataComponentGetter}/{@code Item.TooltipContext} do not exist on
- * 1.20.1 — data components are a REDESIGN, not a port, and must be designed once, centrally. The
- * tooltip text this record used to contribute via {@code addToTooltip} is re-homed by
- * whichever package owns the consuming item's {@code appendHoverText} — the vanilla clock.
+ * 1.20.1, so a record cannot contribute tooltip text of its own here. The line this one used to
+ * add via {@code addToTooltip} belongs on the consuming item's {@code appendHoverText} — the
+ * vanilla clock.
  */
 public record StoredTimeComponent(int time) {
     public static final Codec<StoredTimeComponent> CODEC =

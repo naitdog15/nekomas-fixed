@@ -23,7 +23,7 @@ public class RopeItem extends BlockItem {
 
     protected boolean canPlaceAt(Level level, BlockPos pos) {
         BlockState blockState = level.getBlockState(pos.above());
-        return blockState.is(BlockRegistry.ROPE) || blockState.is(BlockTags.LEAVES) || blockState.isFaceSturdy(level, pos, Direction.DOWN);
+        return blockState.is(BlockRegistry.ROPE.get()) || blockState.is(BlockTags.LEAVES) || blockState.isFaceSturdy(level, pos, Direction.DOWN);
     }
 
     @Nullable
@@ -37,9 +37,9 @@ public class RopeItem extends BlockItem {
         Direction direction = Direction.DOWN;
         BlockPos.MutableBlockPos mutable = blockPos.mutable().move(direction);
         while (true) {
-            if (!level.isClientSide() && !level.isInWorldBounds(mutable)) {
+            if (!level.isClientSide() && level.isOutsideBuildHeight(mutable)) {
                 Player playerEntity = context.getPlayer();
-                int j = level.getMaxY();
+                int j = level.getMaxBuildHeight();
                 if (playerEntity instanceof ServerPlayer && mutable.getY() > j)
                     ((ServerPlayer)playerEntity).sendSystemMessage(Component.translatable("argument.pos.outofbounds").withStyle(ChatFormatting.RED), true);
                 break;

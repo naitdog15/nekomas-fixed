@@ -18,10 +18,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// onDestroyed(ItemEntity) and updateBlockStateFromTag(BlockPos, Level, ItemStack, BlockState) are
-// both unchanged (VERIFIED forge-1.20.1-mapped-src BlockItem.java:123,223). ComponentRegistry.ANIMAL/
-// CLAM_STATE (DataComponentTypes, 1.20.5+) become StackData calls (§9.1); .getFirst() -> .get(0)
-// (Java 17 sweep, §4.3 — a real java.util.List, not one of the 3 legitimate Mojang Pair.getFirst()s).
+// Breaking a nautilus item drops the animal stored in it back into the world, and placing a clam
+// item that was picked up open places it open again. Both bits of stack data go through StackData.
 @Mixin(BlockItem.class)
 public class BlockItemMixin {
 
@@ -37,7 +35,7 @@ public class BlockItemMixin {
                 double e = pos.getX() + 0.5;
                 double g = pos.getY() + 0.5 - releasedEntity.getBbHeight() / 2.0F;
                 double h = pos.getZ() + 0.5;
-                releasedEntity.snapTo(e, g, h, releasedEntity.getYRot(), releasedEntity.getXRot());
+                releasedEntity.moveTo(e, g, h, releasedEntity.getYRot(), releasedEntity.getXRot());
                 level.addFreshEntity(releasedEntity);
             }
             ci.cancel();

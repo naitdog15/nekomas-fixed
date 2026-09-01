@@ -1,7 +1,5 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -17,20 +15,10 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class FloorClockBlock extends AbstractClockBlock {
-	public static final MapCodec<FloorClockBlock> CODEC = RecordCodecBuilder.mapCodec(
-		instance -> instance.group(
-				propertiesCodec()
-			).apply(instance, FloorClockBlock::new)
-	);
 	public static final int MAX_ROTATION_INDEX = RotationSegment.getMaxSegmentIndex();
 	private static final int MAX_ROTATIONS = MAX_ROTATION_INDEX + 1;
 	public static final IntegerProperty ROTATION = BlockStateProperties.ROTATION_16;
-	private static final VoxelShape SHAPE = Block.column(8.0, 0.0, 8.0);
-
-	@Override
-	public MapCodec<? extends FloorClockBlock> codec() {
-		return CODEC;
-	}
+	private static final VoxelShape SHAPE = Block.box(4.0, 0.0, 4.0, 12.0, 8.0, 12.0);
 
 	public FloorClockBlock(Properties settings) {
 		super(settings);
@@ -38,7 +26,7 @@ public class FloorClockBlock extends AbstractClockBlock {
 	}
 
 	@Override
-	protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+	public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		return SHAPE;
 	}
 
@@ -48,12 +36,12 @@ public class FloorClockBlock extends AbstractClockBlock {
 	}
 
 	@Override
-	protected BlockState rotate(BlockState state, Rotation rotation) {
+	public BlockState rotate(BlockState state, Rotation rotation) {
 		return state.setValue(ROTATION, rotation.rotate(state.getValue(ROTATION), MAX_ROTATIONS));
 	}
 
 	@Override
-	protected BlockState mirror(BlockState state, Mirror mirror) {
+	public BlockState mirror(BlockState state, Mirror mirror) {
 		return state.setValue(ROTATION, mirror.mirror(state.getValue(ROTATION), MAX_ROTATIONS));
 	}
 

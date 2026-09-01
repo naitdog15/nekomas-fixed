@@ -26,10 +26,16 @@ public class Derelict extends Zombie {
         }
     }
 
+    /**
+     * The cloud only ever puffs on a hit that actually landed, so this runs after super - which keeps
+     * vanilla's invulnerability window, knockback and shield handling exactly as they are; a hit
+     * swallowed by the window returns false and leaves the cooldown untouched.
+     */
     @Override
-    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
-        boolean isDamaged = super.hurtServer(level, source, amount);
-        if (isDamaged && this.cloudCooldown == 0 && source.getEntity() instanceof LivingEntity) {
+    public boolean hurt(DamageSource source, float amount) {
+        boolean isDamaged = super.hurt(source, amount);
+        if (isDamaged && this.cloudCooldown == 0 && source.getEntity() instanceof LivingEntity
+                && this.level() instanceof ServerLevel level) {
             this.spawnPoisonCloud(level);
             this.cloudCooldown = 40;
         }

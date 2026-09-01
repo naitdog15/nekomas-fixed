@@ -14,7 +14,7 @@ public class FlammableFenceGateBlock extends FenceGateBlock {
     private final int burnOdds;
 
     public FlammableFenceGateBlock(WoodType woodType, BlockBehaviour.Properties settings, int igniteOdds, int burnOdds) {
-        super(woodType, settings);
+        super(settings, woodType);
         this.igniteOdds = igniteOdds;
         this.burnOdds = burnOdds;
     }

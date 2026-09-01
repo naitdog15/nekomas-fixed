@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Block.class)
 public class BlockMixin {
-    // Part of the "keep and expect pain" set of mixins. 1.20.1 delta: 26.2's Holder<Enchantment>/registry
+    // 1.20.1 delta: 26.2's Holder<Enchantment>/registry
     // lookup (Enchantments.SILK_TOUCH is a ResourceKey/Holder there) becomes 1.20.1's plain
     // Enchantment instance; ItemStack#getEnchantments() (an ItemEnchantments view) becomes
     // EnchantmentHelper.getItemEnchantmentLevel/getEnchantments(ItemStack). playerDestroy's own

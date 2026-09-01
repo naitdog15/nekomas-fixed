@@ -1,13 +1,13 @@
 package net.greenjab.nekomasfixed.registry.other;
 
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
+
 /**
- * DESIGN: 1.20.1 has no general item->tooltip-image mechanism — the
- * {@code net.minecraft.world.inventory.tooltip.TooltipComponent} marker interface this record used
- * to implement is a 1.21+ data-component-era API with no 1.20.1 equivalent (image-in-tooltip
- * rendering on 1.20.1 was special-cased per feature, e.g. bundles, not general). Kept as a plain
- * data carrier; wiring actual tooltip-image rendering through a client mixin (comparable to
- * {@code ClientTooltipComponentMixin}) is left to whichever package owns the renderer, not invented
- * here.
+ * The payload half of an item's tooltip image: {@code Item#getTooltipImage} returns one of these,
+ * and {@code ClientTooltipComponent.create(TooltipComponent)} turns it into the drawable half (see
+ * {@code mixin/client/ClientTooltipComponentMixin}, which is what teaches that dispatch about this
+ * type). {@code TooltipComponent} itself is a bare marker interface on 1.20.1, same as vanilla's own
+ * {@code BundleTooltip} uses.
  */
-public record AnimalTooltipData(AnimalComponent contents) {
+public record AnimalTooltipData(AnimalComponent contents) implements TooltipComponent {
 }

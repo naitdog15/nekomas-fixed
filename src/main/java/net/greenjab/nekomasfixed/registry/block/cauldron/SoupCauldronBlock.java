@@ -1,41 +1,35 @@
 package net.greenjab.nekomasfixed.registry.block.cauldron;
 
-import com.mojang.serialization.MapCodec;
 import it.unimi.dsi.fastutil.floats.Float2FloatFunction;
 import net.greenjab.nekomasfixed.registry.block.entity.SoupCauldronBlockEntity;
+import net.greenjab.nekomasfixed.registry.item.SpecialSoupItem;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
+import net.greenjab.nekomasfixed.util.StackData;
+import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Util;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.PotionContents;
-import net.minecraft.world.item.component.DyedItemColor;
-import net.minecraft.world.item.component.ItemContainerContents;
-import net.minecraft.world.item.component.UseRemainder;
-import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -48,20 +42,23 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import javax.annotation.Nullable;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
 public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
-    public static final MapCodec<SoupCauldronBlock> CODEC = simpleCodec(SoupCauldronBlock::new);
 
-    private static final VoxelShape RAYCAST_SHAPE = Block.column(12.0, 4.0, 16.0);
+    private static final VoxelShape RAYCAST_SHAPE = Block.box(2.0, 4.0, 2.0, 14.0, 16.0, 14.0);
     protected static final VoxelShape OUTLINE_SHAPE = Util.make(
              () -> Shapes.join(
                      Shapes.block(),
                      Shapes.or(
-                             Block.column(16.0, 8.0, 0.0, 3.0), Block.column(8.0, 16.0, 0.0, 3.0), Block.column(12.0, 0.0, 3.0), RAYCAST_SHAPE
+                             Block.box(0.0, 0.0, 4.0, 16.0, 3.0, 12.0),
+                             Block.box(4.0, 0.0, 0.0, 12.0, 3.0, 16.0),
+                             Block.box(2.0, 0.0, 2.0, 14.0, 3.0, 14.0),
+                             RAYCAST_SHAPE
                      ),
                      BooleanOp.ONLY_FIRST
              )
@@ -71,12 +68,14 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
         super(settings);
     }
 
-    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
+    @Override
+    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
         return Items.CAULDRON.getDefaultInstance();
     }
 
     @Override
-    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        ItemStack stack = player.getItemInHand(hand);
         Random random = new Random();
         if (!(level.getBlockEntity(pos) instanceof SoupCauldronBlockEntity be)) {
             return InteractionResult.FAIL;
@@ -89,21 +88,22 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
             if(be.hasStirred){return InteractionResult.FAIL;}
             if(be.getInputs().size()>=4){return InteractionResult.FAIL;}
             if (!level.isClientSide()) {
-                if (be.addInput(stack)) stack.consume(1, player);
+                if (be.addInput(stack) && !player.getAbilities().instabuild) stack.shrink(1);
             }
             level.updateNeighbourForOutputSignal(pos, this);
             return InteractionResult.SUCCESS;
         } else if(stack.is(Items.BOWL)){
             if(!be.hasStirred){return InteractionResult.FAIL;}
-            ItemStack soup = new ItemStack(ItemRegistry.SPECIAL_STEW);
+            ItemStack soup = new ItemStack(ItemRegistry.SPECIAL_STEW.get());
             List<ItemStack> copiedInputs = be.getInputs().stream().map(ItemStack::copy).toList();
-            soup.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(copiedInputs));
-            soup.set(DataComponents.DYED_COLOR, new DyedItemColor(blendFoodColors(copiedInputs)));
+            StackData.write(soup, SpecialSoupItem.KEY_INGREDIENTS, SpecialSoupItem.INGREDIENTS_CODEC, copiedInputs);
+            // vanilla's dyed-item tag shape, so any tint layer can read the blend straight off the stack
+            soup.getOrCreateTagElement("display").putInt("color", blendFoodColors(copiedInputs));
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemUtils.createFilledResult(stack, player, soup));
             level.setBlockAndUpdate(pos, Blocks.CAULDRON.defaultBlockState());
             for (ItemStack ingredient : copiedInputs) {
-                UseRemainder remainder = ingredient.get(DataComponents.USE_REMAINDER);
-                if (remainder != null) Block.popResource(level, pos, remainder.convertInto().create());
+                ItemStack remainder = ingredient.getCraftingRemainingItem();
+                if (!remainder.isEmpty()) Block.popResource(level, pos, remainder);
             }
             return InteractionResult.SUCCESS;
         } else if(stack.is(Items.AIR)){
@@ -113,24 +113,25 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
         return InteractionResult.FAIL;
     }
 
+    /** The cauldron plus its tinted broth is the baked model; the block entity only animates it. */
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
+    }
+
+    @Override
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return OUTLINE_SHAPE;
     }
 
     @Override
-    protected VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos pos) {
+    public VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos pos) {
         return RAYCAST_SHAPE;
     }
 
     @Override
-    protected boolean hasAnalogOutputSignal(BlockState state) {
+    public boolean hasAnalogOutputSignal(BlockState state) {
         return true;
-    }
-
-    @Override
-    protected MapCodec<? extends SoupCauldronBlock> codec() {
-        return CODEC;
     }
 
     @Override
@@ -141,7 +142,7 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
     @org.jetbrains.annotations.Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide() ? createTickerHelper(type, BlockEntityTypeRegistry.SOUP_CAULDRON_BLOCK_ENTITY, SoupCauldronBlockEntity::clientTick) : null;
+        return level.isClientSide() ? createTickerHelper(type, BlockEntityTypeRegistry.SOUP_CAULDRON_BLOCK_ENTITY.get(), SoupCauldronBlockEntity::clientTick) : null;
     }
 
     public static SoupCauldronBlock.PropertyRetriever< Float2FloatFunction> getAnimationProgressRetriever(LidBlockEntity progress) {
@@ -152,26 +153,29 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         int hunger = 0;
-        if(level instanceof ServerLevel serverLevel && level.getBlockEntity(pos) instanceof SoupCauldronBlockEntity soupCauldronBlockEntity) {
+        if(!level.isClientSide() && level.getBlockEntity(pos) instanceof SoupCauldronBlockEntity soupCauldronBlockEntity) {
             for (ItemStack item : soupCauldronBlockEntity.getInputs()) {
-                SingleRecipeInput singleStackRecipeInput = new SingleRecipeInput(item);
-                Optional<RecipeHolder<SmeltingRecipe>> optional = serverLevel
-                        .recipeAccess()
-                        .getRecipeFor(RecipeType.SMELTING, singleStackRecipeInput, level);
+                SimpleContainer container = new SimpleContainer(item);
+                Optional<SmeltingRecipe> optional = level.getRecipeManager()
+                        .getRecipeFor(RecipeType.SMELTING, container, level);
                 if (optional.isPresent() && !item.is(Items.CHORUS_FRUIT)) {
-                    ItemStack itemStack = (((RecipeHolder) optional.get()).value()).assemble(singleStackRecipeInput);
+                    ItemStack itemStack = optional.get().assemble(container, level.registryAccess());
                     if (!itemStack.isEmpty()) item=itemStack;
                 }
-                FoodProperties food = item.get(DataComponents.FOOD);
-                if (food != null) hunger += Mth.ceil(food.nutrition()/2f);
+                FoodProperties food = item.getFoodProperties(null);
+                if (food != null) hunger += Mth.ceil(food.getNutrition()/2f);
             }
         }
         return hunger;
     }
 
-    public static final Map<Item, Integer> FOOD_COLORS = Map.ofEntries(
+    /**
+     * Vanilla entries only at class-load — this block is built during block registration, before
+     * any of the mod's items exist. {@link #registerFoodColors()} adds the mod's own entries later.
+     */
+    public static final Map<Item, Integer> FOOD_COLORS = new HashMap<>(Map.ofEntries(
             Map.entry(Items.POTION, 0x385DC6),
             Map.entry(Items.APPLE, 0xFC1C2A),
             Map.entry(Items.GOLDEN_APPLE, 0xE7EB56),
@@ -203,16 +207,20 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
             Map.entry(Items.COOKED_SALMON, 0xB84E23),
             Map.entry(Items.TROPICAL_FISH, 0xF16E20),
             Map.entry(Items.MILK_BUCKET, 0xFCFCFC),
-            Map.entry(Items.HONEY_BOTTLE, 0xFC8F16),
+            Map.entry(Items.HONEY_BOTTLE, 0xFC8F16)
+    ));
 
-            Map.entry(ItemRegistry.BAOBAB_FRUIT, 0x686D24)
-    );
+    /** Runs from common setup, once every item this mod adds is resolvable. */
+    public static void registerFoodColors() {
+        FOOD_COLORS.put(ItemRegistry.BAOBAB_FRUIT.get(), 0x686D24);
+    }
 
     public static Optional<Integer> getFoodColor(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return Optional.empty();
 
-        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
-        if (contents != null) return Optional.of(contents.getColor());
+        if (stack.is(Items.POTION) || stack.is(Items.SPLASH_POTION) || stack.is(Items.LINGERING_POTION)) {
+            return Optional.of(PotionUtils.getColor(stack));
+        }
 
         Integer foodColor = FOOD_COLORS.get(stack.getItem());
         if (foodColor != null) return Optional.of(foodColor);

@@ -7,7 +7,6 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.Blocks;
@@ -26,13 +25,9 @@ import java.util.Map;
 import java.util.function.BooleanSupplier;
 
 /**
- * 1.20.1 deltas: {@code EntitySpawnReason}/{@code EntityTypes} (plural holder) do not exist — see
- * boat.MobMixin/boat.PatrolSpawnerMixin's matching notes. {@code ServerLevel} has no
- * {@code tickThunder(LevelChunk)} method at all on 1.20.1 (VERIFIED: zero matches) — its own
- * lightning-strike selection is inlined directly in {@code tick(BooleanSupplier)}
- * (ServerLevel.java:407-423), so this retargets onto the same {@code tick} HEAD the other injector
- * here already uses, rather than a per-chunk hook that does not exist. This is moot regardless: see
- * EntityMixin's copper-armor NAMED GAP note, which applies identically here.
+ * Expires redstone-striker charges once their timer runs out, and rolls the copper-armour lightning
+ * strike. Lightning selection is inlined in {@code tick(BooleanSupplier)} rather than sitting behind
+ * a per-chunk hook, so both injectors share that method's head.
  */
 @Mixin(ServerLevel.class)
 public abstract class ServerLevelMixin {
@@ -50,7 +45,7 @@ public abstract class ServerLevelMixin {
                     BlockPos pos = Gpos.pos();
                     BlockState state = level.getBlockState(pos);
                     RedstoneStrikerItem.STRUCK_WIRES.remove(Gpos);
-                    state.handleNeighborChanged(level, pos, Blocks.AIR, null, false);
+                    state.neighborChanged(level, pos, Blocks.AIR, pos, false);
                     level.updateNeighborsAt(pos, state.getBlock());
                 }
             }
@@ -69,7 +64,7 @@ public abstract class ServerLevelMixin {
                 if (level.isRainingAt(blockPos)) {
                     LightningBolt lightningEntity = EntityType.LIGHTNING_BOLT.create(level);
                     if (lightningEntity != null) {
-                        lightningEntity.snapTo(Vec3.atBottomCenterOf(blockPos));
+                        lightningEntity.moveTo(Vec3.atBottomCenterOf(blockPos));
                         level.addFreshEntity(lightningEntity);
                     }
                 }
@@ -77,8 +72,7 @@ public abstract class ServerLevelMixin {
         }
     }
 
-    // See EntityMixin's matching note: copper armor does not exist on 1.20.1, so this is
-    // permanently 0 (NAMED GAP, not a feature cut).
+    // no copper armour exists on this version, so nothing can be worn to count - see EntityMixin
     @Unique
     private static int getCopperArmor(LivingEntity entity) {
         return 0;

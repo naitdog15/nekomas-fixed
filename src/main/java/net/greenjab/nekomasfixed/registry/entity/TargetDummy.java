@@ -36,10 +36,9 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
+import net.minecraft.world.entity.vehicle.AbstractMinecart;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -52,7 +51,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
- * PORT (best-effort, documented gap): 26.2's {@code Avatar} base class does not exist on 1.20.1;
+ * PORT: 26.2's {@code Avatar} base class does not exist on 1.20.1;
  * retargeted to {@code net.minecraft.world.entity.decoration.ArmorStand}, whose real behaviour
  * surface matches every override in this file almost 1:1 (verified against
  * forge-1.20.1-mapped-src/.../decoration/ArmorStand.java - handleEntityEvent(ARMORSTAND_WOBBLE=32),
@@ -73,15 +72,22 @@ import java.util.function.Predicate;
  * ArmorStand's own click-to-equip resolution via the static Mob.getEquipmentSlotForItem, since
  * 1.20.1's InteractionResult has no way to distinguish "nothing in hand, unequip by position" from
  * ArmorStand's own equip-by-click behaviour without re-deriving hit-position math that belongs with
- * the client renderer, not this data class - a named simplification, not a silent behaviour change.
+ * the client renderer, not this data class.
  */
 public class TargetDummy extends ArmorStand implements Shearable {
 	protected static final EntityDataAccessor<CompoundTag> PROFILE = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.COMPOUND_TAG);
 	protected static final EntityDataAccessor<Boolean> ZOMBIE = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.BOOLEAN);
 	private static final Predicate<Entity> RIDEABLE_MINECART_PREDICATE =  entity -> entity instanceof AbstractMinecart abstractMinecartEntity
-			&& abstractMinecartEntity.isRideable();
+			&& abstractMinecartEntity.getMinecartType() == AbstractMinecart.Type.RIDEABLE;
 	private int lastHitValue;
 	public long lastHitTime;
+	/**
+	 * 1.20.1's {@link Explosion} applies its knockback by calling {@link #setDeltaMovement(Vec3)}
+	 * directly on the very next statement after {@code hurt}, and has no per-entity knockback
+	 * multiplier to zero out. A dummy is a fixed prop, so arm this when a blast damages us and swallow
+	 * exactly that one velocity write; every other movement still goes through untouched.
+	 */
+	private boolean ignoreNextExplosionPush;
 
 	public TargetDummy(EntityType<? extends TargetDummy> entityType, Level level) {
 		super(entityType, level);
@@ -132,7 +138,7 @@ public class TargetDummy extends ArmorStand implements Shearable {
 	}
 
 	@Override
-	protected void addAdditionalSaveData(CompoundTag tag) {
+	public void addAdditionalSaveData(CompoundTag tag) {
 		super.addAdditionalSaveData(tag);
 		GameProfile profile = this.getTargetDummyProfile();
 		if (profile != null) {
@@ -143,7 +149,7 @@ public class TargetDummy extends ArmorStand implements Shearable {
 	}
 
 	@Override
-	protected void readAdditionalSaveData(CompoundTag tag) {
+	public void readAdditionalSaveData(CompoundTag tag) {
 		super.readAdditionalSaveData(tag);
 		this.noPhysics = !this.canClip();
 		if (tag.contains("profile")) {
@@ -175,11 +181,11 @@ public class TargetDummy extends ArmorStand implements Shearable {
 	public InteractionResult interact(Player player, InteractionHand hand) {
 		ItemStack itemStack = player.getItemInHand(hand);
 		if (itemStack.is(Items.SHEARS)) {
-			if (player.level() instanceof ServerLevel level) {
-				this.breakAndDropItem(level, this.damageSources().generic());
+			if (!player.level().isClientSide()) {
+				this.breakAndDropItem(this.damageSources().generic());
 				this.spawnBreakParticles();
-				this.kill(level);
-				itemStack.hurtAndBreak(1, player, hand);
+				this.kill();
+				itemStack.hurtAndBreak(1, player, p -> p.broadcastBreakEvent(hand));
 			}
 			return InteractionResult.SUCCESS;
 		} else if (itemStack.is(Items.NAME_TAG)) {
@@ -214,7 +220,7 @@ public class TargetDummy extends ArmorStand implements Shearable {
 		} else if (player.level().isClientSide()) {
 			return InteractionResult.SUCCESS;
 		} else if (!itemStack.isEmpty()) {
-			EquipmentSlot equipmentSlot = Mob.getEquipmentSlotForItem(itemStack);
+			EquipmentSlot equipmentSlot = LivingEntity.getEquipmentSlotForItem(itemStack);
 			if (this.equip(player, equipmentSlot, itemStack, hand)) {
 				return InteractionResult.SUCCESS;
 			}
@@ -249,68 +255,91 @@ public class TargetDummy extends ArmorStand implements Shearable {
 		lastHitValue = damage;
 	}
 
+	/**
+	 * The dummy's whole point is that it eats a hit and reports the number, so it deliberately runs
+	 * its own pipeline instead of {@code LivingEntity#hurt}'s: no invulnerability window (every swing
+	 * has to register, so {@code invulnerableTime} is never consulted or set), no health bookkeeping,
+	 * and no knockback - {@code Attributes.KNOCKBACK_RESISTANCE} is 1.0 and nothing here calls
+	 * {@code knockback}. Shield blocking is likewise not in play: the dummy carries no shield, and by
+	 * the time this runs the attacker's own shield handling has already happened on their side.
+	 * <p>
+	 * Client-guarded the way vanilla's {@code ArmorStand#hurt} is, since 1.20.1 has one two-sided
+	 * {@code hurt} rather than a server-only entry point.
+	 */
 	@Override
-	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+	public boolean hurt(DamageSource source, float amount) {
+		if (!(this.level() instanceof ServerLevel level)) {
+			return false;
+		}
+		// 1.20.1's Explosion pushes us on the statement right after this call.
+		if (source.is(DamageTypeTags.IS_EXPLOSION)) {
+			this.ignoreNextExplosionPush = true;
+		}
 		if (this.isRemoved()) {
 			return false;
 		} else if (!level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING) && source.getEntity() instanceof Mob) {
 			return false;
 		} else if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-			this.kill(level);
+			this.kill();
 			return false;
 		} else if (this.isInvulnerableTo(source)) {
 			return false;
 		} else if (source.is(DamageTypeTags.IS_EXPLOSION)) {
-			this.onBreak(level, source);
-			this.kill(level);
+			this.onBreak(source);
+			this.kill();
 			return false;
-		} else if (source.getEntity()==null || !((source.getEntity()) instanceof Player)) {
+		} else if (!(source.getEntity() instanceof Player attacker)) {
 			return false;
 		} else {
 			amount = this.getDamageAfterArmorAbsorb(source, amount);
 			amount = this.getDamageAfterMagicAbsorb(source, amount);
-			if (source.getWeaponItem()!=null&&source.getWeaponItem().is(Items.SHEARS)) {
+			// 1.20.1's DamageSource carries no weapon stack; the attacker's held item is what the
+			// weapon-item accessor resolves to for a melee hit anyway.
+			ItemStack weapon = attacker.getMainHandItem();
+			if (weapon.is(Items.SHEARS)) {
 				if (source.isCreativePlayer()) {
 					this.playBreakSound();
 				} else {
-					this.breakAndDropItem(level, source);
-					if (source.getEntity() instanceof Player player) source.getWeaponItem().hurtAndBreak(1, player, InteractionHand.MAIN_HAND);
+					this.breakAndDropItem(source);
+					weapon.hurtAndBreak(1, attacker, p -> p.broadcastBreakEvent(InteractionHand.MAIN_HAND));
 				}
 				this.spawnBreakParticles();
-				this.kill(level);
+				this.kill();
 				return true;
-			} else if (source.getEntity() instanceof Player playerEntity && !playerEntity.getAbilities().mayBuild) {
+			} else if (!attacker.getAbilities().mayBuild) {
 				return false;
 			} else if (source.isCreativePlayer()) {
 				long l = level.getGameTime();
 				if (l - this.lastHitTime > 5L) {
-					level.broadcastEntityEvent(this, EntityEvent.ARMORSTAND_WOBBLE);
-					this.gameEvent(GameEvent.ENTITY_DAMAGE, source.getEntity());
-					this.lastHitTime = l;
-					lastHitValue = (int) amount;
-					if (this.level() instanceof ServerLevel) {
-						((ServerLevel)this.level())
-								.sendParticles(ParticleRegistry.NUMBER.get(), this.getX(), this.getY()+2, this.getZ(), 0, 1, 0, 0, amount);
-					}
+					this.registerHit(level, source, amount, l);
 				} else {
 					this.playBreakSound();
 					this.spawnBreakParticles();
-					this.kill(level);
+					this.kill();
 				}
 				return true;
 			} else {
-				long l = level.getGameTime();
-				level.broadcastEntityEvent(this, EntityEvent.ARMORSTAND_WOBBLE);
-				this.gameEvent(GameEvent.ENTITY_DAMAGE, source.getEntity());
-				this.lastHitTime = l;
-				lastHitValue = (int) amount;
-				if (this.level() instanceof ServerLevel) {
-					((ServerLevel)this.level())
-							.sendParticles(ParticleRegistry.NUMBER.get(), this.getX(), this.getY()+2, this.getZ(), 0, 1, 0, 0, amount);
-				}
+				this.registerHit(level, source, amount, level.getGameTime());
 				return true;
 			}
 		}
+	}
+
+	private void registerHit(ServerLevel level, DamageSource source, float amount, long gameTime) {
+		level.broadcastEntityEvent(this, EntityEvent.ARMORSTAND_WOBBLE);
+		this.gameEvent(GameEvent.ENTITY_DAMAGE, source.getEntity());
+		this.lastHitTime = gameTime;
+		this.lastHitValue = (int) amount;
+		level.sendParticles(ParticleRegistry.NUMBER.get(), this.getX(), this.getY() + 2, this.getZ(), 0, 1, 0, 0, amount);
+	}
+
+	@Override
+	public void setDeltaMovement(Vec3 velocity) {
+		if (this.ignoreNextExplosionPush) {
+			this.ignoreNextExplosionPush = false;
+			return;
+		}
+		super.setDeltaMovement(velocity);
 	}
 
 	@Override
@@ -354,18 +383,18 @@ public class TargetDummy extends ArmorStand implements Shearable {
 		}
 	}
 
-	private void breakAndDropItem(ServerLevel level, DamageSource damageSource) {
+	private void breakAndDropItem(DamageSource damageSource) {
 		ItemStack itemStack = new ItemStack(ItemRegistry.TARGET_DUMMY.get());
 		if (this.hasCustomName()) {
 			itemStack.setHoverName(this.getCustomName());
 		}
 		Block.popResource(this.level(), this.blockPosition(), itemStack);
-		this.onBreak(level, damageSource);
+		this.onBreak(damageSource);
 	}
 
-	private void onBreak(ServerLevel level, DamageSource damageSource) {
+	private void onBreak(DamageSource damageSource) {
 		this.playBreakSound();
-		this.dropAllDeathLoot(level, damageSource);
+		this.dropAllDeathLoot(damageSource);
 
 		for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
 			ItemStack itemStack = this.getItemBySlot(equipmentSlot);
@@ -388,13 +417,13 @@ public class TargetDummy extends ArmorStand implements Shearable {
 	}
 
 	@Override
-	public void kill(ServerLevel level) {
+	public void kill() {
 		this.remove(Entity.RemovalReason.KILLED);
 		this.gameEvent(GameEvent.ENTITY_DIE);
 	}
 
 	@Override
-	public boolean ignoreExplosion(Explosion explosion) {
+	public boolean ignoreExplosion() {
 		return this.isInvisible();
 	}
 
@@ -450,7 +479,7 @@ public class TargetDummy extends ArmorStand implements Shearable {
 	}
 
 	@Override
-	public EntityDimensions getDefaultDimensions(Pose pose) {
+	public EntityDimensions getDimensions(Pose pose) {
 		return this.getType().getDimensions();
 	}
 
@@ -481,10 +510,10 @@ public class TargetDummy extends ArmorStand implements Shearable {
 	public Rotations getRightLegRotation() { return this.getRightLegPose(); }
 
 	@Override
-	public void shear(ServerLevel level, SoundSource shearedSoundCategory, ItemStack shears) {
-		this.breakAndDropItem(level, this.damageSources().generic());
+	public void shear(SoundSource shearedSoundCategory) {
+		this.breakAndDropItem(this.damageSources().generic());
 		this.spawnBreakParticles();
-		this.kill(level);
+		this.kill();
 	}
 
 	@Override

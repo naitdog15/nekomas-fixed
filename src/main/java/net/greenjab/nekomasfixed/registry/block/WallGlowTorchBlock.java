@@ -1,6 +1,5 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -29,14 +28,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 public class WallGlowTorchBlock extends GlowTorchBlock {
-	public static final MapCodec<WallGlowTorchBlock> CODEC = simpleCodec(WallGlowTorchBlock::new);
 	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 	public static final BooleanProperty WATERLOGGED = GlowTorchBlock.WATERLOGGED;
-
-	@Override
-	public MapCodec<WallGlowTorchBlock> codec() {
-		return CODEC;
-	}
 
 	public WallGlowTorchBlock(BlockBehaviour.Properties settings) {
 		super(settings);
@@ -44,17 +37,19 @@ public class WallGlowTorchBlock extends GlowTorchBlock {
 	}
 
 	@Override
-	protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+	public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		return WallTorchBlock.getShape(state);
 	}
 
 	@Override
-	protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
-		return WallTorchBlock.canSurvive(level, pos, state.getValue(FACING));
+	public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+		Direction facing = state.getValue(FACING);
+		BlockPos support = pos.relative(facing.getOpposite());
+		return level.getBlockState(support).isFaceSturdy(level, support, facing);
 	}
 
 	@Override
-	protected BlockState updateShape(
+	public BlockState updateShape(
             BlockState state, Direction direction, BlockState neighborState,
             LevelAccessor level, BlockPos pos, BlockPos neighborPos
     ) {
@@ -83,12 +78,12 @@ public class WallGlowTorchBlock extends GlowTorchBlock {
 	}
 
 	@Override
-	protected BlockState rotate(BlockState state, Rotation rotation) {
+	public BlockState rotate(BlockState state, Rotation rotation) {
 		return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
 	}
 
 	@Override
-	protected BlockState mirror(BlockState state, Mirror mirror) {
+	public BlockState mirror(BlockState state, Mirror mirror) {
 		return state.rotate(mirror.getRotation(state.getValue(FACING)));
 	}
 

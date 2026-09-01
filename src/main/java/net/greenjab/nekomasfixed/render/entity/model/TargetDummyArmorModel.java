@@ -20,23 +20,23 @@ public class TargetDummyArmorModel extends HumanoidModel<TargetDummy> {
 	@Override
 	public void setupAnim(TargetDummy entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
 		super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
-		this.head.xRot = (float) (Math.PI / 180.0) * entity.getHeadRotation().x();
-		this.head.yRot = (float) (Math.PI / 180.0) * entity.getHeadRotation().y();
-		this.head.zRot = (float) (Math.PI / 180.0) * entity.getHeadRotation().z();
-		this.body.xRot = (float) (Math.PI / 180.0) * entity.getBodyRotation().x();
-		this.body.yRot = (float) (Math.PI / 180.0) * entity.getBodyRotation().y();
-		this.body.zRot = (float) (Math.PI / 180.0) * entity.getBodyRotation().z();
-		this.leftArm.xRot = (float) (Math.PI / 180.0) * entity.getLeftArmRotation().x();
-		this.leftArm.yRot = (float) (Math.PI / 180.0) * entity.getLeftArmRotation().y();
-		this.leftArm.zRot = (float) (Math.PI / 180.0) * entity.getLeftArmRotation().z();
-		this.rightArm.xRot = (float) (Math.PI / 180.0) * entity.getRightArmRotation().x();
-		this.rightArm.yRot = (float) (Math.PI / 180.0) * entity.getRightArmRotation().y();
-		this.rightArm.zRot = (float) (Math.PI / 180.0) * entity.getRightArmRotation().z();
-		this.leftLeg.xRot = (float) (Math.PI / 180.0) * entity.getLeftLegRotation().x();
-		this.leftLeg.yRot = (float) (Math.PI / 180.0) * entity.getLeftLegRotation().y();
-		this.leftLeg.zRot = (float) (Math.PI / 180.0) * entity.getLeftLegRotation().z();
-		this.rightLeg.xRot = (float) (Math.PI / 180.0) * entity.getRightLegRotation().x();
-		this.rightLeg.yRot = (float) (Math.PI / 180.0) * entity.getRightLegRotation().y();
-		this.rightLeg.zRot = (float) (Math.PI / 180.0) * entity.getRightLegRotation().z();
+		this.head.xRot = (float) (Math.PI / 180.0) * entity.getHeadRotation().getX();
+		this.head.yRot = (float) (Math.PI / 180.0) * entity.getHeadRotation().getY();
+		this.head.zRot = (float) (Math.PI / 180.0) * entity.getHeadRotation().getZ();
+		this.body.xRot = (float) (Math.PI / 180.0) * entity.getBodyRotation().getX();
+		this.body.yRot = (float) (Math.PI / 180.0) * entity.getBodyRotation().getY();
+		this.body.zRot = (float) (Math.PI / 180.0) * entity.getBodyRotation().getZ();
+		this.leftArm.xRot = (float) (Math.PI / 180.0) * entity.getLeftArmRotation().getX();
+		this.leftArm.yRot = (float) (Math.PI / 180.0) * entity.getLeftArmRotation().getY();
+		this.leftArm.zRot = (float) (Math.PI / 180.0) * entity.getLeftArmRotation().getZ();
+		this.rightArm.xRot = (float) (Math.PI / 180.0) * entity.getRightArmRotation().getX();
+		this.rightArm.yRot = (float) (Math.PI / 180.0) * entity.getRightArmRotation().getY();
+		this.rightArm.zRot = (float) (Math.PI / 180.0) * entity.getRightArmRotation().getZ();
+		this.leftLeg.xRot = (float) (Math.PI / 180.0) * entity.getLeftLegRotation().getX();
+		this.leftLeg.yRot = (float) (Math.PI / 180.0) * entity.getLeftLegRotation().getY();
+		this.leftLeg.zRot = (float) (Math.PI / 180.0) * entity.getLeftLegRotation().getZ();
+		this.rightLeg.xRot = (float) (Math.PI / 180.0) * entity.getRightLegRotation().getX();
+		this.rightLeg.yRot = (float) (Math.PI / 180.0) * entity.getRightLegRotation().getY();
+		this.rightLeg.zRot = (float) (Math.PI / 180.0) * entity.getRightLegRotation().getZ();
 	}
 }

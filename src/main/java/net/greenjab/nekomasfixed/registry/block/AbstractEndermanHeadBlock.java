@@ -1,11 +1,11 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.registry.block.entity.EndermanHeadBlockEntity;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -19,19 +19,20 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.pathfinder.PathComputationType;
-import net.minecraft.world.level.redstone.ExperimentalRedstoneUtils;
-import net.minecraft.world.level.redstone.Orientation;
 import javax.annotation.Nullable;
 
-public abstract class AbstractEndermanHeadBlock extends BaseEntityBlock {
+public abstract class AbstractEndermanHeadBlock extends BaseEntityBlock implements Equipable {
 	public static final IntegerProperty POWER = BlockStateProperties.POWER;
-
-	@Override
-	public abstract MapCodec<? extends AbstractEndermanHeadBlock> codec();
 
 	public AbstractEndermanHeadBlock(Properties settings) {
 		super(settings);
 		this.registerDefaultState(this.stateDefinition.any().setValue(POWER, 0));
+	}
+
+	/** Wearable on the head, the same way every vanilla skull block is. */
+	@Override
+	public EquipmentSlot getEquipmentSlot() {
+		return EquipmentSlot.HEAD;
 	}
 
 	@Override
@@ -52,21 +53,21 @@ public abstract class AbstractEndermanHeadBlock extends BaseEntityBlock {
 	@Nullable
 	@Override
 	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-		return createTickerHelper(type, BlockEntityTypeRegistry.ENDERMAN_HEAD_BLOCK_ENTITY, level.isClientSide()? null: EndermanHeadBlockEntity::tick);
+		return createTickerHelper(type, BlockEntityTypeRegistry.ENDERMAN_HEAD_BLOCK_ENTITY.get(), level.isClientSide()? null: EndermanHeadBlockEntity::tick);
 	}
 
 	@Override
-	protected int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
+	public int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
 		return state.getValue(POWER);
 	}
 
 	@Override
-	protected int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
+	public int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
 		return direction == Direction.UP ? state.getSignal(level, pos, direction) : 0;
 	}
 
 	@Override
-	protected boolean isSignalSource(BlockState state) {
+	public boolean isSignalSource(BlockState state) {
 		return true;
 	}
 
@@ -77,22 +78,27 @@ public abstract class AbstractEndermanHeadBlock extends BaseEntityBlock {
 	}
 	public void updateNeighbors(BlockState state, Level level, BlockPos pos) {
 		Direction direction = Direction.DOWN;
-		Orientation wireOrientation = ExperimentalRedstoneUtils.initialOrientation(
-				level, direction, Direction.UP
-		);
-		level.updateNeighborsAt(pos, this, wireOrientation);
-		level.updateNeighborsAt(pos.relative(direction), this, wireOrientation);
+		level.updateNeighborsAt(pos, this);
+		level.updateNeighborsAt(pos.relative(direction), this);
 	}
 
 	@Override
-	protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean moved) {
+	public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+		if (!moved && !state.is(newState.getBlock())) {
+			this.notifyNeighborsOnRemoval(state, level, pos);
+		}
+		super.onRemove(state, level, pos, newState, moved);
+	}
+
+	/** Split out so the wall variant can notify along its own facing instead. */
+	protected void notifyNeighborsOnRemoval(BlockState state, Level level, BlockPos pos) {
 		if (state.getValue(POWER)>0) {
 			this.updateNeighbors(state.setValue(POWER, 0), level, pos);
 		}
 	}
 
 	@Override
-	protected boolean isPathfindable(BlockState state, PathComputationType type) {
+	public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) {
 		return false;
 	}
 }

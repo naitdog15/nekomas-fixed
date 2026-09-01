@@ -13,16 +13,14 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
 /**
  * EntityAttributeCreationEvent and the 5 SpawnPlacements.register calls inside
- * FMLCommonSetupEvent#enqueueWork would normally belong on a common mod-bus event holder
- * ({@code ModBusEvents.java}), but that file lives outside this package. Following the design rule
- * to pick {@code @Mod.EventBusSubscriber} for handlers (mixing idioms is the usual source of "my
- * event never fired" bugs), a second, dedicated {@code @Mod.EventBusSubscriber} class self-registers
- * via FML's annotation scan exactly like {@code ModBusEvents} does - same mechanism, different file,
- * entirely within this package. The event handler logic still lands exactly where it should
- * (EntityAttributeCreationEvent + FMLCommonSetupEvent#enqueueWork), just hosted in a class this
- * package owns instead of one it cannot edit.
+ * FMLCommonSetupEvent#enqueueWork could sit on {@code ModBusEvents}, but keeping them next to the
+ * entities they describe is easier to follow. This is a second {@code @Mod.EventBusSubscriber}
+ * class self-registering via FML's annotation scan exactly like {@code ModBusEvents} does — same
+ * mechanism, different file — so the handlers still land on the same events, just closer to home.
+ * (Sticking to one idiom for handlers matters: mixing the annotation with a manual
+ * {@code register(...)} is the usual source of "my event never fired".)
  * <p>
- * Registers attributes for the 8 living entity types this package owns (projectiles and vehicles -
+ * Registers attributes for the 8 living entity types in this package (projectiles and vehicles -
  * SlownessSnowball, SlingshotProjectile, WildfireTrident, SpearEntity, FireBomb, BigBoat, HugeBoat,
  * FakeBoat - are not LivingEntity and need none). Rime and Derelict have no custom attribute builder
  * in the source (both plain Zombie subclasses) and reuse {@code Zombie.createAttributes()} directly,

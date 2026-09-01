@@ -12,7 +12,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.ARGB;
+import net.minecraft.util.FastColor;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
@@ -50,7 +50,7 @@ public class ClockBlockEntityRenderer implements BlockEntityRenderer<ClockBlockE
 				? (int) ((blockEntity.getLevel().getDayTime() + 6000) % 24000)
 				: -1;
 
-		int color = ARGB.colorFromFloat(1, 1.0F, 1.0F, 1.0F);
+		int color = FastColor.ARGB32.color(255, 255, 255, 255);
 		if (dayTime != -1) {
 			int hour = dayTime / 1000;
 			int min = ((dayTime % 1000) * 60) / 1000;

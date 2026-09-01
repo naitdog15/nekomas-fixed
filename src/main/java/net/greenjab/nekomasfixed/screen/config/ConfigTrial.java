@@ -16,14 +16,14 @@ public class ConfigTrial {
         ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
         ConfigCategory netherCategory = builder.getOrCreateCategory(Component.literal("Nether Features"));
-        netherCategory.addEntry(entryBuilder.startTextDescription(Component.literal("=== Nether Improvements ===").withColor(0xBA2720)).build());
+        netherCategory.addEntry(entryBuilder.startTextDescription(Component.literal("=== Nether Improvements ===").withStyle(style -> style.withColor(0xBA2720))).build());
         netherCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("Do Food Rotting"),
                 ModConfigValues.netherFoodRotting).setDefaultValue(true).setTooltip(Component.literal(
                         "All food items except for the golden ones rot in nether over time"))
                 .setSaveConsumer(val -> ModConfigValues.netherFoodRotting = val).build());
 
         ConfigCategory worldCategory = builder.getOrCreateCategory(Component.literal("World Features"));
-        worldCategory.addEntry(entryBuilder.startTextDescription(Component.literal("=== World Improvements ===").withColor(MapColor.COLOR_LIGHT_BLUE.col)).build());
+        worldCategory.addEntry(entryBuilder.startTextDescription(Component.literal("=== World Improvements ===").withStyle(style -> style.withColor(MapColor.COLOR_LIGHT_BLUE.col))).build());
         worldCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("Enable Copper Buffs"),
                 ModConfigValues.enableCopperBuff).setDefaultValue(true).setTooltip(Component.literal(
                         "Lightning striking a player with full copper gear would give the player speed "))

@@ -51,10 +51,11 @@ public class FakeBoat extends Entity {
 		return false;
 	}
 
+	/** A hit on either half of the hull is a hit on the real boat, unless it came from someone aboard. */
 	@Override
-	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+	public boolean hurt(DamageSource source, float amount) {
 		if (owner==null || owner.getPassengers().contains(source.getEntity())) return false;
-		return owner.hurtServer(level, source, amount);
+		return owner.hurt(source, amount);
 	}
 	@Override
 	public InteractionResult interact(Player player, InteractionHand hand) {
@@ -68,13 +69,13 @@ public class FakeBoat extends Entity {
 	}
 
 	@Override
-	public boolean canBeCollidedWith(Entity entity) {
+	public boolean canBeCollidedWith() {
 		return true;
 	}
 
 	@Override
 	public boolean canCollideWith(Entity other) {
-		return (other.canBeCollidedWith(this) || other.isPushable()) && !this.isPassengerOfSameVehicle(other) && other!=owner;
+		return (other.canBeCollidedWith() || other.isPushable()) && !this.isPassengerOfSameVehicle(other) && other!=owner;
 	}
 
 	public void resetCounter(){

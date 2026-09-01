@@ -1,6 +1,5 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.registry.block.entity.KilnBlockEntity;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.minecraft.core.BlockPos;
@@ -22,12 +21,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import javax.annotation.Nullable;
 
 public class KilnBlock extends AbstractFurnaceBlock {
-    public static final MapCodec<KilnBlock> CODEC = simpleCodec(KilnBlock::new);
-
-    @Override
-    public MapCodec<KilnBlock> codec() {
-        return CODEC;
-    }
 
     public KilnBlock(BlockBehaviour.Properties settings) {
         super(settings);
@@ -41,7 +34,7 @@ public class KilnBlock extends AbstractFurnaceBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return createFurnaceTicker(level, type, BlockEntityTypeRegistry.KILN_BLOCK_ENTITY);
+        return createFurnaceTicker(level, type, BlockEntityTypeRegistry.KILN_BLOCK_ENTITY.get());
     }
 
     @Override

@@ -32,7 +32,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Part of the "keep and expect pain" set of mixins whose retarget is non-trivial.
+ * The retarget here is not a straight rename.
  * <p>
  * 1.20.1 delta 1: the 26.2 split {@code useItemOn(ItemStack, BlockState, Level, BlockPos, Player,
  * InteractionHand, BlockHitResult)} does not exist here (VERIFIED against

@@ -1,6 +1,5 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.registry.block.enums.GoatHornTorchType;
 import net.greenjab.nekomasfixed.registry.block.enums.GoatHornType;
 import net.minecraft.core.BlockPos;
@@ -37,12 +36,14 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.level.redstone.Orientation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -55,12 +56,11 @@ import java.util.Map;
 import static net.minecraft.core.Direction.*;
 
 public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleWaterloggedBlock {
-    public static final MapCodec<GoatHornBlock> CODEC = simpleCodec(GoatHornBlock::new);
     public static final Property<Boolean> WATERLOGGED = BlockStateProperties.WATERLOGGED;
     public static final EnumProperty<GoatHornTorchType> TORCH = EnumProperty.create("torch", GoatHornTorchType.class);
     public static final EnumProperty<GoatHornType> HORN = EnumProperty.create("horn", GoatHornType.class);
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-    Map<Direction, VoxelShape> SHAPE = Shapes.rotateHorizontal(Shapes.or(
+    Map<Direction, VoxelShape> SHAPE = RotatedShapes.horizontal(Shapes.or(
             Block.box(7, 3, 0, 9, 5, 7),
             Block.box(6.5, 4, 4, 9.5, 6, 8),
             Block.box(6, 5, 5, 10, 10, 9)
@@ -93,13 +93,14 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
     }
 
     @Override
-    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        ItemStack stack = player.getItemInHand(hand);
         if (state.getValue(TORCH) != GoatHornTorchType.NONE) {
             if (stack.is(Items.SHEARS)) {
                 level.addFreshEntity(new ItemEntity(level, pos.getX(), pos.getY(), pos.getZ(), state.getValue(TORCH).toItem().getDefaultInstance()));
                 level.setBlockAndUpdate(pos, state.setValue(TORCH, GoatHornTorchType.NONE));
                 level.playSound(null, player, SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
-                stack.hurtAndBreak(1, player, hand);
+                stack.hurtAndBreak(1, player, holder -> holder.broadcastBreakEvent(hand));
                 return InteractionResult.SUCCESS;
             }
         } else {
@@ -107,7 +108,7 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
             if (type != GoatHornTorchType.NONE) {
                 level.setBlockAndUpdate(pos, state.setValue(TORCH, type));
                 level.playSound(null, player, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 1.0F, 1.0F);
-                stack.consume(1, player);
+                if (!player.getAbilities().instabuild) stack.shrink(1);
                 return InteractionResult.SUCCESS;
             }
         }
@@ -135,24 +136,29 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
     }
 
     @Override
-    protected List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-        if (this.drops.isEmpty()) {
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+        ResourceLocation lootTableId = this.getLootTable();
+        if (lootTableId == BuiltInLootTables.EMPTY) {
             return Collections.emptyList();
         } else {
             LootParams lootContext = builder.withParameter(LootContextParams.BLOCK_STATE, state).create(LootContextParamSets.BLOCK);
             ServerLevel level = lootContext.getLevel();
-            LootTable lootTable = level.getServer().reloadableRegistries().getLootTable(this.drops.get());
+            LootTable lootTable = level.getServer().getLootData().getLootTable(lootTableId);
             List<ItemStack> drops = lootTable.getRandomItems(lootContext);
 
             if (state.getValue(TORCH) != GoatHornTorchType.NONE) {
                 drops.add(state.getValue(TORCH).toItem().getDefaultInstance());
             }
 
-            Holder<Instrument> entry = level.registryAccess().lookupOrThrow(Registries.INSTRUMENT).getOrThrow(state.getValue(HORN).getInstrument());
-            drops.add(InstrumentItem.create(Items.GOAT_HORN, entry));
+            drops.add(InstrumentItem.create(Items.GOAT_HORN, instrumentOf(level, state)));
 
             return drops;
         }
+    }
+
+    /** The horn's own instrument, resolved out of the level's registries. */
+    private static Holder<Instrument> instrumentOf(LevelReader level, BlockState state) {
+        return level.registryAccess().registryOrThrow(Registries.INSTRUMENT).getHolderOrThrow(state.getValue(HORN).getInstrument());
     }
 
     @Override
@@ -161,15 +167,13 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
     }
 
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block sourceBlock, @Nullable Orientation wireOrientation, boolean notify) {
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
         if (!level.isClientSide()) {
             boolean bl = state.getValue(POWERED);
             if (bl != level.hasNeighborSignal(pos)) {
                 if (bl) level.scheduleTick(pos, this, 20);
                 else {
-                    Holder<Instrument> entry = level.registryAccess()
-                            .lookupOrThrow(net.minecraft.core.registries.Registries.INSTRUMENT)
-                            .getOrThrow(state.getValue(GoatHornBlock.HORN).getInstrument());
+                    Holder<Instrument> entry = instrumentOf(level, state);
                     level.playSound(null, pos, entry.value().soundEvent().value(), SoundSource.RECORDS, 3.0F, 1.0F);
                     level.setBlock(pos, state.cycle(POWERED), Block.UPDATE_CLIENTS);
                     if (level instanceof ServerLevel serverLevel) {
@@ -193,7 +197,8 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
         return this.defaultBlockState().setValue(FACING, ctx.getHorizontalDirection().getOpposite()).setValue(WATERLOGGED, fluidState.getType() == Fluids.WATER);
     }
 
-    protected BlockState updateShape(
+    @Override
+    public BlockState updateShape(
             BlockState state, Direction direction, BlockState neighborState,
             LevelAccessor level, BlockPos pos, BlockPos neighborPos
     ) {
@@ -215,7 +220,7 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
     }
 
     @Override
-    public ItemStack pickupBlock(@Nullable LivingEntity drainer, LevelAccessor level, BlockPos pos, BlockState state) {
+    public ItemStack pickupBlock(LevelAccessor level, BlockPos pos, BlockState state) {
         if (state.getValue(BlockStateProperties.WATERLOGGED)) {
             if (state.getValue(TORCH)==GoatHornTorchType.GLOW_TORCH) state = state.setValue(TORCH, GoatHornTorchType.GLOW_TORCH_OFF);
             level.setBlock(pos, state.setValue(BlockStateProperties.WATERLOGGED, false), Block.UPDATE_ALL);
@@ -225,14 +230,14 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
     }
 
     @Override
-    protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         Direction facing = state.getValue(FACING);
         BlockPos supportPos = pos.relative(facing);
         return level.getBlockState(supportPos).isFaceSturdy(level, supportPos, facing.getOpposite());
     }
 
     @Override
-    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (!state.canSurvive(level, pos)) {
             level.destroyBlock(pos, true);
         } else {
@@ -243,13 +248,7 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
     }
 
     @Override
-    protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
-        return CODEC;
-    }
-
-
-    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
-        Holder<Instrument> entry = level.registryAccess().lookupOrThrow(Registries.INSTRUMENT).getOrThrow(state.getValue(HORN).getInstrument());
-        return InstrumentItem.create(Items.GOAT_HORN, entry);
+    public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player) {
+        return InstrumentItem.create(Items.GOAT_HORN, instrumentOf(player.level(), state));
     }
 }

@@ -1,6 +1,5 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.registry.block.entity.StackedCakeBlockEntity;
 import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.core.BlockPos;
@@ -45,7 +44,6 @@ import java.util.Map;
 public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock {
     public static final IntegerProperty SLICES = IntegerProperty.create("slices", 1, 21);
     public static final BooleanProperty CANDLE = BooleanProperty.create("candle");
-    public static final MapCodec<StackedCakeBlock> CODEC = simpleCodec(StackedCakeBlock::new);
     private static final Map<Integer, VoxelShape[]> SHAPES_BY_BITES_AND_LAYER = new HashMap<>();
     private static final Map<Integer, VoxelShape> CANDLE_SHAPES = new HashMap<>();
 
@@ -61,12 +59,12 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         return level.getBlockState(pos.below()).isSolid();
     }
 
     @Override
-    protected boolean canBeReplaced(BlockState state, BlockPlaceContext context) {
+    public boolean canBeReplaced(BlockState state, BlockPlaceContext context) {
         return false;
     }
 
@@ -74,9 +72,6 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(SLICES, CANDLE, LIT);
     }
-
-    @Override
-    public MapCodec<StackedCakeBlock> codec(){return CODEC;}
 
     static {
         for (int height = 0; height < 3; height++) {
@@ -86,7 +81,12 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
             if (height == 2) yMinT = 8 + 8*(1-0.2);
             final double yMin = yMinT;
             final double yMax = yMin + 8 * scale;
-            SHAPES_BY_BITES_AND_LAYER.put(height, Block.boxes(6, slices -> Block.box(8+(7 - (slices+1) * 2)*scale, yMin, 8-7*scale, 8+7*scale, yMax, 8+7*scale)));
+            // one box per remaining-slice count, 0 through 6 (6 being a whole layer)
+            VoxelShape[] sliceShapes = new VoxelShape[7];
+            for (int slices = 0; slices < sliceShapes.length; slices++) {
+                sliceShapes[slices] = Block.box(8+(7 - (slices+1) * 2)*scale, yMin, 8-7*scale, 8+7*scale, yMax, 8+7*scale);
+            }
+            SHAPES_BY_BITES_AND_LAYER.put(height, sliceShapes);
             CANDLE_SHAPES.put(height, Block.box(7, yMax, 7, 9, yMax+6, 9));
         }
     }
@@ -111,7 +111,7 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
 
             player.awardStat(Stats.EAT_CAKE_SLICE);
             player.getFoodData().eat(2, 0.1F);
-            level.playSound(null, player, SoundEvents.GENERIC_EAT.value(), SoundSource.PLAYERS, 1.0F, 1.0F);
+            level.playSound(null, player, SoundEvents.GENERIC_EAT, SoundSource.PLAYERS, 1.0F, 1.0F);
 
             if(level.getBlockEntity(pos) instanceof StackedCakeBlockEntity blockEntity){
                 int totalSlices = state.getValue(SLICES)-1;
@@ -139,7 +139,7 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         int height = (state.getValue(SLICES)-1)/7;
         int slice = (state.getValue(SLICES)-1)%7;
         if (state.getValue(CANDLE)){
@@ -164,7 +164,7 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    protected BlockState updateShape(
+    public BlockState updateShape(
             BlockState state, Direction direction, BlockState neighborState,
             LevelAccessor level, BlockPos pos, BlockPos neighborPos
     ) {
@@ -172,7 +172,8 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide()) return InteractionResult.SUCCESS;
         else if (level.getBlockEntity(pos) instanceof StackedCakeBlockEntity stackedCakeBlockEntity){
             if (state.getValue(SLICES) == 7 || state.getValue(SLICES) == 14 || state.getValue(SLICES) == 21) {
@@ -180,7 +181,7 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
                     this.addCakeLayer(stack, stackedCakeBlockEntity, state);
                     level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(SLICES, state.getValue(SLICES)+7));
                     level.playSound(null, player, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 1.0F, 1.0F);
-                    stack.consume(1, player);
+                    if (!player.getAbilities().instabuild) stack.shrink(1);
                     return InteractionResult.SUCCESS;
                 } else if (player.getMainHandItem().is(ItemTags.CANDLES)) {
                     if (!state.getValue(CANDLE)) {
@@ -189,7 +190,7 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
                             stackedCakeBlockEntity.CANDLE_STATE = candleState.setValue(CandleBlock.LIT, false);
                             level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(CANDLE, true).setValue(CandleBlock.LIT, false));
                             level.playSound(null, player, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 1.0F, 1.0F);
-                            stack.consume(1, player);
+                            if (!player.getAbilities().instabuild) stack.shrink(1);
                             return InteractionResult.SUCCESS;
                         }
                     }
@@ -200,7 +201,7 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
                             stackedCakeBlockEntity.CANDLE_STATE = candleState.setValue(CandleBlock.LIT, true);
                             stackedCakeBlockEntity.setChanged();
                             level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(LIT, true));
-                            stack.hurtAndBreak(1, player, hand);
+                            stack.hurtAndBreak(1, player, holder -> holder.broadcastBreakEvent(hand));
                             level.playSound(null, player, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
                             return InteractionResult.SUCCESS;
                         }
@@ -218,12 +219,12 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         return state.getValue(SLICES);
     }
 
     @Override
-    protected boolean hasAnalogOutputSignal(BlockState state) {
+    public boolean hasAnalogOutputSignal(BlockState state) {
         return true;
     }
 }

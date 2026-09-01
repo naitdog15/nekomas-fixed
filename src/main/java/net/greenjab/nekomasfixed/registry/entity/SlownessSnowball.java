@@ -27,7 +27,7 @@ public class SlownessSnowball extends Snowball {
     protected void onHitEntity(EntityHitResult entityHitResult) {
         super.onHitEntity(entityHitResult);
         if (entityHitResult.getEntity() instanceof LivingEntity livingEntity) {
-            livingEntity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 1), this.getOwner());
+            livingEntity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 1), this.getOwner());
             livingEntity.hurt(this.damageSources().thrown(this, this.getOwner()), 1.0f);
             livingEntity.setTicksFrozen(livingEntity.getTicksFrozen()+100);
         }

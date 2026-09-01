@@ -1,6 +1,7 @@
 package net.greenjab.nekomasfixed.datagen;
 
 import com.mojang.datafixers.util.Pair;
+import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.util.AllDyes;
 import net.greenjab.nekomasfixed.util.BlockDyeMap;
@@ -8,98 +9,102 @@ import net.greenjab.nekomasfixed.util.ItemDyeMap;
 import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
+import net.minecraft.data.recipes.FinishedRecipe;
 import net.minecraft.data.recipes.RecipeCategory;
-import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+
+import static net.minecraft.data.recipes.ShapedRecipeBuilder.shaped;
+import static net.minecraft.data.recipes.ShapelessRecipeBuilder.shapeless;
 
 /**
- * {@code FabricRecipeProvider} → vanilla {@code RecipeProvider} directly (no
- * Forge-side wrapper needed — the mod bus's {@code GatherDataEvent} handler adds it straight to the
- * generator). 26.2's {@code RecipeProvider} construction shape ({@code RecipeOutput} handed to the
- * constructor, stored as a field) differs from 1.20.1's real one — 1.20.1's abstract method is
- * {@code buildRecipes(RecipeOutput output)}, with {@code output} a method parameter, not a field. The
- * original body already threaded a variable literally named {@code output} through every {@code
- * .save(output)} call, so it binds onto the 1.20.1 parameter unchanged; only the class shape (no
- * Fabric double-wrap, no {@code createRecipeProvider}/anonymous-class indirection) needed fixing.
+ * Plain vanilla {@code RecipeProvider} - the mod bus's {@code GatherDataEvent} handler adds it
+ * straight to the generator, no Forge-side wrapper needed. 1.20.1's {@code RecipeProvider} only
+ * takes a {@code PackOutput} (the registries future isn't needed for anything a recipe builds), and
+ * {@code buildRecipes} hands its results to a plain {@code Consumer<FinishedRecipe>} rather than a
+ * dedicated output type - every {@code .save(output)} call below feeds that consumer directly.
+ * {@code shaped}/{@code shapeless} aren't inherited from {@code RecipeProvider} itself on this
+ * version; they're static-imported from {@code ShapedRecipeBuilder}/{@code ShapelessRecipeBuilder}.
  */
 public class ModRecipeProvider extends RecipeProvider {
     public ModRecipeProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
-        super(output, registriesFuture);
+        super(output);
     }
 
     @Override
-    protected void buildRecipes(RecipeOutput output) {
-        shapeless(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.BAOBAB_PLANKS, 4)
+    protected void buildRecipes(Consumer<FinishedRecipe> output) {
+        shapeless(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.BAOBAB_PLANKS.get(), 4)
                 .requires(ModTags.BAOBAB_LOGS)
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_LOG), has(ItemRegistry.BAOBAB_LOG)).save(output);
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_LOG.get()), has(ItemRegistry.BAOBAB_LOG.get())).save(output);
 
-        shaped(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.BAOBAB_WOOD, 3)
+        shaped(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.BAOBAB_WOOD.get(), 3)
                 .pattern("##")
                 .pattern("##")
-                .define('#', ItemRegistry.BAOBAB_LOG)
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_LOG), has(ItemRegistry.BAOBAB_LOG))
+                .define('#', ItemRegistry.BAOBAB_LOG.get())
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_LOG.get()), has(ItemRegistry.BAOBAB_LOG.get()))
                 .save(output);
 
-        shaped(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.STRIPPED_BAOBAB_WOOD, 3)
+        shaped(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.STRIPPED_BAOBAB_WOOD.get(), 3)
                 .pattern("##")
                 .pattern("##")
-                .define('#', ItemRegistry.STRIPPED_BAOBAB_LOG)
-                .unlockedBy(getHasName(ItemRegistry.STRIPPED_BAOBAB_LOG), has(ItemRegistry.STRIPPED_BAOBAB_LOG))
+                .define('#', ItemRegistry.STRIPPED_BAOBAB_LOG.get())
+                .unlockedBy(getHasName(ItemRegistry.STRIPPED_BAOBAB_LOG.get()), has(ItemRegistry.STRIPPED_BAOBAB_LOG.get()))
                 .save(output);
 
-        woodenBoat(ItemRegistry.BAOBAB_BOAT, ItemRegistry.BAOBAB_PLANKS);
-        chestBoat(ItemRegistry.BAOBAB_CHEST_BOAT, ItemRegistry.BAOBAB_PLANKS);
+        woodenBoat(output, ItemRegistry.BAOBAB_BOAT.get(), ItemRegistry.BAOBAB_PLANKS.get());
+        chestBoat(output, ItemRegistry.BAOBAB_CHEST_BOAT.get(), ItemRegistry.BAOBAB_BOAT.get());
 
-        fenceBuilder(ItemRegistry.BAOBAB_FENCE, Ingredient.of(ItemRegistry.BAOBAB_PLANKS))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS), has(ItemRegistry.BAOBAB_PLANKS))
+        fenceBuilder(ItemRegistry.BAOBAB_FENCE.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
                 .save(output);
-        fenceGateBuilder(ItemRegistry.BAOBAB_FENCE_GATE, Ingredient.of(ItemRegistry.BAOBAB_PLANKS))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS), has(ItemRegistry.BAOBAB_PLANKS))
+        fenceGateBuilder(ItemRegistry.BAOBAB_FENCE_GATE.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
                 .save(output);
-        buttonBuilder(ItemRegistry.BAOBAB_BUTTON, Ingredient.of(ItemRegistry.BAOBAB_PLANKS))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS), has(ItemRegistry.BAOBAB_PLANKS))
+        buttonBuilder(ItemRegistry.BAOBAB_BUTTON.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
                 .save(output);
-        doorBuilder(ItemRegistry.BAOBAB_DOOR, Ingredient.of(ItemRegistry.BAOBAB_PLANKS))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS), has(ItemRegistry.BAOBAB_PLANKS))
+        doorBuilder(ItemRegistry.BAOBAB_DOOR.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
                 .save(output);
-        trapdoorBuilder(ItemRegistry.BAOBAB_TRAPDOOR, Ingredient.of(ItemRegistry.BAOBAB_PLANKS))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS), has(ItemRegistry.BAOBAB_PLANKS))
+        trapdoorBuilder(ItemRegistry.BAOBAB_TRAPDOOR.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
                 .save(output);
-        pressurePlateBuilder(RecipeCategory.REDSTONE, ItemRegistry.BAOBAB_PRESSURE_PLATE, Ingredient.of(ItemRegistry.BAOBAB_PLANKS))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS), has(ItemRegistry.BAOBAB_PLANKS))
+        pressurePlateBuilder(RecipeCategory.REDSTONE, ItemRegistry.BAOBAB_PRESSURE_PLATE.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
                 .save(output);
-        signBuilder(ItemRegistry.BAOBAB_SIGN, Ingredient.of(ItemRegistry.BAOBAB_PLANKS))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS), has(ItemRegistry.BAOBAB_PLANKS))
+        signBuilder(ItemRegistry.BAOBAB_SIGN.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
                 .save(output);
-        hangingSignBuilder(ItemRegistry.BAOBAB_HANGING_SIGN, Ingredient.of(ItemRegistry.BAOBAB_LOG))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_LOG), has(ItemRegistry.BAOBAB_LOG))
+        // No hangingSignBuilder() on 1.20.1 - hangingSign(...) builds and saves the whole recipe
+        // itself (unlockedBy is fixed to "has_stripped_logs" inside it, same predicate either way).
+        hangingSign(output, ItemRegistry.BAOBAB_HANGING_SIGN.get(), ItemRegistry.BAOBAB_LOG.get());
+        slabBuilder(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.BAOBAB_SLAB.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
                 .save(output);
-        slabBuilder(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.BAOBAB_SLAB, Ingredient.of(ItemRegistry.BAOBAB_PLANKS))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS), has(ItemRegistry.BAOBAB_PLANKS))
-                .save(output);
-        stairBuilder(ItemRegistry.BAOBAB_STAIRS, Ingredient.of(ItemRegistry.BAOBAB_PLANKS))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS), has(ItemRegistry.BAOBAB_PLANKS))
+        stairBuilder(ItemRegistry.BAOBAB_STAIRS.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
+                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
                 .save(output);
 
         for (AllDyes colour : AllDyes.values()) {
             createRingRecipe(output, RecipeCategory.MISC, ItemDyeMap.DYE.get(colour), Items.BRUSH, ItemDyeMap.BRUSH.get(colour), "dyed_brush", 1)
                     .save(output);
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICKS, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICKS.get(colour).asItem(), "dyed_bricks_dyed", 8)
-                    .save(output, BlockDyeMap.BRICKS.get(colour).asItem() + "_dyed");
+                    .save(output, NekomasFixed.id(BlockDyeMap.BRICKS.get(colour).asItem() + "_dyed"));
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICK_SLAB, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICK_SLAB.get(colour).asItem(), "dyed_brick_slab_dyed", 8)
-                    .save(output, BlockDyeMap.BRICK_SLAB.get(colour).asItem() + "_dyed");
+                    .save(output, NekomasFixed.id(BlockDyeMap.BRICK_SLAB.get(colour).asItem() + "_dyed"));
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICK_STAIRS, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICK_STAIRS.get(colour).asItem(), "dyed_brick_stairs_dyed", 8)
-                    .save(output, BlockDyeMap.BRICK_STAIRS.get(colour).asItem() + "_dyed");
+                    .save(output, NekomasFixed.id(BlockDyeMap.BRICK_STAIRS.get(colour).asItem() + "_dyed"));
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICK_WALL, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICK_WALL.get(colour).asItem(), "dyed_brick_wall_dyed", 8)
-                    .save(output, BlockDyeMap.BRICK_WALL.get(colour).asItem() + "_dyed");
+                    .save(output, NekomasFixed.id(BlockDyeMap.BRICK_WALL.get(colour).asItem() + "_dyed"));
             stonecutterResultFromBase(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_SLAB.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem(), 2);
             stonecutterResultFromBase(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_STAIRS.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem());
             stonecutterResultFromBase(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_WALL.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem());
@@ -109,36 +114,36 @@ public class ModRecipeProvider extends RecipeProvider {
         }
         ArrayList<Item> spottedWool = new ArrayList<>();
         BlockDyeMap.SPOTTED_WOOL.values().forEach(e -> spottedWool.add(e.asItem()));
-        colorItemWithDye(output, ItemDyeMap.DYE.values().stream().toList(), spottedWool, "spotted_wool", RecipeCategory.BUILDING_BLOCKS);
+        colorItemWithDye(output, RecipeCategory.BUILDING_BLOCKS, ItemDyeMap.DYE.values().stream().toList(), spottedWool, "spotted_wool");
 
         ArrayList<Item> spottedCarpet = new ArrayList<>();
         BlockDyeMap.SPOTTED_CARPET.values().forEach(e -> spottedCarpet.add(e.asItem()));
-        colorItemWithDye(output, ItemDyeMap.DYE.values().stream().toList(), spottedCarpet, "spotted_carpet_dye", RecipeCategory.DECORATIONS);
+        colorItemWithDye(output, RecipeCategory.DECORATIONS, ItemDyeMap.DYE.values().stream().toList(), spottedCarpet, "spotted_carpet_dye");
 
         List<Pair<Item, Item>> hollows = List.of(
-                Pair.of(Items.OAK_PLANKS, ItemRegistry.HOLLOW_OAK_LOG),
-                Pair.of(Items.SPRUCE_PLANKS, ItemRegistry.HOLLOW_SPRUCE_LOG),
-                Pair.of(Items.BIRCH_PLANKS, ItemRegistry.HOLLOW_BIRCH_LOG),
-                Pair.of(Items.JUNGLE_PLANKS, ItemRegistry.HOLLOW_JUNGLE_LOG),
-                Pair.of(Items.ACACIA_PLANKS, ItemRegistry.HOLLOW_ACACIA_LOG),
-                Pair.of(Items.DARK_OAK_PLANKS, ItemRegistry.HOLLOW_DARK_OAK_LOG),
-                Pair.of(Items.MANGROVE_PLANKS, ItemRegistry.HOLLOW_MANGROVE_LOG),
-                Pair.of(Items.CHERRY_PLANKS, ItemRegistry.HOLLOW_CHERRY_LOG),
+                Pair.of(Items.OAK_PLANKS, ItemRegistry.HOLLOW_OAK_LOG.get()),
+                Pair.of(Items.SPRUCE_PLANKS, ItemRegistry.HOLLOW_SPRUCE_LOG.get()),
+                Pair.of(Items.BIRCH_PLANKS, ItemRegistry.HOLLOW_BIRCH_LOG.get()),
+                Pair.of(Items.JUNGLE_PLANKS, ItemRegistry.HOLLOW_JUNGLE_LOG.get()),
+                Pair.of(Items.ACACIA_PLANKS, ItemRegistry.HOLLOW_ACACIA_LOG.get()),
+                Pair.of(Items.DARK_OAK_PLANKS, ItemRegistry.HOLLOW_DARK_OAK_LOG.get()),
+                Pair.of(Items.MANGROVE_PLANKS, ItemRegistry.HOLLOW_MANGROVE_LOG.get()),
+                Pair.of(Items.CHERRY_PLANKS, ItemRegistry.HOLLOW_CHERRY_LOG.get()),
                 // Items.PALE_OAK_PLANKS dropped: Pale Garden wood is a post-1.20.1 vanilla addition,
                 // absent from this Minecraft version entirely (no analogue to fall back to — a real,
                 // content gap, not an oversight).
-                Pair.of(Items.BAMBOO_PLANKS, ItemRegistry.HOLLOW_BAMBOO_BLOCK),
-                Pair.of(Items.CRIMSON_PLANKS, ItemRegistry.HOLLOW_CRIMSON_STEM),
-                Pair.of(Items.WARPED_PLANKS, ItemRegistry.HOLLOW_WARPED_STEM),
-                Pair.of(ItemRegistry.BAOBAB_PLANKS, ItemRegistry.HOLLOW_BAOBAB_LOG));
+                Pair.of(Items.BAMBOO_PLANKS, ItemRegistry.HOLLOW_BAMBOO_BLOCK.get()),
+                Pair.of(Items.CRIMSON_PLANKS, ItemRegistry.HOLLOW_CRIMSON_STEM.get()),
+                Pair.of(Items.WARPED_PLANKS, ItemRegistry.HOLLOW_WARPED_STEM.get()),
+                Pair.of(ItemRegistry.BAOBAB_PLANKS.get(), ItemRegistry.HOLLOW_BAOBAB_LOG.get()));
         for (Pair<Item, Item> hollow : hollows) {
             shapeless(RecipeCategory.BUILDING_BLOCKS, hollow.getFirst(), 1)
                     .requires(hollow.getSecond())
                     .unlockedBy(getHasName(hollow.getSecond()), has(hollow.getSecond()))
-                    .save(output, hollow.getFirst() + "_from_hollow_log");
+                    .save(output, NekomasFixed.id(hollow.getFirst() + "_from_hollow_log"));
         }
 
-        shaped(RecipeCategory.TOOLS, ItemRegistry.REDSTONE_STRIKER, 1)
+        shaped(RecipeCategory.TOOLS, ItemRegistry.REDSTONE_STRIKER.get(), 1)
                 .pattern("RG")
                 .pattern("FR")
                 .define('R', Items.REDSTONE)
@@ -150,7 +155,7 @@ public class ModRecipeProvider extends RecipeProvider {
                 .save(output);
     }
 
-    private ShapedRecipeBuilder createRingRecipe(RecipeOutput output, RecipeCategory category, Item outside, Item inside, Item result, String group, int num) {
+    private ShapedRecipeBuilder createRingRecipe(Consumer<FinishedRecipe> output, RecipeCategory category, Item outside, Item inside, Item result, String group, int num) {
         return shaped(category, result, num)
                 .pattern("###")
                 .pattern("#D#")
@@ -160,5 +165,22 @@ public class ModRecipeProvider extends RecipeProvider {
                 .group(group)
                 .unlockedBy(getHasName(outside), has(outside))
                 .unlockedBy(getHasName(inside), has(inside));
+    }
+
+    // Vanilla's colorBlockWithDye (RecipeProvider) hardcodes RecipeCategory.BUILDING_BLOCKS and
+    // takes no category argument - the carpet call site here needs DECORATIONS, so this is that
+    // same "dye + any other colour of the same item -> the target colour" shapeless pattern with
+    // the category opened up as a parameter instead.
+    private static void colorItemWithDye(Consumer<FinishedRecipe> output, RecipeCategory category, List<Item> dyes, List<Item> results, String group) {
+        for (int i = 0; i < dyes.size(); i++) {
+            Item dye = dyes.get(i);
+            Item result = results.get(i);
+            shapeless(category, result)
+                    .requires(dye)
+                    .requires(Ingredient.of(results.stream().filter(item -> !item.equals(result)).map(ItemStack::new)))
+                    .group(group)
+                    .unlockedBy("has_needed_dye", has(dye))
+                    .save(output, NekomasFixed.id("dye_" + getItemName(result)));
+        }
     }
 }

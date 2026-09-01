@@ -31,7 +31,7 @@ public class GeyserBlock extends Block {
 
     @Override
     public void stepOn(Level level, BlockPos pos, BlockState state, Entity entity) {
-            entity.igniteForSeconds(3);
+            entity.setSecondsOnFire(3);
             entity.setDeltaMovement(entity.getDeltaMovement().x, 1.2, entity.getDeltaMovement().z);
             if(level.isClientSide()){
                 java.util.Random random = new java.util.Random();
@@ -50,18 +50,16 @@ public class GeyserBlock extends Block {
     }
 
     @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide()) {
             ItemStack tool = player.getMainHandItem();
-            boolean silkTouch =EnchantmentHelper.getItemEnchantmentLevel(level.registryAccess()
-                                    .lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
-                                    .getOrThrow(Enchantments.SILK_TOUCH), tool) > 0;
+            boolean silkTouch = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool) > 0;
             if (!silkTouch) {
                 level.setBlockAndUpdate(pos, Blocks.LAVA.defaultBlockState());
-                return state;
+                return;
             }
         }
-        return super.playerWillDestroy(level, pos, state, player);
+        super.playerWillDestroy(level, pos, state, player);
     }
 
 }

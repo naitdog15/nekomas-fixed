@@ -5,8 +5,8 @@ import net.greenjab.nekomasfixed.util.AllDyes;
 import net.greenjab.nekomasfixed.util.BlockDyeMap;
 import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.BlockSource;
 import net.minecraft.core.Direction;
-import net.minecraft.core.dispenser.BlockSource;
 import net.minecraft.core.dispenser.OptionalDispenseItemBehavior;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -25,9 +25,9 @@ public class DyedBrushBehaviour extends OptionalDispenseItemBehavior {
 		this.setSuccess(false);
 		if (dispensed.getItem() instanceof DyedBrushItem brushItem) {
 			AllDyes color = brushItem.getColor();
-			Direction facing = source.state().getValue(DispenserBlock.FACING);
-			BlockPos pos = source.pos().relative(facing);
-			Level level = source.level();
+			Direction facing = source.getBlockState().getValue(DispenserBlock.FACING);
+			BlockPos pos = source.getPos().relative(facing);
+			Level level = source.getLevel();
 			BlockState state = level.getBlockState(pos);
 
 			boolean used = false;
@@ -54,10 +54,10 @@ public class DyedBrushBehaviour extends OptionalDispenseItemBehavior {
 				} else if (state.is(ModTags.DYED_BRICK_WALLS) || state.is(Blocks.BRICK_WALL) && !state.is(getBrickWalls(color))) {
 					level.setBlockAndUpdate(pos, getBrickWalls(color).defaultBlockState()
 							.setValue(WallBlock.WATERLOGGED, state.getValue(WallBlock.WATERLOGGED))
-							.setValue(WallBlock.NORTH, state.getValue(WallBlock.NORTH))
-							.setValue(WallBlock.EAST, state.getValue(WallBlock.EAST))
-							.setValue(WallBlock.SOUTH, state.getValue(WallBlock.SOUTH))
-							.setValue(WallBlock.WEST, state.getValue(WallBlock.WEST))
+							.setValue(WallBlock.NORTH_WALL, state.getValue(WallBlock.NORTH_WALL))
+							.setValue(WallBlock.EAST_WALL, state.getValue(WallBlock.EAST_WALL))
+							.setValue(WallBlock.SOUTH_WALL, state.getValue(WallBlock.SOUTH_WALL))
+							.setValue(WallBlock.WEST_WALL, state.getValue(WallBlock.WEST_WALL))
 							.setValue(WallBlock.UP, state.getValue(WallBlock.UP)));
 					used = true;
 				} else if (state.is(ModTags.STAINED_GLASSES) || state.is(Blocks.GLASS) && !state.is(getStainedGlass(color))) {
@@ -131,7 +131,7 @@ public class DyedBrushBehaviour extends OptionalDispenseItemBehavior {
 			if (used){
 				this.setSuccess(true);
 				level.playSound(null, pos, SoundEvents.SLIME_SQUISH, SoundSource.BLOCKS, 1.0F, 1.0F);
-				if (dispensed.nextDamageWillBreak()) return ItemStack.EMPTY;
+				if (dispensed.getDamageValue() + 1 >= dispensed.getMaxDamage()) return ItemStack.EMPTY;
 				else dispensed.setDamageValue(dispensed.getDamageValue()+1);
 			}
 		}

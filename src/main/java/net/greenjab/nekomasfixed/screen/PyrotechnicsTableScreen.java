@@ -1,14 +1,9 @@
 package net.greenjab.nekomasfixed.screen;
 
-import com.mojang.datafixers.util.Pair;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.greenjab.nekomasfixed.NekomasFixed;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.greenjab.nekomasfixed.render.other.LegacySpriteBlit;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.CyclingSlotBackground;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.SimpleContainer;
@@ -17,25 +12,27 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-import com.mojang.blaze3d.platform.cursor.CursorTypes;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 import java.util.List;
 
 /**
- * PORT (NOT attempted this pass - documented, not silently broken): {@code GuiGraphicsExtractor},
- * {@code extractRenderState}/{@code extractBackground}, {@code CyclingSlotBackground}, {@code
- * ResourceLocation} (as a rendering-sprite id type), {@code MouseButtonEvent}, {@code CursorTypes}, and the
- * {@code blitSprite}/{@code RenderPipelines.GUI_TEXTURED} draw calls are all part of 26.2's
- * render-state extraction split (a client-render-pipeline redesign with no 1.20.1 analogue) - the
- * widest single block of affected files in the whole port (roughly 69 files,
- * plus 29 GUI sprites). Rewriting this screen's rendering internals is out of proportion for
- * one file in a much larger cross-cutting redesign; this package's own job here (this package's own
- * screen/** code) - the MENU's own crafting logic (PyrotechnicsMenu.java) - is fully converted. This
- * class's imports and gross signatures (@OnlyIn, jspecify) are mechanically cleaned, but {@code
- * render}/{@code renderBg}/{@code mouseClicked}'s actual draw calls still target 26.2-only APIs and
- * will not compile until the wider render-state redesign reaches this screen. Left as a named,
- * predicted compile error rather than an invented reimplementation of a rendering
- * pipeline this package does not own.
+ * The table's own drawing, on 1.20.1's plain {@code AbstractContainerScreen}: everything goes through
+ * {@code renderBg} + {@code render}, there is no render-state extraction pass to hook.
+ *
+ * <p>Three things about the GUI have no 1.20.1 counterpart and are handled here rather than dropped:
+ * <ul>
+ * <li>There is no GUI sprite atlas, so every sprite is blitted from its own PNG under
+ *     {@code textures/gui/sprites/} — see {@link LegacySpriteBlit}. The pattern previews are
+ *     animation strips, which an atlas would have played for us; without one the frame is picked by
+ *     hand from the strip length recorded per pattern.</li>
+ * <li>The chest-slot background is a vanilla sprite that only exists from 1.20.2 on. Pre-split it is
+ *     a region of {@code textures/gui/container/horse.png}, which is what gets blitted instead.</li>
+ * <li>{@code CyclingSlotBackground} does exist on 1.20.1, but it only draws block-atlas sprites —
+ *     these icons are loose GUI PNGs, so the cycle is done here (without the 4-tick cross-fade).</li>
+ * </ul>
+ * Mouse-cursor shape requests have no 1.20.1 API at all and are gone.
  */
 @OnlyIn(Dist.CLIENT)
 public class PyrotechnicsTableScreen extends AbstractContainerScreen<PyrotechnicsMenu> {
@@ -59,120 +56,158 @@ public class PyrotechnicsTableScreen extends AbstractContainerScreen<Pyrotechnic
     private static final ResourceLocation GLOWSTONE_ICON = NekomasFixed.id("container/pyrotechnics/glowstone");
     private static final ResourceLocation DIAMOND = NekomasFixed.id("container/pyrotechnics/diamond");
 
-    private final CyclingSlotBackground dyeOrStarSlotIcon = new CyclingSlotBackground(0);
     private static final List<ResourceLocation> DYE_OR_STAR_TEXTURES = List.of(
             DYE_ICON, FIREWORK_STAR_ICON);
-
-    private final CyclingSlotBackground shapeSlotIcon = new CyclingSlotBackground(10);
     private static final List<ResourceLocation> SHAPE_TEXTURES = List.of(
             EMPTY_ICON, FIRE_CHARGE_ICON, GOLD_NUGGET_ICON, CREEPER_PATTERN_ICON, FEATHER_ICON);
-
-    private final CyclingSlotBackground twinkleSlotIcon = new CyclingSlotBackground(11);
     private static final List<ResourceLocation> TWINKLE_TEXTURES = List.of(
             EMPTY_ICON, GLOWSTONE_ICON);
-
-    private final CyclingSlotBackground trailSlotIcon = new CyclingSlotBackground(12);
     private static final List<ResourceLocation> TRAIL_TEXTURES = List.of(
             EMPTY_ICON, DIAMOND);
 
-    private static final ResourceLocation CHEST_SLOTS_TEXTURE = ResourceLocation.withDefaultNamespace("container/horse/chest_slots");
+    /** Ticks a slot icon stays up before the next one in its list, same rate vanilla cycles at. */
+    private static final int ICON_CHANGE_TICK_RATE = 30;
 
-    private static final List<Pair<String, Item>> ANIMATIONS = List.of(
-        new Pair<>("none", Items.AIR),
-        new Pair<>("large_ball", Items.FIRE_CHARGE),
-        new Pair<>("star", Items.GOLD_NUGGET),
-        new Pair<>("creeper", Items.CREEPER_BANNER_PATTERN),
-        new Pair<>("burst", Items.FEATHER),
-        new Pair<>("twinkle", Items.GLOWSTONE_DUST),
-        new Pair<>("trail", Items.DIAMOND)
+    private static final ResourceLocation HORSE_INVENTORY_TEXTURE = new ResourceLocation("textures/gui/container/horse.png");
+    /** Where the 90x54 block of chest slots sits in horse.png (directly under the 176x166 window). */
+    private static final int HORSE_CHEST_SLOTS_V = 166;
+
+    /** Pattern preview strips: {@link #FRAME_SIZE}-square frames stacked vertically, one per tick. */
+    private static final int FRAME_SIZE = 200;
+    private static final int PREVIEW_SIZE = 71;
+
+    /** A firework-shape button: its preview strip's name and length, and the item drawn on the button. */
+    private record Pattern(String name, int frames, Item icon) {
+        ResourceLocation preview() {
+            return NekomasFixed.id("container/pyrotechnics/" + this.name);
+        }
+    }
+
+    private static final List<Pattern> ANIMATIONS = List.of(
+        new Pattern("none", 119, Items.AIR),
+        new Pattern("large_ball", 119, Items.FIRE_CHARGE),
+        new Pattern("star", 119, Items.GOLD_NUGGET),
+        new Pattern("creeper", 119, Items.CREEPER_BANNER_PATTERN),
+        new Pattern("burst", 118, Items.FEATHER),
+        new Pattern("twinkle", 119, Items.GLOWSTONE_DUST),
+        new Pattern("trail", 118, Items.DIAMOND)
     );
 
-    private final int totalPatterns = 7;
+    private final int totalPatterns = ANIMATIONS.size();
+    private int ticks;
 
     public PyrotechnicsTableScreen(PyrotechnicsMenu handler, Inventory inventory, Component title) {
-        super(handler, inventory, title, 176, 186);
+        super(handler, inventory, title);
+        this.imageWidth = 176;
+        this.imageHeight = 186;
+        this.inventoryLabelY = this.imageHeight - 94;
     }
 
     @Override
-    public void containerTick() {
+    protected void containerTick() {
         super.containerTick();
-        this.dyeOrStarSlotIcon.tick(DYE_OR_STAR_TEXTURES);
-        this.shapeSlotIcon.tick(SHAPE_TEXTURES);
-        this.twinkleSlotIcon.tick(TWINKLE_TEXTURES);
-        this.trailSlotIcon.tick(TRAIL_TEXTURES);
+        this.ticks++;
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
-        this.extractContents(context, mouseX, mouseY, deltaTicks);
-        this.extractCarriedItem(context, mouseX, mouseY);
-        this.extractTooltip(context, mouseX, mouseY);
+    public void render(GuiGraphics context, int mouseX, int mouseY, float partialTick) {
+        this.renderBackground(context);
+        super.render(context, mouseX, mouseY, partialTick);
+        int hovered = patternAt(mouseX, mouseY);
+        if (hovered >= 0 && hovered != this.menu.getSelectedPattern()) {
+            context.renderTooltip(this.font, Component.translatable(
+                    "container.nekomasfixed.pyrotechnics." + ANIMATIONS.get(hovered).name()), mouseX, mouseY);
+        } else {
+            this.renderTooltip(context, mouseX, mouseY);
+        }
     }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
-        context.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, leftPos, topPos, 0.0F, 0.0F, this.imageWidth, this.imageHeight, 256, 256);
+    protected void renderBg(GuiGraphics context, float partialTick, int mouseX, int mouseY) {
+        context.blit(TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
 
-        context.blitSprite(RenderPipelines.GUI_TEXTURED, NekomasFixed.id("container/pyrotechnics/"+ANIMATIONS.get(this.menu.getSelectedPattern()).getFirst()), leftPos+98, topPos+15, 71, 71);
-        for (Slot slot : this.menu.slots){
-            if (slot.isActive() && slot.getContainerSlot()>0 && slot.container instanceof SimpleContainer) {
-                context.blitSprite(RenderPipelines.GUI_TEXTURED, CHEST_SLOTS_TEXTURE, 90, 54, 0, 0, leftPos+slot.x-1, topPos+slot.y-1, 18, 18);
-                if (!slot.hasItem()){
+        Pattern selected = ANIMATIONS.get(Math.floorMod(this.menu.getSelectedPattern(), totalPatterns));
+        LegacySpriteBlit.blitSpriteScaled(context, selected.preview(),
+                this.leftPos + 98, this.topPos + 15, PREVIEW_SIZE, PREVIEW_SIZE,
+                0, (this.ticks % selected.frames()) * FRAME_SIZE,
+                FRAME_SIZE, FRAME_SIZE, FRAME_SIZE, selected.frames() * FRAME_SIZE);
+
+        for (Slot slot : this.menu.slots) {
+            if (slot.isActive() && slot.getContainerSlot() > 0 && slot.container instanceof SimpleContainer) {
+                blitChestSlot(context, this.leftPos + slot.x - 1, this.topPos + slot.y - 1);
+                if (!slot.hasItem()) {
                     if (slot.mayPlace(Items.WHITE_DYE.getDefaultInstance()))
-                        context.blitSprite(RenderPipelines.GUI_TEXTURED, DYE_ICON, leftPos + slot.x, topPos + slot.y, 16, 16);
+                        LegacySpriteBlit.blitSprite(context, DYE_ICON, this.leftPos + slot.x, this.topPos + slot.y, 16, 16);
                     else if (slot.mayPlace(Items.FIREWORK_STAR.getDefaultInstance()))
-                        context.blitSprite(RenderPipelines.GUI_TEXTURED, FIREWORK_STAR_ICON, 16, 16, 0, 0, leftPos + slot.x, topPos + slot.y, 16, 16);
+                        LegacySpriteBlit.blitSprite(context, FIREWORK_STAR_ICON, this.leftPos + slot.x, this.topPos + slot.y, 16, 16);
                     else if (slot.mayPlace(Items.GUNPOWDER.getDefaultInstance()))
-                        context.blitSprite(RenderPipelines.GUI_TEXTURED, GUNPOWDER_ICON, 16, 16, 0, 0, leftPos + slot.x, topPos + slot.y, 16, 16);
+                        LegacySpriteBlit.blitSprite(context, GUNPOWDER_ICON, this.leftPos + slot.x, this.topPos + slot.y, 16, 16);
                     else if (slot.mayPlace(Items.PAPER.getDefaultInstance()))
-                        context.blitSprite(RenderPipelines.GUI_TEXTURED, PAPER_ICON, 16, 16, 0, 0, leftPos + slot.x, topPos + slot.y, 16, 16);
+                        LegacySpriteBlit.blitSprite(context, PAPER_ICON, this.leftPos + slot.x, this.topPos + slot.y, 16, 16);
                 }
             }
         }
-        this.dyeOrStarSlotIcon.extractRenderState(this.menu, context, deltaTicks, this.leftPos, this.topPos);
-        if (this.menu.slots.getFirst().hasItem() && this.menu.slots.getFirst().getItem().getItem() instanceof DyeItem){
-            this.shapeSlotIcon.extractRenderState(this.menu, context, deltaTicks, this.leftPos, this.topPos);
-            this.twinkleSlotIcon.extractRenderState(this.menu, context, deltaTicks, this.leftPos, this.topPos);
-            this.trailSlotIcon.extractRenderState(this.menu, context, deltaTicks, this.leftPos, this.topPos);
-        }
-        if (this.menu.slots.get(14).isActive()) context.blitSprite(RenderPipelines.GUI_TEXTURED, CHEST_SLOTS_TEXTURE, 90, 54, 0, 0, leftPos+151, topPos+72, 18, 18);
 
-        int sx = leftPos + 7-14;
-        int sy = topPos + 53+19;
+        renderCyclingIcon(context, 0, DYE_OR_STAR_TEXTURES);
+        Slot firstSlot = this.menu.slots.get(0);
+        if (firstSlot.hasItem() && firstSlot.getItem().getItem() instanceof DyeItem) {
+            renderCyclingIcon(context, 10, SHAPE_TEXTURES);
+            renderCyclingIcon(context, 11, TWINKLE_TEXTURES);
+            renderCyclingIcon(context, 12, TRAIL_TEXTURES);
+        }
+        if (this.menu.slots.get(14).isActive()) blitChestSlot(context, this.leftPos + 151, this.topPos + 72);
 
         for (int index = 0; index < totalPatterns; ++index) {
-            int bx = sx + index * 14;
-            int by = sy;
-            if (index==0) {bx = leftPos +7;by=topPos +53;}
-            if (index>4) bx+=6;
-            boolean bl = mouseX >= bx && mouseY >= by && mouseX < bx + 14 && mouseY < by + 18;
-            ResourceLocation identifier2;
-            if (index == this.menu.getSelectedPattern()) identifier2 = BUTTON_SELECTED_TEXTURE;
-            else if (bl) {
-                identifier2 = BUTTON_HIGHLIGHTED_TEXTURE;
-                context.setTooltipForNextFrame(Component.translatable("container.nekomasfixed.pyrotechnics."+ANIMATIONS.get(index).getFirst()), mouseX, mouseY);
-                context.requestCursor(CursorTypes.POINTING_HAND);
-            } else identifier2 = BUTTON_TEXTURE;
+            int bx = buttonX(index);
+            int by = buttonY(index);
+            ResourceLocation button;
+            if (index == this.menu.getSelectedPattern()) button = BUTTON_SELECTED_TEXTURE;
+            else if (mouseX >= bx && mouseY >= by && mouseX < bx + 14 && mouseY < by + 18) button = BUTTON_HIGHLIGHTED_TEXTURE;
+            else button = BUTTON_TEXTURE;
 
-            context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier2, bx, by, 14, 18);
-            context.item(ANIMATIONS.get(index).getSecond().getDefaultInstance(), bx-1, by +1);
+            LegacySpriteBlit.blitSprite(context, button, bx, by, 14, 18);
+            context.renderItem(ANIMATIONS.get(index).icon().getDefaultInstance(), bx - 1, by + 1);
         }
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
-        int sx = leftPos + 7-14;
-        int sy = topPos + 53+19;
-        for (int index = 0; index < totalPatterns; ++index) {
-            double dx = click.x() - (double) (sx + index * 14);
-            double dy = click.y() - (double) (sy);
-            if (index==0) { dx = click.x() - (leftPos +7);dy = click.y() - (topPos +53);}
-            if (index>4) dx-=6;
-            if (dx >= 0.0 && dy >= 0.0 && dx < 14.0 && dy < 18.0) {
-                this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, index);
-                return true;
-            }
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int index = patternAt(mouseX, mouseY);
+        if (index >= 0) {
+            this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, index);
+            return true;
         }
-        return super.mouseClicked(click, doubled);
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void blitChestSlot(GuiGraphics context, int x, int y) {
+        context.blit(HORSE_INVENTORY_TEXTURE, x, y, 0, HORSE_CHEST_SLOTS_V, 18, 18);
+    }
+
+    private void renderCyclingIcon(GuiGraphics context, int slotIndex, List<ResourceLocation> icons) {
+        Slot slot = this.menu.getSlot(slotIndex);
+        if (slot.hasItem()) return;
+        ResourceLocation icon = icons.get((this.ticks / ICON_CHANGE_TICK_RATE) % icons.size());
+        LegacySpriteBlit.blitSprite(context, icon, this.leftPos + slot.x, this.topPos + slot.y, 16, 16);
+    }
+
+    /** The first button sits on its own above the row; the last two are pushed right by a divider. */
+    private int buttonX(int index) {
+        if (index == 0) return this.leftPos + 7;
+        return this.leftPos + 7 - 14 + index * 14 + (index > 4 ? 6 : 0);
+    }
+
+    private int buttonY(int index) {
+        return index == 0 ? this.topPos + 53 : this.topPos + 53 + 19;
+    }
+
+    /** Index of the pattern button under the given point, or -1. */
+    private int patternAt(double mouseX, double mouseY) {
+        for (int index = 0; index < totalPatterns; ++index) {
+            double dx = mouseX - buttonX(index);
+            double dy = mouseY - buttonY(index);
+            if (dx >= 0.0 && dy >= 0.0 && dx < 14.0 && dy < 18.0) return index;
+        }
+        return -1;
     }
 }

@@ -35,14 +35,14 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.pathfinder.PathType;
+import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 
 /**
- * PORT: {@code registerDebugValues}/{@code WildfireDebugData} deleted outright (§6.3: 26.x-only F3
+ * PORT: {@code registerDebugValues}/{@code WildfireDebugData} deleted outright (26.x-only F3
  * telemetry with a {@code DebugValueSource} type that has no 1.20.1 counterpart at all - zero
  * gameplay, no replacement needed). Brain construction rewritten onto 1.20.1's real shape
  * ({@code brainProvider()} + {@code makeBrain(Dynamic<?>)} delegating to a static
@@ -63,11 +63,11 @@ public class WildfireEntity extends Monster {
 
 	public WildfireEntity(EntityType<? extends WildfireEntity> entityType, Level level) {
 		super(entityType, level);
-		this.setPathfindingMalus(PathType.WATER, -1.0F);
-		this.setPathfindingMalus(PathType.LAVA, 8.0F);
-		this.setPathfindingMalus(PathType.FIRE_IN_NEIGHBOR, 0.0F);
-		this.setPathfindingMalus(PathType.FIRE, 0.0F);
-		this.bossBar = (new ServerBossEvent(Mth.createInsecureUUID(this.level().getRandom()), this.getDisplayName(), BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.PROGRESS));
+		this.setPathfindingMalus(BlockPathTypes.WATER, -1.0F);
+		this.setPathfindingMalus(BlockPathTypes.LAVA, 8.0F);
+		this.setPathfindingMalus(BlockPathTypes.DANGER_FIRE, 0.0F);
+		this.setPathfindingMalus(BlockPathTypes.DAMAGE_FIRE, 0.0F);
+		this.bossBar = (new ServerBossEvent(this.getDisplayName(), BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.PROGRESS));
 		this.xpReward = 50;
 		setShieldsActive(4);
 	}
@@ -86,7 +86,7 @@ public class WildfireEntity extends Monster {
 	}
 
 	@Override
-	protected void addAdditionalSaveData(CompoundTag tag) {
+	public void addAdditionalSaveData(CompoundTag tag) {
 		super.addAdditionalSaveData(tag);
 		tag.putInt("State", this.entityData.get(WILDFIRE_FLAGS));
 		if (spawnPos==null) spawnPos = new BlockPos(0, 0, 0);
@@ -96,7 +96,7 @@ public class WildfireEntity extends Monster {
 	}
 
 	@Override
-	protected void readAdditionalSaveData(CompoundTag tag) {
+	public void readAdditionalSaveData(CompoundTag tag) {
 		super.readAdditionalSaveData(tag);
 		this.entityData.set(WILDFIRE_FLAGS, (byte) tag.getInt("State"));
 		spawnPos = new BlockPos(tag.getInt("spawnX"), tag.getInt("spawnY"), tag.getInt("spawnZ"));
@@ -235,12 +235,12 @@ public class WildfireEntity extends Monster {
 					if ( livingEntity.getEyeY() > this.getEyeY() + this.eyeOffset) {
 						this.setDeltaMovement(this.getDeltaMovement().add(0.0, (0.3F - vec3d.y) * 0.6F, 0.0));
 					}
-					this.setDeltaMovement(this.getDeltaMovement().add(livingEntity.getEyePosition().subtract(this.position()).horizontal().normalize().scale(0.03f)));
+					this.setDeltaMovement(this.getDeltaMovement().add(livingEntity.getEyePosition().subtract(this.position()).multiply(1.0, 0.0, 1.0).normalize().scale(0.03f)));
 				}
 			} else {
 				if ( livingEntity.getEyeY() > this.getEyeY() + this.eyeOffset) {
 					this.setDeltaMovement(this.getDeltaMovement().add(0.0, (0.3F - vec3d.y) * 0.6F, 0.0));
-					this.needsSync = true;
+					this.hasImpulse = true;
 				}
 			}
 		}
@@ -251,7 +251,9 @@ public class WildfireEntity extends Monster {
 			int newShields = (int)Mth.clamp(5*this.getHealth()/this.getMaxHealth(), 0, 4);
 			setShieldsActive(newShields);
 			if (newShields < lastShields) {
-				level.playSound(null, this, SoundEvents.WOLF_ARMOR_BREAK, SoundSource.PLAYERS, 1.0F, 1.0F);
+				// Wolf armour doesn't exist on 1.20.1; the shield-break sound is the closest match
+				// for a plate popping off.
+				level.playSound(null, this, SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS, 1.0F, 1.0F);
 			} else if (newShields > lastShields) {
 				level.playSound(null, this, SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.7F, 2.0F);
 			}
@@ -328,10 +330,16 @@ public class WildfireEntity extends Monster {
 		this.entityData.set(WILDFIRE_FLAGS, b);
 	}
 
+	/**
+	 * The plate roll deliberately sits ahead of {@code super.hurt}, so a blocked arrow neither deals
+	 * damage nor opens the 10-tick invulnerability window - the next arrow gets its own roll. Damage
+	 * that gets past the plates falls through to LivingEntity's normal pipeline, keeping vanilla
+	 * invulnerability timing, knockback and hurt sounds intact.
+	 */
 	@Override
-	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+	public boolean hurt(DamageSource source, float amount) {
 		if(this == source.getEntity())return false;
-		if (!isOnFire()) {
+		if (!isOnFire() && this.level() instanceof ServerLevel level) {
 			Entity entity = source.getDirectEntity();
 			if (entity instanceof AbstractArrow) {
 				if (random.nextInt(4)<getShieldsActive()) {
@@ -340,6 +348,6 @@ public class WildfireEntity extends Monster {
 				}
 			}
 		}
-		return super.hurtServer(level,source,amount);
+		return super.hurt(source, amount);
 	}
 }

@@ -16,13 +16,10 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.UUID;
@@ -42,7 +39,9 @@ public class SpearEntity extends Entity {
 	@Override
 	protected void defineSynchedData() {
 		this.entityData.define(DIRECTION, Direction.UP);
-		this.entityData.define(SPEAR, Items.WOODEN_SPEAR.getDefaultInstance());
+		// No spear item exists on 1.20.1, so there is nothing to default the carried stack to; the
+		// dispenser wiring always calls setStack before the entity is added to the level.
+		this.entityData.define(SPEAR, ItemStack.EMPTY);
 	}
 
 	public void setDirection(Direction dir) {
@@ -68,17 +67,24 @@ public class SpearEntity extends Entity {
 		tag.putInt("Warmup", this.warmup);
 	}
 
+	/** How far the stab reaches past the hitbox, along the facing axis only. */
+	private Vec3 reachVector() {
+		Vec3 unit = Vec3.atLowerCornerOf(getDirection().getNormal());
+		return unit.multiply(unit).scale(0.4);
+	}
+
 	@Override
 	public void tick() {
 		super.tick();
 		if (this.level().isClientSide()) {
 			this.ticksLeft--;
 			if (this.ticksLeft == 20-5) {
-				Vec3 b = getDirection().getUnitVec3().multiply(getDirection().getUnitVec3()).scale(0.4);
+				Vec3 b = reachVector();
 				AABB box = this.getBoundingBox().inflate(b.x, b.y, b.z);
 				List<LivingEntity> list = this.level().getEntitiesOfClass(LivingEntity.class, box);
 				if (!list.isEmpty()) {
-					this.level().playLocalSound(this.getX(), this.getY(), this.getZ(), SoundEvents.SPEAR_HIT,
+					// 1.20.1 has no spear sound event; the trident stab is the nearest match.
+					this.level().playLocalSound(this.getX(), this.getY(), this.getZ(), SoundEvents.TRIDENT_HIT,
 							this.getSoundSource(), 1.0F, 1f, false);
 					for (int i = 0; i < 12; i++) {
 						double d = this.getX() + (this.random.nextDouble() * 2.0 - 1.0) * this.getBbWidth() * 0.5;
@@ -93,7 +99,7 @@ public class SpearEntity extends Entity {
 			}
 		} else if (--this.warmup < 0) {
 			if (this.warmup == -5) {
-				Vec3 b = getDirection().getUnitVec3().multiply(getDirection().getUnitVec3()).scale(0.4);
+				Vec3 b = reachVector();
 				AABB box = this.getBoundingBox().inflate(b.x, b.y, b.z);
 				for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, box)) {
 					this.damage(livingEntity);
@@ -111,37 +117,43 @@ public class SpearEntity extends Entity {
 		}
 	}
 
-	// PORT (design gap, documented rather than invented): 26.2's PiercingWeapon/Weapon DataComponents,
+	// PORT: 26.2's PiercingWeapon/Weapon DataComponents,
 	// DataComponents.ATTRIBUTE_MODIFIERS-derived damage, and Player#stabAttack/onAttack/postPiercingAttack
 	// are all part of the 1.21.2+ combat rework and have no 1.20.1 counterpart (1.20.1's Item.Properties
 	// carries no components at all - components landed in 1.20.5). The fake-"Dispenser"-player positioning
 	// technique is preserved (still valid 1.20.1 API), but the piercing-weapon-component attack dispatch is
-	// replaced with a direct target.hurt(...) call using a fixed base damage, enchant-scaled via
-	// EnchantmentHelper.modifyDamage (still 1.20.1 API). Per-spear-material damage scaling previously read
-	// from the wielded stack's own attribute-modifier component cannot be reproduced without the spear
-	// Item class exposing a damage value some other way.
+	// replaced with a direct target.hurt(...) call using a fixed base damage plus the wielded stack's own
+	// Sharpness-family bonus (EnchantmentHelper.getDamageBonus, the 1.20.1 form). Per-spear-material damage
+	// scaling previously read from the stack's attribute-modifier component cannot be reproduced without the
+	// spear Item class exposing a damage value some other way.
 	private static final float BASE_SPEAR_DAMAGE = 8.0F;
 
 	private void damage(LivingEntity target) {
 		if (target.isAlive() && !target.isInvulnerable()) {
 			if (this.level() instanceof ServerLevel level) {
-				Player player = new Player(level, new GameProfile(UUID.randomUUID(), "Dispenser")) {
+				Direction direction = entityData.get(DIRECTION);
+				float yRot = direction.getAxis().isHorizontal() ? direction.toYRot() : 0.0F;
+				Player player = new Player(level, this.blockPosition(), yRot, new GameProfile(UUID.randomUUID(), "Dispenser")) {
 					@Override
-					public @NotNull GameType gameMode() {
-						return GameType.SURVIVAL;
+					public boolean isSpectator() {
+						return false;
+					}
+
+					@Override
+					public boolean isCreative() {
+						return false;
 					}
 				};
 				ItemStack stack = entityData.get(SPEAR);
-				Direction direction = entityData.get(DIRECTION);
 				if (direction.getAxis().isHorizontal()) {
-					player.absSnapTo(this.getX(), this.getY(), this.getZ(), direction.toYRot(), 0);
+					player.absMoveTo(this.getX(), this.getY(), this.getZ(), direction.toYRot(), 0);
 				} else {
-					player.absSnapTo(this.getX(), this.getY(), this.getZ(), 0, direction==Direction.UP?-90:90);
+					player.absMoveTo(this.getX(), this.getY(), this.getZ(), 0, direction==Direction.UP?-90:90);
 				}
 				player.attackStrengthTicker = 1000;
 				player.getInventory().setItem(0, stack);
 				DamageSource damageSource = this.damageSources().playerAttack(player);
-				float damage = EnchantmentHelper.modifyDamage(level, stack, target, damageSource, BASE_SPEAR_DAMAGE);
+				float damage = BASE_SPEAR_DAMAGE + EnchantmentHelper.getDamageBonus(stack, target.getMobType());
 				if (target.hurt(damageSource, damage)) {
 					// 1.20.1 has no unified EnchantmentHelper.doPostAttackEffects(level, target, source);
 					// the two-call vanilla form is doPostHurtEffects(victim, attacker) + doPostDamageEffects(attacker, victim)
@@ -163,7 +175,7 @@ public class SpearEntity extends Entity {
 	}
 
 	@Override
-	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+	public boolean hurt(DamageSource source, float amount) {
 		return false;
 	}
 }

@@ -1,8 +1,6 @@
 {
-  "parent": "minecraft:block/template_bed_head",
+  "parent": "minecraft:block/block",
   "textures": {
-    "east": "nekomasfixed:block/maroon_bed_head_east",
-    "up": "nekomasfixed:block/maroon_bed_head_up",
-    "west": "nekomasfixed:block/maroon_bed_head_west"
+    "particle": "nekomasfixed:block/maroon_wool"
   }
 }

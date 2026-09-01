@@ -22,7 +22,7 @@ import net.minecraftforge.fml.common.Mod;
  * a shared {@code NekomasFixedClient.onInitializeClient()} that no longer exists on Forge.
  *
  * <p><b>{@code ArmorModelSet} does not exist on 1.20.1</b> (VERIFIED against
- * {@code _reference/upstream/forge-1.20.1-mapped-src} — no such class in that tree). 1.20.1's
+ * {@code forge-1.20.1-mapped-src} — no such class in that tree). 1.20.1's
  * {@code HumanoidArmorLayer} takes an "inner" (0.5 dilation) and "outer" (1.0 dilation) model shared
  * across every armor slot, plus a {@code ModelManager} (for the armor-trim atlas) — not four
  * separately-baked per-slot models. Vanilla already bakes and shares one such pair per mob family

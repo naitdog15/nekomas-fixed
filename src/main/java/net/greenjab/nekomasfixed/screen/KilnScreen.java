@@ -14,7 +14,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * text / lit-progress texture / burn-progress texture / tabs list are all gone from the screen layer;
  * they live inside {@code RecipeBookComponent} + the recipe-book-category system now - see {@code
  * KilnRecipeBookClient} for where the 3 tabs actually get wired). {@code @OnlyIn} added
- * explicitly (§4.2 rule 1) - the Fabric client source set gave this structural dist-safety for free;
+ * explicitly - the Fabric client source set gave this structural dist-safety for free;
  * Forge's single source set needs the annotation instead.
  */
 @OnlyIn(Dist.CLIENT)

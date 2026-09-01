@@ -33,9 +33,9 @@ import net.minecraft.world.item.ItemStack;
  * {@code getFoilBufferDirect}/{@code scale(1,-1,-1)} shape, retargeted at this mod's two items and its
  * damage-based soul-shield texture swap.
  *
- * <p><b>Still needs wiring</b> (registry/item/** is a different file's scope): wire this in
- * {@code WildfireTridentItem}/{@code WildfireShieldItem} by overriding
- * {@code Item#initializeClient(Consumer<IClientItemExtensions>)}:
+ * <p><b>Not wired up yet.</b> To use it, override
+ * {@code Item#initializeClient(Consumer<IClientItemExtensions>)} on
+ * {@code WildfireTridentItem}/{@code WildfireShieldItem}:
  * <pre>{@code
  * @Override
  * public void initializeClient(Consumer<IClientItemExtensions> consumer) {

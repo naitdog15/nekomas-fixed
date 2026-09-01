@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 import java.util.Random;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
@@ -24,6 +23,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.Vec3;
 
 @Mixin(Fox.class)
 public class FoxMixin {
@@ -37,7 +37,7 @@ public class FoxMixin {
         if(stack.is(ItemTags.HOES) && randInt){
             if(world.getBlockState(foxEntity.blockPosition().below()).is(BlockTags.DIRT)){
                 world.setBlockAndUpdate(foxEntity.blockPosition().below(), Blocks.FARMLAND.defaultBlockState());
-                stack.hurtAndBreak(1, foxEntity, InteractionHand.MAIN_HAND);
+                stack.hurtAndBreak(1, foxEntity, holder -> holder.broadcastBreakEvent(InteractionHand.MAIN_HAND));
             }
         }else if(stack.is(Items.SHEARS) && randInt){
             List<Sheep> nearbySheeps = world.getEntitiesOfClass(Sheep.class, foxEntity.getBoundingBox().inflate(1), ignored -> true);
@@ -46,9 +46,9 @@ public class FoxMixin {
                 sheep = nearbySheeps.get(0);
                 if(sheep.readyForShearing()){
                     if (world.isClientSide()) {return;}
-                    sheep.shear((ServerLevel) world, SoundSource.PLAYERS, stack);
+                    sheep.shear(SoundSource.PLAYERS);
                     sheep.gameEvent(GameEvent.SHEAR, foxEntity);
-                    stack.hurtAndBreak(1, foxEntity, InteractionHand.MAIN_HAND);
+                    stack.hurtAndBreak(1, foxEntity, holder -> holder.broadcastBreakEvent(InteractionHand.MAIN_HAND));
                 }
             }
         }
@@ -56,10 +56,10 @@ public class FoxMixin {
             Direction dir = Direction.Plane.HORIZONTAL.getRandomDirection(foxEntity.getRandom());
             if(world.getBlockState(foxEntity.blockPosition().below()).is(Blocks.SOUL_SOIL)){
                 world.setBlockAndUpdate(foxEntity.blockPosition().relative(dir), Blocks.SOUL_FIRE.defaultBlockState());
-                stack.hurtAndBreak(1, foxEntity, InteractionHand.MAIN_HAND);
+                stack.hurtAndBreak(1, foxEntity, holder -> holder.broadcastBreakEvent(InteractionHand.MAIN_HAND));
             }else{
                 world.setBlockAndUpdate(foxEntity.blockPosition().relative(dir), Blocks.FIRE.defaultBlockState());
-                stack.hurtAndBreak(1, foxEntity, InteractionHand.MAIN_HAND);
+                stack.hurtAndBreak(1, foxEntity, holder -> holder.broadcastBreakEvent(InteractionHand.MAIN_HAND));
             }
         }else if(stack.is(Items.POTION) && randInt){
             Potion potionContent = PotionUtils.getPotion(stack);
@@ -71,11 +71,14 @@ public class FoxMixin {
                 foxEntity.setItemInHand(InteractionHand.MAIN_HAND, Items.GLASS_BOTTLE.getDefaultInstance());
             }
         }else if(stack.is(Items.BUCKET) && randInt){
-            if(world.getFluidState(foxEntity.blockPosition().below().relative(foxEntity.getNearestViewDirection())).is(Fluids.WATER)){
-                world.setBlockAndUpdate(foxEntity.blockPosition().below().relative(foxEntity.getNearestViewDirection()), Blocks.AIR.defaultBlockState());
+            // no Entity#getNearestViewDirection on this version - snap the look vector to an axis by hand
+            Vec3 look = foxEntity.getViewVector(1.0F);
+            Direction viewDir = Direction.getNearest(look.x, look.y, look.z);
+            if(world.getFluidState(foxEntity.blockPosition().below().relative(viewDir)).is(Fluids.WATER)){
+                world.setBlockAndUpdate(foxEntity.blockPosition().below().relative(viewDir), Blocks.AIR.defaultBlockState());
                 foxEntity.setItemInHand(InteractionHand.MAIN_HAND, Items.WATER_BUCKET.getDefaultInstance());
-            }else if(world.getFluidState(foxEntity.blockPosition().below().relative(foxEntity.getNearestViewDirection())).is(Fluids.LAVA)){
-                world.setBlockAndUpdate(foxEntity.blockPosition().below().relative(foxEntity.getNearestViewDirection()), Blocks.AIR.defaultBlockState());
+            }else if(world.getFluidState(foxEntity.blockPosition().below().relative(viewDir)).is(Fluids.LAVA)){
+                world.setBlockAndUpdate(foxEntity.blockPosition().below().relative(viewDir), Blocks.AIR.defaultBlockState());
                 foxEntity.setItemInHand(InteractionHand.MAIN_HAND, Items.LAVA_BUCKET.getDefaultInstance());
             }
         }

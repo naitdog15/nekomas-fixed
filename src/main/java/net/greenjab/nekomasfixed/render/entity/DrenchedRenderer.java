@@ -45,7 +45,7 @@ public class DrenchedRenderer extends HumanoidMobRenderer<Drenched, DrenchedMode
         // the pivot height by its trailing param `g`; mapping that to `partialTick` here would
         // occasionally divide by a near-zero value and produce a wildly wrong pivot on some frames,
         // so the division is dropped (equivalent to assuming scale=1.0, true for every current variant
-        // of this mob) rather than guessed. Documented simplification, not a silent cut.
+        // of this mob) rather than guessed.
         float swimAmount = entity.getSwimAmount(partialTick);
         if (swimAmount > 0.0F) {
             float i = -10.0F - entity.getXRot();

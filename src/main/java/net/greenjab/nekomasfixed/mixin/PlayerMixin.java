@@ -54,7 +54,7 @@ import java.util.Random;
  * <li>{@code Entity#hurtOrSimulate} does not exist; {@code attack(Entity)} deals damage via the plain
  *     {@code target.hurt(DamageSource,float):boolean} (Player.java:1142).</li>
  * <li>{@code DamageTypes.MACE_SMASH} does not exist on 1.20.1 (the Mace is a 1.21+ item — VERIFIED:
- *     zero matches in DamageTypes.java). NAMED GAP, not a feature cut: the injection point survives
+ *     zero matches in DamageTypes.java). The injection point itself survives
  *     (Player#hurt does call removeEntitiesOnShoulder(), matching the original anchor exactly), but
  *     the condition it guards can never be true until this mod ships its own mace-like weapon or the
  *     game does. See LivingEntityMixin's matching helmet-branch note.</li>
@@ -178,7 +178,7 @@ public class PlayerMixin {
     // turtleHelmetMaceBlock (originally @ModifyVariable on hurtServer at the removeEntitiesOnShoulder
     // INVOKE — which does still exist verbatim in Player's own hurt(), Player.java:823) is REMOVED,
     // not ported: its sole purpose was gating on DamageTypes.MACE_SMASH, which does not exist on
-    // 1.20.1 (the Mace is a 1.21+ item — NAMED GAP, see class header). An @ModifyVariable that can
+    // 1.20.1 (the Mace is a 1.21+ item — see class header). An @ModifyVariable that can
     // never do anything but return its input unchanged is dead weight, not a faithful port — unlike
     // LivingEntityMixin's matching helmet branch, which survives because it shares a method with
     // other real chestplate-blocking logic. Restore this method (same anchor, same shape) once the

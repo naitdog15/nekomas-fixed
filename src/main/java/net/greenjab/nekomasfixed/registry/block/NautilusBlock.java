@@ -1,31 +1,30 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.greenjab.nekomasfixed.registry.block.entity.NautilusBlockEntity;
 import net.greenjab.nekomasfixed.registry.block.enums.NautilusBlockType;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
+import net.greenjab.nekomasfixed.util.StackData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.Leashable;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.BlockItemStateProperties;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -33,7 +32,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
@@ -41,20 +40,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public class NautilusBlock extends BaseEntityBlock {
-	public static final MapCodec<NautilusBlock> CODEC = RecordCodecBuilder.mapCodec(
-			instance -> instance.group(
-					NautilusBlockType.CODEC.fieldOf("nautilus_block_type").forGetter(NautilusBlock::getNautilusBlockType),
-					propertiesCodec()
-			).apply(instance, NautilusBlock::new)
-	);
 	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 	public static final BooleanProperty OCCUPIED = BlockStateProperties.OCCUPIED;
+	/** BlockItem reads placement overrides out of this tag, so the shell keeps its guest. */
+	private static final String BLOCK_STATE_TAG = "BlockStateTag";
 	private final NautilusBlockType nautilusBlockType;
-
-	@Override
-	public MapCodec<NautilusBlock> codec() {
-		return CODEC;
-	}
 
 	public NautilusBlock(NautilusBlockType nautilusBlockType, Properties settings) {
 		super(settings);
@@ -62,13 +52,19 @@ public class NautilusBlock extends BaseEntityBlock {
 		this.nautilusBlockType = nautilusBlockType;
 	}
 
+	/** The shell is a plain baked model; the block entity only holds the passenger. */
 	@Override
-	protected boolean hasAnalogOutputSignal(BlockState state) {
+	public RenderShape getRenderShape(BlockState state) {
+		return RenderShape.MODEL;
+	}
+
+	@Override
+	public boolean hasAnalogOutputSignal(BlockState state) {
 		return true;
 	}
 
 	@Override
-	protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
+	public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
 		return state.getValue(OCCUPIED)?15:0;
 	}
 
@@ -78,7 +74,8 @@ public class NautilusBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+	public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+		ItemStack stack = player.getItemInHand(hand);
 		boolean occupied = hasAnimal(level, pos);
 		if (level instanceof ServerLevel serverLevel) {
 			if (occupied) {
@@ -87,8 +84,8 @@ public class NautilusBlock extends BaseEntityBlock {
 					if (!list.isEmpty()) {
 						level.setBlockAndUpdate(pos, state.setValue(NautilusBlock.OCCUPIED, false));
 						if (stack.is(Items.LEAD)) {
-							if (list.get(0) instanceof Leashable leashable) {
-								leashable.setLeashedTo(player, true);
+							if (list.get(0) instanceof Mob mob) {
+								mob.setLeashedTo(player, true);
 								stack.shrink(1);
 							}
 						}
@@ -98,12 +95,13 @@ public class NautilusBlock extends BaseEntityBlock {
 				List<Entity> list = serverLevel.getEntities(player, player.getBoundingBox().inflate(10));
 				for (Entity entity : list) {
 					if (!player.isSecondaryUseActive()
-							&& entity instanceof Leashable leashable
-							&& leashable.canBeLeashed()
+							&& entity instanceof Mob mob
+							&& mob.canBeLeashed(player)
 							&& entity.isAlive()
 							&& entity.distanceToSqr(Vec3.atCenterOf(pos))<10) {
-						List<Leashable> list2 = Leashable.leashableInArea(entity, leashablex -> leashablex.getLeashHolder() == player);
-						for (Leashable entity2 : list2) {
+						AABB area = AABB.ofSize(entity.getBoundingBox().getCenter(), 32.0, 32.0, 32.0);
+						List<Mob> list2 = serverLevel.getEntitiesOfClass(Mob.class, area, other -> other.getLeashHolder() == player);
+						for (Mob entity2 : list2) {
 							if (entity2 instanceof Animal animalEntity) {
 								if (level.getBlockEntity(pos) instanceof NautilusBlockEntity nautilusBlockEntity) {
 									if (animalEntity.getBoundingBox().getXsize()<1 &&
@@ -122,7 +120,7 @@ public class NautilusBlock extends BaseEntityBlock {
 			return InteractionResult.SUCCESS;
 		}
 
-		return super.useItemOn(stack, state, level, pos, player, hand, hit);
+		return super.use(state, level, pos, player, hand, hit);
 	}
 
 	private boolean hasAnimal(Level level, BlockPos pos) {
@@ -147,49 +145,50 @@ public class NautilusBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+	public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
 		if (level instanceof ServerLevel serverLevel
-			&& player.preventsBlockDrops()
-			&& serverLevel.getGameRules().get(GameRules.BLOCK_DROPS)
+			&& player.getAbilities().instabuild
+			&& serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)
 			&& level.getBlockEntity(pos) instanceof NautilusBlockEntity NautilusBlockEntity) {
 			boolean occupied = state.getValue(OCCUPIED);
 			boolean bl = NautilusBlockEntity.hasAnimal();
 			if (bl || occupied) {
 				ItemStack itemStack = getItemStack(this.getNautilusBlockType());
-				itemStack.applyComponents(NautilusBlockEntity.collectComponents());
-				itemStack.set(DataComponents.BLOCK_STATE, BlockItemStateProperties.EMPTY.with(OCCUPIED, occupied));
+				StackData.writeAnimal(itemStack, NautilusBlockEntity.getAnimalComponent());
+				setOccupiedTag(itemStack, occupied);
 				ItemEntity itemEntity = new ItemEntity(level, pos.getX(), pos.getY(), pos.getZ(), itemStack);
 				itemEntity.setDefaultPickUpDelay();
 				level.addFreshEntity(itemEntity);
 			}
 		}
 
-		return super.playerWillDestroy(level, pos, state, player);
+		super.playerWillDestroy(level, pos, state, player);
 	}
-	
+
+	private static void setOccupiedTag(ItemStack stack, boolean occupied) {
+		stack.getOrCreateTagElement(BLOCK_STATE_TAG).putString(OCCUPIED.getName(), Boolean.toString(occupied));
+	}
+
 	public static ItemStack getItemStack(@Nullable NautilusBlockType nautilusBlockType) {
 		return new ItemStack(get(nautilusBlockType));
 	}
 
 	public static Block get(@Nullable NautilusBlockType nautilusBlockType) {
 		if (nautilusBlockType == null) {
-			return BlockRegistry.NAUTILUS_BLOCK;
+			return BlockRegistry.NAUTILUS_BLOCK.get();
 		} else {
 			return switch (nautilusBlockType) {
-				case REGULAR -> BlockRegistry.NAUTILUS_BLOCK;
-				case ZOMBIE -> BlockRegistry.ZOMBIE_NAUTILUS_BLOCK;
-				case CORAL -> BlockRegistry.CORAL_NAUTILUS_BLOCK;
+				case REGULAR -> BlockRegistry.NAUTILUS_BLOCK.get();
+				case ZOMBIE -> BlockRegistry.ZOMBIE_NAUTILUS_BLOCK.get();
+				case CORAL -> BlockRegistry.CORAL_NAUTILUS_BLOCK.get();
 			};
 		}
 	}
 
 	@Override
-	protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
-		ItemStack itemStack = super.getCloneItemStack(level, pos, state, includeData);
-		if (includeData) {
-			itemStack.set(DataComponents.BLOCK_STATE, BlockItemStateProperties.EMPTY.with(OCCUPIED, state.getValue(OCCUPIED)));
-		}
-
+	public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
+		ItemStack itemStack = super.getCloneItemStack(level, pos, state);
+		setOccupiedTag(itemStack, state.getValue(OCCUPIED));
 		return itemStack;
 	}
 

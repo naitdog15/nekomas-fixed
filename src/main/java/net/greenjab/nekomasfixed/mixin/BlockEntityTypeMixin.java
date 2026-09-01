@@ -25,14 +25,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * at all — no AT, no {@code @Shadow}, no timing dependency on mod-block registration having already
  * run before some setup hook fires.
  * <p>
- * NAMED GAP, not a feature cut: there is no {@code BlockEntityType.SHELF} (or any single-item
- * display-shelf analogue) on 1.20.1 — only {@code CHISELED_BOOKSHELF}, a different block entirely
- * (VERIFIED: zero matches for {@code SHELF} in BlockEntityType.java). {@code BAOBAB_SHELF} has no
- * vanilla block entity type to attach to; giving it one is new block-entity construction (its own
- * class), not a mixin retarget, and is out of this mixin's scope to invent unreviewed. Cross-package
- * dependency on whoever owns {@code BlockRegistry.BAOBAB_SHELF.get()}/the block-entity registry: this
- * block needs its own dedicated {@code BlockEntityType}+{@code BlockEntity} pair on this port, or the
- * feature needs to be reconsidered for this Minecraft version.
+ * Still missing: there is no {@code BlockEntityType.SHELF} (or any single-item display-shelf
+ * analogue) on 1.20.1 — only {@code CHISELED_BOOKSHELF}, a different block entirely (VERIFIED: zero
+ * matches for {@code SHELF} in BlockEntityType.java). {@code BAOBAB_SHELF} therefore has no vanilla
+ * block entity type to attach to; giving it one means writing a dedicated {@code BlockEntityType} +
+ * {@code BlockEntity} pair, which is new construction rather than a mixin retarget.
  */
 @Mixin(BlockEntityType.class)
 public abstract class BlockEntityTypeMixin {

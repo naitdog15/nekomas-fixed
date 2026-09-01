@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 
 /** Render-state collapse: {@code EntityRenderer<WildfireTrident, ThrownTridentRenderState>} →
  * {@code EntityRenderer<WildfireTrident>}; {@code submit(...)} → the classic {@code render(...)}. */
@@ -33,8 +34,8 @@ public class ThrownWildfireTridentRenderer extends EntityRenderer<WildfireTriden
 	@Override
 	public void render(WildfireTrident entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
 		poseStack.pushPose();
-		poseStack.mulPose(Axis.YP.rotationDegrees(entity.getYRot(partialTicks) - 90.0F));
-		poseStack.mulPose(Axis.ZP.rotationDegrees(entity.getXRot(partialTicks) + 90.0F));
+		poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entity.yRotO, entity.getYRot()) - 90.0F));
+		poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(partialTicks, entity.xRotO, entity.getXRot()) + 90.0F));
 		VertexConsumer vertexConsumer = ItemRenderer.getFoilBufferDirect(buffer, this.model.renderType(TEXTURE), false, entity.isEnchanted());
 		this.model.renderToBuffer(poseStack, vertexConsumer, packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
 		poseStack.popPose();

@@ -12,7 +12,8 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 
-public class SuspiciousSpiderModel extends EntityModel<SuspiciousSpider> {
+public class SuspiciousSpiderModel extends HierarchicalModel<SuspiciousSpider> {
+    private final ModelPart root;
     private final ModelPart head;
     private final ModelPart rightHindLeg;
     private final ModelPart leftHindLeg;
@@ -24,7 +25,7 @@ public class SuspiciousSpiderModel extends EntityModel<SuspiciousSpider> {
     private final ModelPart leftFrontLeg;
 
     public SuspiciousSpiderModel(ModelPart modelPart) {
-        super(modelPart);
+        this.root = modelPart;
         this.head = modelPart.getChild(PartNames.HEAD);
         this.rightHindLeg = modelPart.getChild(PartNames.RIGHT_HIND_LEG);
         this.leftHindLeg = modelPart.getChild(PartNames.LEFT_HIND_LEG);
@@ -35,6 +36,12 @@ public class SuspiciousSpiderModel extends EntityModel<SuspiciousSpider> {
         this.rightFrontLeg = modelPart.getChild(PartNames.RIGHT_FRONT_LEG);
         this.leftFrontLeg = modelPart.getChild(PartNames.LEFT_FRONT_LEG);
     }
+
+    @Override
+    public ModelPart root() {
+        return this.root;
+    }
+
     public static LayerDefinition getTexturedModelData() {
         MeshDefinition modelData = new MeshDefinition();
         PartDefinition modelPartData = modelData.getRoot();

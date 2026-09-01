@@ -38,7 +38,10 @@ import java.util.Optional;
 public class Termite extends Monster {
     public final AnimationState swipeAnimationState = new AnimationState();
     private static final EntityDataAccessor<Termite.State> STATE;
+    /** Length of the swipe animation, and how long the SWIPING state lasts. */
+    private static final int SWIPE_TICKS = 20;
     private BlockPos moundPosition = null;
+    private int swipeStartTick = Integer.MIN_VALUE;
 
     public Termite(EntityType<? extends Monster> entityType, Level level) {
         super(entityType, level);
@@ -100,6 +103,7 @@ public class Termite extends Monster {
         if (STATE.equals(data)) {
             if (this.entityData.get(STATE) == State.SWIPING) {
                 this.swipeAnimationState.start(this.tickCount);
+                this.swipeStartTick = this.tickCount;
             } else {
                 this.swipeAnimationState.stop();
             }
@@ -109,14 +113,16 @@ public class Termite extends Monster {
     }
 
     boolean canEnterMound() {
-        return this.getTarget() == null && this.level().isDarkOutside();
+        return this.getTarget() == null && this.level().isNight();
     }
 
+    // 1.20.1's AnimationState only accumulates time from the renderer, so the swipe is timed off the
+    // entity's own tick counter instead - the server has to end the state too.
     @Override
     public void tick() {
         super.tick();
         if (this.entityData.get(STATE) == State.SWIPING) {
-            if (swipeAnimationState.getTimeInMillis(this.tickCount)>1000) {
+            if (this.tickCount - this.swipeStartTick > SWIPE_TICKS) {
                 this.setState(State.IDLING);
             }
         }
@@ -160,7 +166,7 @@ public class Termite extends Monster {
 
         @Override
         public boolean canUse() {
-            if (this.termite.level().isDarkOutside() && this.termite.getMoundPosition()!=null) {
+            if (this.termite.level().isNight() && this.termite.getMoundPosition()!=null) {
                 BlockState state = this.termite.level().getBlockState(this.termite.getMoundPosition());
                 return state.is(BlockRegistry.TERMITE_HIVE.get()) && state.getValue(TermitehiveBlock.TERMITES) < 2;
             }
@@ -169,7 +175,7 @@ public class Termite extends Monster {
 
         @Override
         public boolean canContinueToUse() {
-            if (!this.isReachedTarget() && this.termite.level().isDarkOutside() && this.termite.getMoundPosition()!=null) {
+            if (!this.isReachedTarget() && this.termite.level().isNight() && this.termite.getMoundPosition()!=null) {
                 BlockState state = this.termite.level().getBlockState(this.termite.getMoundPosition());
                 return state.is(BlockRegistry.TERMITE_HIVE.get()) && state.getValue(TermitehiveBlock.TERMITES) < 2;
             }
@@ -258,7 +264,7 @@ public class Termite extends Monster {
         @Override
         public boolean canUse() {
             return termite.getRandom().nextInt(40) == 0
-                    && termite.level().isBrightOutside();
+                    && termite.level().isDay();
         }
 
         @Override

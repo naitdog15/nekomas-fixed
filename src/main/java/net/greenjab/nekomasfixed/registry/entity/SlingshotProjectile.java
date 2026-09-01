@@ -6,12 +6,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.AreaEffectCloud;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityEvent;
 import net.minecraft.world.entity.EntityType;
@@ -21,7 +17,6 @@ import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
@@ -54,7 +49,7 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
 
     private ParticleOptions getParticleParameters() {
         ItemStack itemStack = this.getItem();
-        return itemStack.isEmpty() ? ParticleTypes.ITEM_SNOWBALL : new ItemParticleOption(ParticleTypes.ITEM, itemStack.getItem());
+        return itemStack.isEmpty() ? ParticleTypes.ITEM_SNOWBALL : new ItemParticleOption(ParticleTypes.ITEM, itemStack);
     }
 
     @Override
@@ -84,14 +79,18 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
         DamageSource damageSource = this.damageSources().thrown(this, this.getOwner());
         if (entity.hurt(damageSource, getDamage(this.getItem().getItem()))) {
             if (entity instanceof LivingEntity livingEntity2) {
-                this.knockback(livingEntity2, damageSource);
+                this.knockback(livingEntity2);
             }
         }
     }
 
-    protected void knockback(LivingEntity target, DamageSource source) {
-        double d = this.weapon != null && this.level() instanceof ServerLevel level
-                ? EnchantmentHelper.modifyKnockback(level, this.weapon, target, source, 0.0F): 0.0F;
+    /**
+     * 1.20.1 has no enchantment-effect-component knockback modifier; Punch is read off the launching
+     * weapon and applied the same way {@code AbstractArrow} does it (normalized horizontal velocity
+     * scaled by level * 0.6 * knockback resistance, plus the fixed 0.1 vertical nudge).
+     */
+    protected void knockback(LivingEntity target) {
+        double d = this.weapon.isEmpty() ? 0.0 : NekomasFixed.enchantLevel(this.weapon, "punch");
         if (d > 0.0) {
             double e = Math.max(0.0, 1.0 - target.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE));
             Vec3 vec3d = this.getDeltaMovement().multiply(1.0, 0.0, 1.0).normalize().scale(d * 0.6 * e);
@@ -99,13 +98,13 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
         }
     }
 
+    // Copper nugget and resin clump are 1.21+ items with no 1.20.1 counterpart, so their ammo rows
+    // (2 and 1 damage) fall through to the default 2 here.
     private float getDamage(Item item) {
         int damage;
-        if (item==Items.COPPER_NUGGET) damage = 2;
-        else if (item==Items.GOLD_NUGGET) damage = 3;
+        if (item==Items.GOLD_NUGGET) damage = 3;
         else if (item==Items.IRON_NUGGET) damage = 4;
         else if (item==Items.AMETHYST_SHARD) damage = 2;
-        else if (item==Items.RESIN_CLUMP) damage = 1;
         else damage = 2;
         damage +=NekomasFixed.enchantLevel(weapon, "power");
         return damage;
@@ -120,30 +119,30 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
                 if (hitResult instanceof BlockHitResult blockHitResult) {
                     newSlingshotProjectile.setPos(this.getX(), this.getY(), this.getZ());
                     Direction.Axis axis = blockHitResult.getDirection().getAxis();
-                    Vec3 vec = blockHitResult.getDirection().getUnitVec3();
+                    Vec3 vec = Vec3.atLowerCornerOf(blockHitResult.getDirection().getNormal());
                     if (Math.signum(this.getDeltaMovement().get(axis))!=Math.signum(vec.get(axis))){
                         Vec3 vec2 = new Vec3(vec.x==0?1:-0.9,vec.y==0?1:-0.9,vec.z==0?1:-0.9);
-                        Vec3 vec3d = this.getDeltaMovement().multiply(vec2).scale(0.8).add(new Vec3(this.getRandom().triangle(0, 1), 0.25, this.getRandom().triangle(0, 1)));
+                        Vec3 vec3d = this.getDeltaMovement().multiply(vec2).scale(0.8).add(new Vec3(this.random.triangle(0, 1), 0.25, this.random.triangle(0, 1)));
                         newSlingshotProjectile.setDeltaMovement(vec3d);
-                        newSlingshotProjectile.needsSync = true;
+                        newSlingshotProjectile.hasImpulse = true;
                     }
                 } else if (hitResult instanceof EntityHitResult entityHitResult) {
                     Entity e = entityHitResult.getEntity();
                     newSlingshotProjectile.setPos(e.getX(), this.getY(), e.getZ());
-                    Vec3 vec3d = this.getDeltaMovement().scale(0.8).add(new Vec3(this.getRandom().triangle(0, 1), 0.25, this.getRandom().triangle(0, 1)));
+                    Vec3 vec3d = this.getDeltaMovement().scale(0.8).add(new Vec3(this.random.triangle(0, 1), 0.25, this.random.triangle(0, 1)));
                     newSlingshotProjectile.setDeltaMovement(vec3d);
-                    newSlingshotProjectile.needsSync = true;
+                    newSlingshotProjectile.hasImpulse = true;
                 }
                 this.level().addFreshEntity(newSlingshotProjectile);
             }
         }
         if (hitResult instanceof BlockHitResult blockHitResult && this.getItem().is(Items.AMETHYST_SHARD) && (blockHitResult.getDirection() != Direction.UP || this.getDeltaMovement().y < -0.035) && ticksStuck<5) {
             Direction.Axis axis = blockHitResult.getDirection().getAxis();
-            Vec3 vec = blockHitResult.getDirection().getUnitVec3();
+            Vec3 vec = Vec3.atLowerCornerOf(blockHitResult.getDirection().getNormal());
             if (Math.signum(this.getDeltaMovement().get(axis))!=Math.signum(vec.get(axis))){
                 Vec3 vec2 = new Vec3(vec.x==0?1:-1,vec.y==0?1:-1,vec.z==0?1:-1).scale(0.9);
                 this.setDeltaMovement(this.getDeltaMovement().multiply(vec2));
-                this.needsSync = true;
+                this.hasImpulse = true;
                 this.playSound(SoundEvents.AMETHYST_BLOCK_FALL, 1, 1);
             } else {
                 super.onHit(hitResult);
@@ -154,16 +153,8 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
             }
         } else {
             super.onHit(hitResult);
-            if (this.getItem().is(Items.RESIN_CLUMP)) {
-                AreaEffectCloud areaEffectCloudEntity = new AreaEffectCloud(this.level(), this.getX(), this.getY(), this.getZ());
-                areaEffectCloudEntity.setRadius(3.0F);
-                areaEffectCloudEntity.setRadiusOnUse(-0.5F);
-                areaEffectCloudEntity.setDuration(60);
-                areaEffectCloudEntity.setWaitTime(0);
-                areaEffectCloudEntity.setRadiusPerTick(-areaEffectCloudEntity.getRadius() / areaEffectCloudEntity.getDuration());
-                areaEffectCloudEntity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60, 4));
-                this.level().addFreshEntity(areaEffectCloudEntity);
-            }
+            // The resin-clump round's lingering slowness cloud has no 1.20.1 ammo item to hang off
+            // (resin clump is 1.21+), so nothing spawns here on this version.
             if (!this.level().isClientSide()) {
                 this.level().broadcastEntityEvent(this, EntityEvent.DEATH);
                 this.discard();

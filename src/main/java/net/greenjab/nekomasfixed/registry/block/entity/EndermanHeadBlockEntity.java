@@ -3,8 +3,6 @@ package net.greenjab.nekomasfixed.registry.block.entity;
 import net.greenjab.nekomasfixed.registry.block.AbstractEndermanHeadBlock;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponentGetter;
-import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -13,15 +11,14 @@ import net.minecraft.server.players.PlayerList;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 public class EndermanHeadBlockEntity extends BlockEntity {
@@ -31,17 +28,7 @@ public class EndermanHeadBlockEntity extends BlockEntity {
 	}
 
 	public EndermanHeadBlockEntity(BlockPos pos, BlockState state) {
-		this(BlockEntityTypeRegistry.ENDERMAN_HEAD_BLOCK_ENTITY, pos, state);
-	}
-
-	@Override
-	protected void loadAdditional(ValueInput view) {
-		super.loadAdditional(view);
-	}
-
-	@Override
-	protected void saveAdditional(ValueOutput view) {
-		super.saveAdditional(view);
+		this(BlockEntityTypeRegistry.ENDERMAN_HEAD_BLOCK_ENTITY.get(), pos, state);
 	}
 
 	public ClientboundBlockEntityDataPacket getUpdatePacket() {
@@ -51,16 +38,6 @@ public class EndermanHeadBlockEntity extends BlockEntity {
 	@Override
 	public boolean triggerEvent(int type, int data) {
 		return super.triggerEvent(type, data);
-	}
-
-	@Override
-	protected void applyImplicitComponents(DataComponentGetter components) {
-		super.applyImplicitComponents(components);
-	}
-
-	@Override
-	protected void collectImplicitComponents(DataComponentMap.Builder builder) {
-		super.collectImplicitComponents(builder);
 	}
 
 	public static void tick(Level level, BlockPos pos, BlockState state, EndermanHeadBlockEntity blockEntity) {
@@ -84,7 +61,8 @@ public class EndermanHeadBlockEntity extends BlockEntity {
 		int max = 0;
 		for (int i = 0; i < playerManager.getPlayers().size(); i++) {
 			ServerPlayer SPE = playerManager.getPlayers().get(i);
-			if (!LivingEntity.PLAYER_NOT_WEARING_DISGUISE_ITEM.test(SPE)) continue;
+			// A carved pumpkin hides the stare, exactly as it does from a live enderman.
+			if (SPE.getItemBySlot(EquipmentSlot.HEAD).is(Items.CARVED_PUMPKIN)) continue;
 			if (SPE.isSpectator()) continue;
 			if (SPE.level().dimension() == levelKey) {
 				double x1 = pos.getX() - SPE.getX();
@@ -106,7 +84,7 @@ public class EndermanHeadBlockEntity extends BlockEntity {
 
 	protected static BlockHitResult raycast(Level level, Player player) {
 		Vec3 vec3d = player.getEyePosition();
-		Vec3 vec3d2 = vec3d.add(player.calculateViewVector(player.getXRot(), player.getYRot()).scale(45));
+		Vec3 vec3d2 = vec3d.add(player.getViewVector(1.0F).scale(45));
 		return level.clip(new ClipContext(vec3d, vec3d2, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
 	}
 }

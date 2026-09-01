@@ -180,7 +180,7 @@ public class PyrotechnicsMenu extends AbstractContainerMenu {
         return false;
     }
 
-    // PORT (design gap, best-effort NBT reimplementation): net.minecraft.world.item.component.{
+    // PORT: net.minecraft.world.item.component.{
     // FireworkExplosion,Fireworks} and DataComponents.{FIREWORK_EXPLOSION,FIREWORKS,DYE} do not exist
     // on 1.20.1 at all (verified: no such files under forge-1.20.1-mapped-src) - the whole typed
     // firework-component system is 1.20.5+. 1.20.1's firework data is the older raw NBT format

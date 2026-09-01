@@ -1,8 +1,6 @@
-// Refmap generation — Mixin's annotation processor is what turns
-// string-based injector references ("method = \"useOn\"", "target = \"...\"") into an SRG-name
-// refmap; without one, all 77 injector-heavy mixins in this mod silently fail to apply in a
-// production (reobfuscated) jar. ForgeGradle 6 alone configures no refmap, so MixinGradle is added
-// here explicitly and the refmap is named + wired into BOTH mixin configs below.
+// ForgeGradle 6 does not wire up a refmap on its own, so MixinGradle is applied here: Mixin's
+// annotation processor turns the string-based injector references into SRG names, which is what
+// keeps them resolving in a reobfuscated jar. Refmap name and configs are set in `mixin {}` below.
 buildscript {
     repositories {
         maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
@@ -103,48 +101,4 @@ tasks.named('jar', Jar).configure {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.compilerArgs << '-Xlint:-removal' << '-Xlint:-deprecation' << '-Xlint:-unchecked'
-    // The categorized error inventory IS the deliverable, so javac must report every
-    // error rather than stopping at its default 100.
-    options.compilerArgs << '-Xmaxerrs' << '100000'
 }
-
-// ============================================================================================
-// SCRATCH EXCLUSION (temporary). Restricts sourceSets.main.java to the files below, which were
-// already converted to Forge, while the rest of the codebase still contained unconverted
-// Fabric-era Java (which does not compile against Forge/vanilla 1.20.1 APIs).
-// Was ACTIVE while this restricted build was verified (build/runClient/runServer all confirmed
-// green); REVERTED (commented out, below) immediately after, once the rest of the port was ready
-// to compile alongside it.
-// Two files were deliberately left OUT of this include-list even though they live under
-// registry/other/**: DyedBrushBehaviour.java (references DyedBrushItem plus AllDyes/
-// BlockDyeMap/ModTags from other packages) and TermitesComponent.java (references
-// TermitehiveBlockEntity.TermiteData). Both are structurally coupled to other packages' output and
-// cannot compile until those packages land; they are staged correctly in-place for later
-// reconciliation.
-// ============================================================================================
-// sourceSets.main.java {
-//     setSrcDirs(['src/main/java'])
-//     include 'net/greenjab/nekomasfixed/NekomasFixed.java'
-//     include 'net/greenjab/nekomasfixed/ClientSyncHandler.java'
-//     include 'net/greenjab/nekomasfixed/ModBusEvents.java'
-//     include 'net/greenjab/nekomasfixed/ForgeBusEvents.java'
-//     include 'net/greenjab/nekomasfixed/ModBusClientEvents.java'
-//     include 'net/greenjab/nekomasfixed/Registries.java'
-//     include 'net/greenjab/nekomasfixed/network/**'
-//     include 'net/greenjab/nekomasfixed/registry/other/AnimalComponent.java'
-//     include 'net/greenjab/nekomasfixed/registry/other/AnimalTooltipData.java'
-//     include 'net/greenjab/nekomasfixed/registry/other/ComboComponent.java'
-//     include 'net/greenjab/nekomasfixed/registry/other/ContainerTooltipData.java'
-//     include 'net/greenjab/nekomasfixed/registry/other/LightningEffect.java'
-//     include 'net/greenjab/nekomasfixed/registry/other/StoredTimeComponent.java'
-//     include 'net/greenjab/nekomasfixed/util/StackData.java'
-//     include 'net/greenjab/nekomasfixed/util/EntityNbtHelper.java'
-// }
-// ============================================================================================
-// DIAGNOSTIC (temporary): runServer failed to reach "Done" with the full resource tree present,
-// root-caused to pre-existing data/** JSON that references Java registrations excluded from this
-// restricted build. Excluding assets/**+data/** in isolation confirmed the scaffold itself (this
-// file, the @Mod lifecycle, mixin loading) reaches "Done" on a near-vanilla resource set ("Done
-// (25.318s)!"). Reverted immediately after, alongside the Java exclusion above.
-// sourceSets.main.resources { exclude 'assets/**', 'data/**' }
-// ============================================================================================

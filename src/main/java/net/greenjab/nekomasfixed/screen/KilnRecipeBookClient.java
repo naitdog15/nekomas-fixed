@@ -9,8 +9,8 @@ import net.minecraft.client.gui.screens.recipebook.AbstractFurnaceRecipeBookComp
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.AbstractFurnaceBlockEntity;
 import net.minecraft.world.item.crafting.CookingBookCategory;
+import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RegisterRecipeBookCategoriesEvent;

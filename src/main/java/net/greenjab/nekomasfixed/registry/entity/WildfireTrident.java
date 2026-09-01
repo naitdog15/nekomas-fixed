@@ -32,8 +32,7 @@ import javax.annotation.Nullable;
  * (forge-1.20.1-mapped-src/net/minecraft/world/entity/projectile/ThrownTrident.java), which this class
  * now mirrors structurally: a stored {@code tridentItem} field (not a base-class pickup slot),
  * {@code EnchantmentHelper.doPostHurtEffects}/{@code doPostDamageEffects} as two separate calls
- * (1.20.1 has no unified {@code doPostAttackEffects}), and {@code entity.hurt(DamageSource, float)} as
- * the outgoing-damage call (not {@code hurtServer}, which is the *incoming*-damage override hook).
+ * (1.20.1 has no unified {@code doPostAttackEffects}).
  * The 26.2 {@code findHitEntities} plural override and {@code hitBlockEnchantmentEffects} have no
  * 1.20.1 hook to attach to and are dropped, matching vanilla's own shape exactly.
  */
@@ -129,7 +128,7 @@ public class WildfireTrident extends AbstractArrow {
 					EnchantmentHelper.doPostDamageEffects(ownerLiving, livingEntity);
 				}
 				this.doPostHurtEffects(livingEntity);
-				entity.igniteForTicks(20*3);
+				entity.setSecondsOnFire(3);
 			}
 		}
 
@@ -137,7 +136,7 @@ public class WildfireTrident extends AbstractArrow {
 		this.playSound(hitSound, 1.0F, 1.0F);
 	}
 
-	@Override
+	/** The stack this trident was thrown as - 1.20.1's AbstractArrow has no weapon-item hook of its own. */
 	public ItemStack getWeaponItem() {
 		return this.tridentItem.copy();
 	}
@@ -163,7 +162,7 @@ public class WildfireTrident extends AbstractArrow {
 	}
 
 	@Override
-	protected void readAdditionalSaveData(CompoundTag tag) {
+	public void readAdditionalSaveData(CompoundTag tag) {
 		super.readAdditionalSaveData(tag);
 		this.dealtDamage = tag.getBoolean("DealtDamage");
 		if (tag.contains("Trident", 10)) {
@@ -173,7 +172,7 @@ public class WildfireTrident extends AbstractArrow {
 	}
 
 	@Override
-	protected void addAdditionalSaveData(CompoundTag tag) {
+	public void addAdditionalSaveData(CompoundTag tag) {
 		super.addAdditionalSaveData(tag);
 		tag.putBoolean("DealtDamage", this.dealtDamage);
 		tag.put("Trident", this.tridentItem.save(new CompoundTag()));

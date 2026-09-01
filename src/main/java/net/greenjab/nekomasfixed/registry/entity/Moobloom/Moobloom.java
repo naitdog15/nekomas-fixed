@@ -34,6 +34,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SuspiciousStewItem;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -42,7 +43,6 @@ import org.jetbrains.annotations.Nullable;
 public class Moobloom extends Cow {
     public final AnimationState idleAnimationState = new AnimationState();
     public final AnimationState runAnimationState = new AnimationState();
-    private static final EntityDimensions BABY_BASE_DIMENSIONS;
     private ItemStack LastFlowerEaten = ItemStack.EMPTY;
     private int flowerRegrowTimer = 20 * 60 * 5;
     public static final EntityDataAccessor<String> VARIANT = SynchedEntityData.defineId(Moobloom.class, EntityDataSerializers.STRING);
@@ -53,8 +53,8 @@ public class Moobloom extends Cow {
     }
 
     @Override
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnReason, SpawnGroupData entityData) {
-        SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnReason, entityData);
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnReason, @Nullable SpawnGroupData entityData, @Nullable CompoundTag dataTag) {
+        SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnReason, entityData, dataTag);
         this.entityData.set(VARIANT, MoobloomVariants.getRandomVariant().path);
 
         return data;
@@ -65,7 +65,7 @@ public class Moobloom extends Cow {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new PanicGoal(this, 2.0F));
         this.goalSelector.addGoal(2, new BreedGoal(this, 1.0F));
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.25F, (stack) -> stack.is(ModTags.MOOBLOOM_FLOWERS), false));
+        this.goalSelector.addGoal(3, new TemptGoal(this, 1.25F, Ingredient.of(ModTags.MOOBLOOM_FLOWERS), false));
         this.goalSelector.addGoal(4, new FollowParentGoal(this, 1.25F));
         this.goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 1.0F));
         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6.0F));
@@ -84,7 +84,7 @@ public class Moobloom extends Cow {
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag tag) {
+    public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putBoolean("Sheared", this.entityData.get(SHEARED));
         tag.putInt("FlowerRegrowTimer", this.flowerRegrowTimer);
@@ -96,7 +96,7 @@ public class Moobloom extends Cow {
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag tag) {
+    public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         this.setSheared(tag.getBoolean("Sheared"));
         this.flowerRegrowTimer = tag.contains("FlowerRegrowTimer") ? tag.getInt("FlowerRegrowTimer") : 20 * 60 * 5;
@@ -114,7 +114,7 @@ public class Moobloom extends Cow {
                 if (this.isShearable()) {
                     this.sheared(serverLevel, SoundSource.PLAYERS, itemStack);
                     this.gameEvent(GameEvent.SHEAR, player);
-                    itemStack.hurtAndBreak(1, player, hand.asEquipmentSlot());
+                    itemStack.hurtAndBreak(1, player, p -> p.broadcastBreakEvent(hand));
                     return InteractionResult.SUCCESS;
                 }
             }
@@ -126,7 +126,7 @@ public class Moobloom extends Cow {
                 // API is SuspiciousStewItem.saveMobEffect(stack, MobEffect, durationTicks) (NBT-backed).
                 ItemStack stew = new ItemStack(Items.SUSPICIOUS_STEW);
                 MoobloomVariants variant = MoobloomVariants.fromPath(this.entityData.get(VARIANT));
-                SuspiciousStewItem.saveMobEffect(stew, variant.effectHolder.value(), variant.effectDuration);
+                SuspiciousStewItem.saveMobEffect(stew, variant.effect, variant.effectDuration);
                 player.getItemInHand(InteractionHand.MAIN_HAND).shrink(1);
                 if (!player.getInventory().add(stew)) {
                     player.drop(stew, false);
@@ -159,7 +159,7 @@ public class Moobloom extends Cow {
     }
     @Override
     public Moobloom getBreedOffspring(ServerLevel level, AgeableMob other) {
-        Moobloom child = EntityTypeRegistry.MOOBLOOM.get().create(level, MobSpawnType.BREEDING);
+        Moobloom child = EntityTypeRegistry.MOOBLOOM.get().create(level);
         assert child != null;
 
         MoobloomVariants thisVariant = MoobloomVariants.fromPath(this.entityData.get(VARIANT));
@@ -223,12 +223,12 @@ public class Moobloom extends Cow {
         }
     }
 
+    // Half-size calf hitbox. Derived per call from the registered adult box rather than cached in a
+    // static, so nothing here touches the entity-type registry before it has been populated; the
+    // matching calf eye height already comes from Cow's own getStandingEyeHeight.
     @Override
-    public EntityDimensions getDefaultDimensions(Pose pose) {
-        return this.isBaby() ? BABY_BASE_DIMENSIONS : super.getDefaultDimensions(pose);
-    }
-
-    static {
-        BABY_BASE_DIMENSIONS = EntityTypeRegistry.MOOBLOOM.get().getDimensions().scale(0.5F).withEyeHeight(0.665F);
+    public EntityDimensions getDimensions(Pose pose) {
+        EntityDimensions dimensions = super.getDimensions(pose);
+        return this.isBaby() ? dimensions.scale(0.5F) : dimensions;
     }
 }

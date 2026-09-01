@@ -12,28 +12,28 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 
-// 1.20.1 delta: isPrimaryItem/isSupportedItem (1.21+ data-driven enchantment predicates) do not
-// exist here — enchantability is a single check, canEnchant(ItemStack) (VERIFIED
-// forge-1.20.1-mapped-src Enchantment.java:114), which internally tests the EquipmentCategory this
-// enchantment was constructed with. Both pristine branches already only called canEnchant/checked
-// description text, so retargeting onto that one method loses no behaviour.
+// Enchantability is one check here, canEnchant(ItemStack), which tests the category the enchantment
+// was built with; there are no data-driven per-item predicates to hook. Individual enchantments are
+// identified off their translation key ("enchantment.<namespace>.<id>"), which is the only stable
+// per-enchantment string available from the base class.
 @Mixin(Enchantment.class)
 public class EnchantmentMixin {
 
     @Inject(method = "canEnchant", at = @At(value = "HEAD"), cancellable = true)
     private void otherChecks(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
         Enchantment enchantment = (Enchantment)(Object)this;
+        String id = enchantment.getDescriptionId();
         Item item = stack.getItem();
         if (item instanceof SickleItem) {
-            cir.setReturnValue(enchantment.canEnchant(Items.DIAMOND_SWORD.getDefaultInstance()) && enchantment.getMaxLevel()!=5 && !enchantment.description().plainCopy().toString().contains("sweeping"));
+            cir.setReturnValue(enchantment.canEnchant(Items.DIAMOND_SWORD.getDefaultInstance()) && enchantment.getMaxLevel()!=5 && !id.contains("sweeping"));
             cir.cancel();
         }
         if (item instanceof SlingshotItem) {
             cir.setReturnValue(enchantment.canEnchant(Items.FLINT_AND_STEEL.getDefaultInstance())
-                            || enchantment.description().plainCopy().toString().contains("multishot")
-                            || enchantment.description().plainCopy().toString().contains("power")
-                            || enchantment.description().plainCopy().toString().contains("punch")
-                            || enchantment.description().plainCopy().toString().contains("shatter")
+                            || id.contains("multishot")
+                            || id.contains("power")
+                            || id.contains("punch")
+                            || id.contains("shatter")
             );
             cir.cancel();
         }

@@ -20,7 +20,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
  * executes. {@code ConfigTrial.java} itself needs zero code changes: it is already
  * {@code public static Screen createConfigScreen(Screen)}, matching {@code
  * ConfigScreenHandler.ConfigScreenFactory}'s {@code Function<Screen,Screen>} convenience constructor.
- * Client-only ({@code FMLClientSetupEvent} never fires on a dedicated server, per §4.2 rule 2 - no
+ * Client-only ({@code FMLClientSetupEvent} never fires on a dedicated server - no
  * {@code @OnlyIn} needed beyond the event-subscriber's own {@code value = Dist.CLIENT}).
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)

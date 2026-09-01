@@ -1,7 +1,5 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -17,21 +15,11 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class FloorEndermanHeadHead extends AbstractEndermanHeadBlock {
-	public static final MapCodec<FloorEndermanHeadHead> CODEC = RecordCodecBuilder.mapCodec(
-			instance -> instance.group(
-					propertiesCodec()
-			).apply(instance, FloorEndermanHeadHead::new)
-	);
 	public static final int MAX_ROTATION_INDEX = RotationSegment.getMaxSegmentIndex();
 	private static final int MAX_ROTATIONS = MAX_ROTATION_INDEX + 1;
 	public static final IntegerProperty ROTATION = BlockStateProperties.ROTATION_16;
-	private static final VoxelShape SHAPE = Block.column(8.0, 0.0, 8.0);
-	private static final VoxelShape SHAPE_POWERED = Block.column(8.0, 0.0, 13.0);
-
-	@Override
-	public MapCodec<? extends FloorEndermanHeadHead> codec() {
-		return CODEC;
-	}
+	private static final VoxelShape SHAPE = Block.box(4.0, 0.0, 4.0, 12.0, 8.0, 12.0);
+	private static final VoxelShape SHAPE_POWERED = Block.box(4.0, 0.0, 4.0, 12.0, 13.0, 12.0);
 
 	public FloorEndermanHeadHead(Properties settings) {
 		super(settings);
@@ -39,7 +27,7 @@ public class FloorEndermanHeadHead extends AbstractEndermanHeadBlock {
 	}
 
 	@Override
-	protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+	public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		return state.getValue(POWER)>0?SHAPE_POWERED:SHAPE;
 	}
 
@@ -49,12 +37,12 @@ public class FloorEndermanHeadHead extends AbstractEndermanHeadBlock {
 	}
 
 	@Override
-	protected BlockState rotate(BlockState state, Rotation rotation) {
+	public BlockState rotate(BlockState state, Rotation rotation) {
 		return state.setValue(ROTATION, rotation.rotate(state.getValue(ROTATION), MAX_ROTATIONS));
 	}
 
 	@Override
-	protected BlockState mirror(BlockState state, Mirror mirror) {
+	public BlockState mirror(BlockState state, Mirror mirror) {
 		return state.setValue(ROTATION, mirror.mirror(state.getValue(ROTATION), MAX_ROTATIONS));
 	}
 

@@ -26,7 +26,8 @@ import java.util.Arrays;
  * (c.f. {@code EntityModel.attackTime}/{@code young}/{@code riding}, all set the same way by
  * {@code LivingEntityRenderer.render()} itself).
  */
-public class WildfireModel extends EntityModel<WildfireEntity> {
+public class WildfireModel extends HierarchicalModel<WildfireEntity> {
+	private final ModelPart root;
 	private final ModelPart[] rods;
 	private final ModelPart[] shields;
 	private final ModelPart head;
@@ -38,13 +39,18 @@ public class WildfireModel extends EntityModel<WildfireEntity> {
 	public float bodyRot;
 
 	public WildfireModel(ModelPart modelPart) {
-		super(modelPart);
+		this.root = modelPart;
 		this.head = modelPart.getChild(PartNames.HEAD);
 		this.pillar = modelPart.getChild("pillar");
 		this.rods = new ModelPart[12];
 		this.shields = new ModelPart[4];
 		Arrays.setAll(this.rods, i -> modelPart.getChild(getRodName(i)));
 		Arrays.setAll(this.shields, i -> modelPart.getChild(getShieldName(i)));
+	}
+
+	@Override
+	public ModelPart root() {
+		return this.root;
 	}
 
 	private static String getRodName(int index) {return "rod" + index;}

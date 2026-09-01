@@ -35,8 +35,13 @@ public class BigBoatRenderer<T extends BigBoat, M extends BigBoatModel<T>> exten
 		super(context);
 		this.itemRenderer = context.getItemRenderer();
 		this.shadowRadius = 0.8F;
-		this.texture = new ResourceLocation(layer.model().getNamespace(), "textures/entity/" + layer.model().getPath() + ".png");
+		this.texture = new ResourceLocation(layer.getModel().getNamespace(), "textures/entity/" + layer.getModel().getPath() + ".png");
 		this.model = getThisModel(context, layer);
+	}
+
+	@Override
+	public ResourceLocation getTextureLocation(T entity) {
+		return this.texture;
 	}
 
 	@SuppressWarnings("unchecked")

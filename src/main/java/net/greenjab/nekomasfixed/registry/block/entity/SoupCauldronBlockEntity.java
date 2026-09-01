@@ -3,19 +3,20 @@ package net.greenjab.nekomasfixed.registry.block.entity;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.greenjab.nekomasfixed.util.SoupCauldronAnimator;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -24,8 +25,6 @@ import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.LidBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +37,7 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
 
 
     public SoupCauldronBlockEntity(BlockPos pos, BlockState state) {
-        super(BlockEntityTypeRegistry.SOUP_CAULDRON_BLOCK_ENTITY, pos, state);
+        super(BlockEntityTypeRegistry.SOUP_CAULDRON_BLOCK_ENTITY.get(), pos, state);
     }
 
     @Override
@@ -50,7 +49,7 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
         if (stack.is(Items.AIR)) return false;
         setChanged();
 
-        if (!stack.hasNonDefault(DataComponents.POTION_CONTENTS)) for (ItemStack existing : inputs) if (ItemStack.isSameItem(existing, stack)) return false;
+        if (!hasPotionContents(stack)) for (ItemStack existing : inputs) if (ItemStack.isSameItem(existing, stack)) return false;
 
         if (inputs.size() < 4) {
             inputs.add(stack.copyWithCount(1));
@@ -59,35 +58,44 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
         return true;
     }
 
+    /** Two potions are the same item but a different brew, so they are allowed to stack up in the pot. */
+    private static boolean hasPotionContents(ItemStack stack) {
+        return PotionUtils.getPotion(stack) != Potions.EMPTY || !PotionUtils.getCustomEffects(stack).isEmpty();
+    }
+
     public ItemStack removeInput() {
         if (inputs.isEmpty()) return Items.AIR.getDefaultInstance();
         setChanged();
 
         if(level != null && !level.isClientSide()) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-        ItemStack removed = inputs.removeLast();
+        ItemStack removed = inputs.remove(inputs.size() - 1);
         if (inputs.isEmpty()) level.setBlockAndUpdate(worldPosition, Blocks.WATER_CAULDRON.defaultBlockState().setValue(LayeredCauldronBlock.LEVEL, 3));
         return removed;
     }
 
     @Override
-    protected void saveAdditional(ValueOutput view) {
-        super.saveAdditional(view);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
 
-        view.putBoolean("HasStirred", hasStirred);
-        view.store("inputs", ItemStack.CODEC.listOf(), inputs);
+        tag.putBoolean("HasStirred", hasStirred);
+        ItemStack.CODEC.listOf().encodeStart(NbtOps.INSTANCE, inputs)
+                .result().ifPresent(encoded -> tag.put("inputs", encoded));
     }
 
     @Override
-    protected void loadAdditional(ValueInput view) {
-        super.loadAdditional(view);
-        hasStirred = view.getBooleanOr("HasStirred", false);
+    public void load(CompoundTag tag) {
+        super.load(tag);
+        hasStirred = tag.getBoolean("HasStirred");
         inputs.clear();
-        inputs.addAll(view.read("inputs", ItemStack.CODEC.listOf()).orElse(List.of()));
+        if (tag.contains("inputs", Tag.TAG_LIST)) {
+            ItemStack.CODEC.listOf().parse(NbtOps.INSTANCE, tag.get("inputs"))
+                    .result().ifPresent(inputs::addAll);
+        }
     }
 
     @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        return saveWithoutMetadata(registries);
+    public CompoundTag getUpdateTag() {
+        return saveWithoutMetadata();
     }
 
     public void setStirred(Level level) {
@@ -95,12 +103,12 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
         if (level instanceof ServerLevel serverLevel) {
             List<ItemStack> updatedInputs = new ArrayList<>();
             for (ItemStack item : inputs) {
-                SingleRecipeInput singleStackRecipeInput = new SingleRecipeInput(item);
-                Optional<RecipeHolder<SmeltingRecipe>> optional = serverLevel
-                        .recipeAccess()
+                SimpleContainer singleStackRecipeInput = new SimpleContainer(item);
+                Optional<SmeltingRecipe> optional = serverLevel
+                        .getRecipeManager()
                         .getRecipeFor(RecipeType.SMELTING, singleStackRecipeInput, level);
                 if (optional.isPresent() && !item.is(Items.CHORUS_FRUIT)) {
-                    ItemStack itemStack = (((RecipeHolder)optional.get()).value()).assemble(singleStackRecipeInput);
+                    ItemStack itemStack = optional.get().assemble(singleStackRecipeInput, serverLevel.registryAccess());
                     if (!itemStack.isEmpty()) updatedInputs.add(itemStack);
                     else updatedInputs.add(item);
                 } else updatedInputs.add(item);

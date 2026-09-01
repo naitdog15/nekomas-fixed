@@ -1,10 +1,10 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.greenjab.nekomasfixed.registry.block.entity.HollowLogBlockEntity;
+import com.google.common.collect.Maps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.FlowerPotBlock;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.server.level.ServerLevel;
@@ -26,6 +26,7 @@ import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -52,23 +53,26 @@ import java.util.Map;
 
 public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, SimpleWaterloggedBlock{
     public static final IntegerProperty LIGHT_LEVEL = IntegerProperty.create("light_level", 0, 15);
-    private static final Map<Direction.Axis, VoxelShape> SHAPES_BY_AXIS = Shapes.rotateAllAxis(
-            Shapes.or(
-                    Block.column(16.0, 0.0, 2.0),
-                    Block.column(16.0, 14.0, 16.0),
-                    Block.box(0.0, 0.0, 0.0, 2.0, 16.0, 16.0),
-                    Block.box(14.0, 0.0, 0.0, 16.0, 16.0, 16.0)
-            )
-    );
-    private static final Map<Direction.Axis, VoxelShape> SHAPES_BY_AXIS_FILLED = Shapes.rotateAllAxis(
-            Shapes.or(
-                    Block.column(16.0, 0.0, 2.0),
-                    Block.column(16.0, 14.0, 16.0),
-                    Block.box(0.0, 0.0, 0.0, 2.0, 16.0, 16.0),
-                    Block.box(14.0, 0.0, 0.0, 16.0, 16.0, 16.0),
-                    Block.column(12.0, 2.0, 14.0)
-            )
-    );
+    // two-thick bark on the four faces around the log's own axis, leaving the ends open
+    private static final VoxelShape SIDE_DOWN = Block.box(0.0, 0.0, 0.0, 16.0, 2.0, 16.0);
+    private static final VoxelShape SIDE_UP = Block.box(0.0, 14.0, 0.0, 16.0, 16.0, 16.0);
+    private static final VoxelShape SIDE_WEST = Block.box(0.0, 0.0, 0.0, 2.0, 16.0, 16.0);
+    private static final VoxelShape SIDE_EAST = Block.box(14.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+    private static final VoxelShape SIDE_NORTH = Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 2.0);
+    private static final VoxelShape SIDE_SOUTH = Block.box(0.0, 0.0, 14.0, 16.0, 16.0, 16.0);
+    /** what a stored block fills the bore with */
+    private static final VoxelShape CORE = Block.box(2.0, 2.0, 2.0, 14.0, 14.0, 14.0);
+
+    private static final Map<Direction.Axis, VoxelShape> SHAPES_BY_AXIS = Maps.newEnumMap(Map.of(
+            Direction.Axis.X, Shapes.or(SIDE_DOWN, SIDE_UP, SIDE_NORTH, SIDE_SOUTH),
+            Direction.Axis.Y, Shapes.or(SIDE_WEST, SIDE_EAST, SIDE_NORTH, SIDE_SOUTH),
+            Direction.Axis.Z, Shapes.or(SIDE_DOWN, SIDE_UP, SIDE_WEST, SIDE_EAST)
+    ));
+    private static final Map<Direction.Axis, VoxelShape> SHAPES_BY_AXIS_FILLED = Maps.newEnumMap(Map.of(
+            Direction.Axis.X, Shapes.or(SHAPES_BY_AXIS.get(Direction.Axis.X), CORE),
+            Direction.Axis.Y, Shapes.or(SHAPES_BY_AXIS.get(Direction.Axis.Y), CORE),
+            Direction.Axis.Z, Shapes.or(SHAPES_BY_AXIS.get(Direction.Axis.Z), CORE)
+    ));
     public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.AXIS;
     public static final BooleanProperty SOLID_INSIDE = BooleanProperty.create("filled");
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
@@ -78,18 +82,8 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false).setValue(SOLID_INSIDE, false).setValue(AXIS, Direction.Axis.Y));
     }
 
-    public static final MapCodec<HollowLogBlock> CODEC = RecordCodecBuilder.mapCodec(
-            instance -> instance.group(
-                    propertiesCodec()
-            ).apply(instance, HollowLogBlock::new)
-    );
     @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
-    }
-
-    @Override
-    protected BlockState updateShape(
+    public BlockState updateShape(
             BlockState state, Direction direction, BlockState neighborState,
             LevelAccessor level, BlockPos pos, BlockPos neighborPos
     ) {
@@ -99,8 +93,14 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
         return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
 
+    /** The log itself is a baked model; the block entity only draws whatever is stuffed inside it. */
     @Override
-    protected BlockState rotate(BlockState state, Rotation rotation) {
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
+    }
+
+    @Override
+    public BlockState rotate(BlockState state, Rotation rotation) {
         return changeRotation(state, rotation);
     }
     public static BlockState changeRotation(BlockState state, Rotation rotation) {
@@ -126,24 +126,30 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
     }
 
     @Override
-    protected FluidState getFluidState(BlockState state) {
+    public FluidState getFluidState(BlockState state) {
         return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
     @Override
     public boolean placeLiquid(LevelAccessor level, BlockPos pos, BlockState state, FluidState fluidState) {
         if (level.getBlockEntity(pos) instanceof HollowLogBlockEntity logBE) {
-            if (!(logBE.getStoredBlock()==Blocks.AIR.defaultBlockState()||logBE.getStoredStack().getItemName().getString().toLowerCase().contains("glass"))) return false;
+            if (!(logBE.getStoredBlock()==Blocks.AIR.defaultBlockState()||isGlassLike(logBE.getStoredStack()))) return false;
         }
         return SimpleWaterloggedBlock.super.placeLiquid(level, pos, state, fluidState);
     }
 
     @Override
-    public boolean canPlaceLiquid(@Nullable LivingEntity filler, BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
+    public boolean canPlaceLiquid(BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
         if (level.getBlockEntity(pos) instanceof HollowLogBlockEntity logBE) {
-            if (!(logBE.getStoredBlock()==Blocks.AIR.defaultBlockState()||logBE.getStoredStack().getItemName().getString().toLowerCase().contains("glass"))) return false;
+            if (!(logBE.getStoredBlock()==Blocks.AIR.defaultBlockState()||isGlassLike(logBE.getStoredStack()))) return false;
         }
-        return SimpleWaterloggedBlock.super.canPlaceLiquid(filler, level, pos, state, fluid);
+        return SimpleWaterloggedBlock.super.canPlaceLiquid(level, pos, state, fluid);
+    }
+
+    /** Water still shows through a pane or a block of glass stuffed in the bore, nothing else. */
+    private static boolean isGlassLike(ItemStack stack) {
+        ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        return id != null && id.getPath().contains("glass");
     }
 
     @Override
@@ -156,7 +162,9 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
        return new HollowLogBlockEntity(pos, state);
     }
 
-    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        ItemStack stack = player.getItemInHand(hand);
         if (level instanceof ServerLevel serverLevel) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof HollowLogBlockEntity logBE) {
@@ -172,17 +180,17 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
                         if (pottedSupplier != null) {
                             Block potted = pottedSupplier.get();
                             logBE.setStoredBlock(stack.copyWithCount(1), potted.defaultBlockState());
-                            stack.consume(1, player);
+                            if (!player.getAbilities().instabuild) stack.shrink(1);
                             return InteractionResult.SUCCESS;
                         }
                     }
                     if (HollowLogBlockEntity.canStoreBlock(logBE, blockItem, state.getValue(AXIS)== Direction.Axis.Y)) {
                         logBE.setStoredBlock(stack.copyWithCount(1), blockItem.getBlock().defaultBlockState());
-                        stack.consume(1, player);
+                        if (!player.getAbilities().instabuild) stack.shrink(1);
                         level.sendBlockUpdated(pos, state, state, 3);
                         if (state.getValue(AXIS)== Direction.Axis.Y)
                             state = state.setValue(SOLID_INSIDE, true);
-                        if (!stack.getItemName().getString().toLowerCase().contains("glass"))
+                        if (!isGlassLike(stack))
                             state = state.setValue(WATERLOGGED, false);
                         if (blockItem.getBlock().defaultBlockState().getLightEmission() > 0)
                             state = state.setValue(LIGHT_LEVEL, blockItem.getBlock().defaultBlockState().getLightEmission());
@@ -193,7 +201,7 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
                 } else if (stack.getItem() instanceof Item) {
                     if (stack.is(Items.SHEARS)) {
                         if (logBE.getStoredBlock()!=Blocks.AIR.defaultBlockState())
-                            stack.hurtAndBreak(1, player, hand);
+                            stack.hurtAndBreak(1, player, holder -> holder.broadcastBreakEvent(hand));
                         if (logBE.getStoredBlock().is(BlockTags.FLOWER_POTS)&&!logBE.getStoredStack().is(Items.FLOWER_POT)) popResource(serverLevel, pos, Items.FLOWER_POT.getDefaultInstance());
                         popResource(serverLevel, pos, logBE.getStoredStack());
                         logBE.setStoredBlock(ItemStack.EMPTY, Blocks.AIR.defaultBlockState());
@@ -212,14 +220,14 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
             }
         } else {
             if (stack.is(Items.BUCKET) || stack.is(Items.WATER_BUCKET))
-               return super.useItemOn(stack, state, level, pos, player, hand, hit);
+               return super.use(state, level, pos, player, hand, hit);
             return InteractionResult.SUCCESS;
         }
-        return super.useItemOn(stack, state, level, pos, player, hand, hit);
+        return super.use(state, level, pos, player, hand, hit);
     }
 
     @Override
-    protected List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
         BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         List<ItemStack> list = super.getDrops(state, builder);
         if (blockEntity instanceof HollowLogBlockEntity hollowLogBlockEntity) {

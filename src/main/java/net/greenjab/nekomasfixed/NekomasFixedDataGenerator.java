@@ -7,10 +7,10 @@ import net.greenjab.nekomasfixed.datagen.ModLootTableProvider;
 import net.greenjab.nekomasfixed.datagen.ModRecipeProvider;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
-import net.minecraft.data.advancements.AdvancementProvider;
 import net.minecraft.data.loot.LootTableProvider;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraftforge.common.data.ExistingFileHelper;
+import net.minecraftforge.common.data.ForgeAdvancementProvider;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -37,7 +37,7 @@ public class NekomasFixedDataGenerator {
         ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
 
         generator.addProvider(event.includeServer(), new ModRecipeProvider(output, event.getLookupProvider()));
-        generator.addProvider(event.includeServer(), new AdvancementProvider(output, event.getLookupProvider(), existingFileHelper,
+        generator.addProvider(event.includeServer(), new ForgeAdvancementProvider(output, event.getLookupProvider(), existingFileHelper,
                 List.of(new ModAdvancementProvider())));
 
         ModBlockTagProvider blockTags = new ModBlockTagProvider(output, event.getLookupProvider(), existingFileHelper);
@@ -45,7 +45,6 @@ public class NekomasFixedDataGenerator {
         generator.addProvider(event.includeServer(), new ModItemTagProvider(output, event.getLookupProvider(), blockTags.contentsGetter(), existingFileHelper));
 
         generator.addProvider(event.includeServer(), new LootTableProvider(output, java.util.Set.of(),
-                List.of(new LootTableProvider.SubProviderEntry(ModLootTableProvider::new, LootContextParamSets.BLOCK)),
-                event.getLookupProvider()));
+                List.of(new LootTableProvider.SubProviderEntry(ModLootTableProvider::new, LootContextParamSets.BLOCK))));
     }
 }

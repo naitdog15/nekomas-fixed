@@ -1,8 +1,8 @@
 package net.greenjab.nekomasfixed.util;
 
 /**
- * PORT: HARD, VERSION-FORCED BLOCK - not attempted, and not fakeable. Every piece this class needs is
- * absent from 1.20.1, not merely renamed:
+ * PORT: nothing this class needs survives on 1.20.1, and none of it can be faked. Every piece is
+ * absent, not merely renamed:
  * <ul>
  *   <li>{@code EquipmentSlot.BODY} does not exist - 1.20.1's {@code EquipmentSlot} enum has exactly 6
  *       values (MAINHAND, OFFHAND, FEET, LEGS, CHEST, HEAD; verified against
@@ -16,17 +16,13 @@ package net.greenjab.nekomasfixed.util;
  *       entity, no such tag, and nothing in the game a harness could attach to even if the item and
  *       component machinery were reconstructed from scratch.</li>
  * </ul>
- * This is categorically different from every other design-gap in this port: those retarget an API to
- * an equivalent 1.20.1 mechanism (e.g. {@code getDefaultAttributeModifiers} in place of a component).
- * Here there is no equivalent 1.20.1 mechanism to retarget onto - the vanilla feature this class hangs
- * off of (Happy Ghast) simply is not part of the game on this version. Inventing a mod-original
- * stand-in mob/mechanic to give harnesses something to attach to would be new game content, not a
- * port, and is squarely a product decision (the "Happy Ghast harness" question is a candidate cut,
- * but that cut was not taken unilaterally here), so
- * the class is left as a compile error rather than silently deleted, pending that product decision.
- * {@code ModColors}-keyed dye variants
- * (AMBER/AQUA/INDIGO/MAROON harnesses) are preserved conceptually in {@link ModEquipmentAssets}'s own
- * doc comment for whenever this becomes actionable.
+ * Elsewhere in this port an absent API can be retargeted onto an equivalent 1.20.1 mechanism (e.g.
+ * {@code getDefaultAttributeModifiers} in place of a component). There is no equivalent to retarget
+ * onto here - the vanilla feature this class hangs off of (Happy Ghast) is simply not part of the
+ * game on this version. Inventing a mod-original stand-in mob to give harnesses something to attach
+ * to would be new game content rather than a port, so the class is kept as an empty marker instead
+ * of being deleted. The {@code ModColors}-keyed dye variants (AMBER/AQUA/INDIGO/MAROON harnesses)
+ * are recorded in {@link ModEquipmentAssets}'s own doc comment.
  */
 public class HarnessHelper {
 }

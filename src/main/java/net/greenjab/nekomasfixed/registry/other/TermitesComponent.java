@@ -12,9 +12,6 @@ import java.util.List;
  * never a 1.21+ data component. Every {@code PACKET_CODEC} on this and the other three record
  * components is deleted, not ported: 1.20.1 syncs the whole stack tag to the client for
  * free.
- * <p>
- * This file depends on {@code TermitehiveBlockEntity.TermiteData}, which was still Fabric-era Java
- * at the time this record was converted.
  */
 public record TermitesComponent(List<TermitehiveBlockEntity.TermiteData> termites) {
     public static final Codec<TermitesComponent> CODEC = TermitehiveBlockEntity.TermiteData.LIST_CODEC

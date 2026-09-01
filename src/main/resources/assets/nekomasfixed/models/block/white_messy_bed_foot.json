@@ -1,9 +1,6 @@
 {
-  "parent": "minecraft:block/template_bed_foot",
+  "parent": "minecraft:block/block",
   "textures": {
-    "east": "nekomasfixed:block/white_messy_bed_foot_east",
-    "south": "nekomasfixed:block/white_messy_bed_foot_south",
-    "up": "nekomasfixed:block/white_messy_bed_foot_up",
-    "west": "nekomasfixed:block/white_messy_bed_foot_west"
+    "particle": "minecraft:block/white_wool"
   }
 }

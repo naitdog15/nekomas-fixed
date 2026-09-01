@@ -16,7 +16,7 @@ import java.util.List;
 // Block.column(...) (a shorthand VoxelShape/AABB builder) does not exist on 1.20.1 (VERIFIED: zero
 // matches in Block.java) — the same 14x4-wide, 0-to-1-tall detection box is built directly as an
 // AABB instead. getSignalStrength(Level, BlockPos) is otherwise unchanged (WeightedPressurePlateBlock
-// .java:24). .getFirst() -> .get(0) (Java 17 sweep, §4.3).
+// .java:24). .getFirst() -> .get(0), since List#getFirst is Java 21+.
 @Mixin(WeightedPressurePlateBlock.class)
 public class WeightedPressurePlateBlockMixin {
 

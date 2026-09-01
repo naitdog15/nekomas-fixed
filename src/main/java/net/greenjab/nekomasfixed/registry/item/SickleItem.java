@@ -1,37 +1,59 @@
 package net.greenjab.nekomasfixed.registry.item;
 
+import com.google.common.collect.Multimap;
+import net.greenjab.nekomasfixed.util.ModItemSettings;
 import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.Tier;
 import net.minecraft.world.level.Level;
 
 public class SickleItem extends Item {
 
     public static final float SPEED = -2.4F;
 
-    public SickleItem(Item.Properties settings) {
+    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
+
+    public SickleItem(Tier material, Item.Properties settings) {
         super(settings);
+        this.defaultModifiers = ModItemSettings.sickleAttributeModifiers(material, SPEED);
     }
 
-    public InteractionResult use(Level level, Player user, InteractionHand hand) {
-        if (hand == InteractionHand.MAIN_HAND) return InteractionResult.PASS;
-        if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResult.PASS;
-        if (user.getAttackStrengthScale(0)<0.5) return InteractionResult.PASS;
-        user.getCooldowns().addCooldown(user.getItemInHand(hand), 12);
+    @Override
+    public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
+        return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.getDefaultAttributeModifiers(slot);
+    }
+
+    @Override
+    public boolean isValidRepairItem(ItemStack stack, ItemStack ingredient) {
+        return ingredient.is(Items.IRON_INGOT);
+    }
+
+    public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {
+        ItemStack stack = user.getItemInHand(hand);
+        if (hand == InteractionHand.MAIN_HAND) return InteractionResultHolder.pass(stack);
+        if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResultHolder.pass(stack);
+        if (user.getAttackStrengthScale(0)<0.5) return InteractionResultHolder.pass(stack);
+        user.getCooldowns().addCooldown(stack.getItem(), 12);
         if (user.attackStrengthTicker>5) user.attackStrengthTicker = 5;
-        return InteractionResult.SUCCESS;
+        return InteractionResultHolder.success(stack);
     }
 
     public InteractionResult interactLivingEntity(ItemStack stack, Player user, LivingEntity entity, InteractionHand hand) {
         if (hand == InteractionHand.MAIN_HAND) return InteractionResult.PASS;
         if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResult.PASS;
         if (user.getAttackStrengthScale(0)<0.5) return InteractionResult.PASS;
-        if (user.getCooldowns().getCooldownPercent(user.getItemInHand(hand), 0)>0) return InteractionResult.PASS;
-        user.getCooldowns().addCooldown(stack, 12);
+        if (user.getCooldowns().getCooldownPercent(user.getItemInHand(hand).getItem(), 0)>0) return InteractionResult.PASS;
+        user.getCooldowns().addCooldown(stack.getItem(), 12);
         if (user.attackStrengthTicker>5) user.attackStrengthTicker = 5;
         if (user.level().isClientSide()) return InteractionResult.SUCCESS;
 

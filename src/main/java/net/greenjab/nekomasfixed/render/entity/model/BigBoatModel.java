@@ -3,8 +3,8 @@ package net.greenjab.nekomasfixed.render.entity.model;
 import net.greenjab.nekomasfixed.registry.entity.BigBoat;
 import net.minecraft.client.model.*;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.model.geom.PartNames;
 import net.minecraft.client.model.geom.PartPose;
+import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
@@ -12,13 +12,24 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 
 /**
- * Render-state collapse: {@code EntityModel<S extends BigBoatRenderState>} → {@code EntityModel<T
- * extends BigBoat>}. Paddle angle needs {@code partialTick} (unavailable inside {@code setupAnim}'s
- * 5-float signature), so — same pattern as {@code WildfireModel} — it's computed once per frame in
- * {@code prepareMobModel} and read back in {@code setupAnim}.
+ * Render-state collapse: {@code EntityModel<S extends BigBoatRenderState>} → {@code
+ * HierarchicalModel<T extends BigBoat>} (the model owns its root part and renders it, the way every
+ * 1.20.1 model that isn't a flat {@code ListModel} does). Paddle angle needs {@code partialTick}
+ * (unavailable inside {@code setupAnim}'s 5-float signature), so — same pattern as {@code
+ * WildfireModel} — it's computed once per frame in {@code prepareMobModel} and read back in
+ * {@code setupAnim}.
  */
-public class BigBoatModel<T extends BigBoat> extends EntityModel<T> {
+public class BigBoatModel<T extends BigBoat> extends HierarchicalModel<T> {
 
+	/** The stand posts sit flush inside the hull; shaving them keeps the faces from z-fighting. */
+	protected static final CubeDeformation STAND_INSET = new CubeDeformation(-0.001F);
+
+	// 1.20.1's PartNames has no chest entries — these are the names the constructor looks up.
+	protected static final String CHEST_BOTTOM = "chest_bottom";
+	protected static final String CHEST_LID = "chest_lid";
+	protected static final String CHEST_LOCK = "chest_lock";
+
+	private final ModelPart root;
 	private final ModelPart chest_bottom;
 	private final ModelPart chest_lid;
 	private final ModelPart chest_lock;
@@ -33,15 +44,20 @@ public class BigBoatModel<T extends BigBoat> extends EntityModel<T> {
 	protected float rightPaddleAngle;
 
 	public BigBoatModel(ModelPart modelPart) {
-		super(modelPart);
-		this.chest_bottom = modelPart.getChild("chest_bottom");
-		this.chest_lid = modelPart.getChild("chest_lid");
-		this.chest_lock = modelPart.getChild("chest_lock");
+		this.root = modelPart;
+		this.chest_bottom = modelPart.getChild(CHEST_BOTTOM);
+		this.chest_lid = modelPart.getChild(CHEST_LID);
+		this.chest_lock = modelPart.getChild(CHEST_LOCK);
 
 		this.leftPaddle = modelPart.getChild("left_paddle");
 		this.rightPaddle = modelPart.getChild("right_paddle");
 		this.leftPaddle2 = modelPart.getChild("left_paddle2");
 		this.rightPaddle2 = modelPart.getChild("right_paddle2");
+	}
+
+	@Override
+	public ModelPart root() {
+		return this.root;
 	}
 
 	@Override
@@ -95,7 +111,7 @@ public class BigBoatModel<T extends BigBoat> extends EntityModel<T> {
 		modelPartData.addOrReplaceChild("boat_19", CubeListBuilder.create().texOffs(0, 0).addBox(-6.0F, 0.0F, 26.0F, 12.0F, 3.0F, 1.0F), PartPose.ZERO);
 		modelPartData.addOrReplaceChild("boat_20", CubeListBuilder.create().texOffs(0, 0).addBox(-5.0F, 0.0F, 27.0F, 10.0F, 3.0F, 1.0F), PartPose.ZERO);
 
-		modelPartData.addOrReplaceChild("stand", CubeListBuilder.create().texOffs(48, 64).addBox(-1.0F, -45F, 8.0F, 2.0F, 45.0F, 2.0F), PartPose.ZERO.scaled(0.999f));
+		modelPartData.addOrReplaceChild("stand", CubeListBuilder.create().texOffs(48, 64).addBox(-1.0F, -45F, 8.0F, 2.0F, 45.0F, 2.0F, STAND_INSET), PartPose.ZERO);
 
 		float dist = 20f;
 		modelPartData.addOrReplaceChild("left_paddle",
@@ -116,13 +132,13 @@ public class BigBoatModel<T extends BigBoat> extends EntityModel<T> {
 		MeshDefinition modelData = new MeshDefinition();
 		PartDefinition modelPartData = modelData.getRoot();
 		addParts(modelPartData);
-		modelPartData.addOrReplaceChild(PartNames.CHEST_BOTTOM,
+		modelPartData.addOrReplaceChild(CHEST_BOTTOM,
 			CubeListBuilder.create().texOffs(0, 92).addBox(0.0F, 0.0F, 0.0F, 12.0F, 8.0F, 12.0F),
 			PartPose.offsetAndRotation(-6.0F, -8.0F, 13.0F, 0.0F, 0, 0.0F));
-		modelPartData.addOrReplaceChild(PartNames.CHEST_LID,
+		modelPartData.addOrReplaceChild(CHEST_LID,
 			CubeListBuilder.create().texOffs(0, 75).addBox(0.0F, 0.0F, 0.0F, 12.0F, 4.0F, 12.0F),
 			PartPose.offsetAndRotation(-6.0F, -12.0F, 13.0F, 0f, 0, 0.0F));
-		modelPartData.addOrReplaceChild(PartNames.CHEST_LOCK,
+		modelPartData.addOrReplaceChild(CHEST_LOCK,
 			CubeListBuilder.create().texOffs(0, 75).addBox(0.0F, 0.0F, 0.0F, 2.0F, 4.0F, 1.0F),
 			PartPose.offsetAndRotation(-1.0F, -9.0F, 12.0F, 0.0F, 0, 0.0F));
 		return LayerDefinition.create(modelData, 128, 128);

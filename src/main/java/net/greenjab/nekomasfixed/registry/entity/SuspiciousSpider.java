@@ -1,8 +1,7 @@
 package net.greenjab.nekomasfixed.registry.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.effect.MobEffect;
@@ -12,7 +11,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -32,12 +30,12 @@ public class SuspiciousSpider extends Spider {
     }
 
     @Override
-    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnReason, SpawnGroupData entityData) {
-        entityData = super.finalizeSpawn(level, difficulty, spawnReason, entityData);
+    public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnReason, SpawnGroupData entityData, CompoundTag dataTag) {
+        entityData = super.finalizeSpawn(level, difficulty, spawnReason, entityData, dataTag);
         if (entityData instanceof Spider.SpiderEffectsGroupData spiderData) {
             spiderData.setRandomEffect(random);
-            Holder<MobEffect> registryEntry = spiderData.effect;
-            if (registryEntry != null) this.addEffect(new MobEffectInstance(registryEntry, -1));
+            MobEffect effect = spiderData.effect;
+            if (effect != null) this.addEffect(new MobEffectInstance(effect, -1));
         }
         return entityData;
     }
@@ -61,7 +59,7 @@ public class SuspiciousSpider extends Spider {
     }
 
     public static boolean canSpawn(
-            EntityType<? extends Mob> type, ServerLevelAccessor level, MobSpawnType spawnReason, BlockPos pos, RandomSource random
+            EntityType<? extends Monster> type, ServerLevelAccessor level, MobSpawnType spawnReason, BlockPos pos, RandomSource random
     ) {
         return checkMonsterSpawnRules(type, level, spawnReason, pos, random) && (spawnReason == MobSpawnType.SPAWNER || !level.canSeeSky(pos));
     }

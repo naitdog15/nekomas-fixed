@@ -1,5 +1,6 @@
 {
   "block.minecraft.clock": "Clock",
+  "block.minecraft.wall_clock": "Clock",
   "item.minecraft.tipped_arrow.effect.lightning": "Lightning on an Arrow",
   "item.minecraft.lingering_potion.effect.lightning": "Lightning in a Lingering Bottle",
   "item.minecraft.potion.effect.lightning": "Lightning in a Bottle",

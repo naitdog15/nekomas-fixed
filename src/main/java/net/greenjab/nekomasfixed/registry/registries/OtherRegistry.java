@@ -7,15 +7,14 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.ai.sensing.SensorType;
-import net.minecraft.world.entity.animal.dolphin.Dolphin;
+import net.minecraft.world.entity.animal.Dolphin;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * This file lives at {@code registry/registries/OtherRegistry.java}, inside this package's scope
- * ({@code registry/registries/**}), even though these registrations logically pair with entity code
- * that lives elsewhere in the tree.
+ * The odds and ends that do not belong to any of the other registry holders, even though what they
+ * register pairs with entity code elsewhere in the tree.
  * <p>
  * DebugSubscription/WildfireDebugData deleted outright (26.x-only F3 telemetry, zero gameplay).
  * SensorType -&gt; DeferredRegister on ForgeRegistries.SENSOR_TYPES (no more raw

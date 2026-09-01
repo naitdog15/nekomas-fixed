@@ -9,14 +9,13 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
-import net.minecraft.world.level.block.entity.FuelValues;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class KilnBlockEntity extends AbstractFurnaceBlockEntity {
     private static final Component CONTAINER_NAME_TEXT = Component.translatable("container.nekomasfixed.kiln");
 
     public KilnBlockEntity(BlockPos pos, BlockState state) {
-        super( BlockEntityTypeRegistry.KILN_BLOCK_ENTITY, pos, state, RecipeRegistry.KILN);
+        super( BlockEntityTypeRegistry.KILN_BLOCK_ENTITY.get(), pos, state, RecipeRegistry.KILN.get());
     }
 
     @Override
@@ -24,9 +23,10 @@ public class KilnBlockEntity extends AbstractFurnaceBlockEntity {
         return CONTAINER_NAME_TEXT;
     }
 
+    /** A fuel item lasts the kiln half as long as it would a furnace. */
     @Override
-    protected int getBurnDuration(FuelValues fuelRegistry, ItemStack stack) {
-        return super.getBurnDuration(fuelRegistry, stack) / 2;
+    protected int getBurnDuration(ItemStack stack) {
+        return super.getBurnDuration(stack) / 2;
     }
 
     @Override

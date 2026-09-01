@@ -23,9 +23,9 @@ import org.slf4j.LoggerFactory;
  * deleted; this class is its replacement.
  * <p>
  * Network sync is free: 1.20.1 syncs the whole {@code ItemStack} tag to the client as part of the
- * stack's own network representation, so nothing here needs a packet (§9.4).
+ * stack's own network representation, so nothing here needs a packet.
  * <p>
- * §9.4's never-write-defaults rule: never write a value equal to a component's default, and prune
+ * Never-write-defaults rule: never write a value equal to a component's default, and prune
  * the key — and {@link #ROOT} itself once it is empty — when a value returns to default. Use
  * {@link #writeOrRemove} rather than {@link #write} for every mod-owned default-carrying
  * declaration (exactly ten: the 3 nautilus blocks' {@code ANIMAL} and the 7
@@ -50,7 +50,7 @@ public final class StackData {
 
     private static final Codec<Integer> CLAM_STATE_CODEC = ExtraCodecs.intRange(0, 3);
 
-    // --- Generic core (§9.1's frozen shape) — every consumer, including TermitesComponent
+    // --- Generic core — every consumer, including TermitesComponent
     // once it exists, may call these directly with its own Codec. ---
 
     /**
@@ -59,7 +59,7 @@ public final class StackData {
      * NBT into an apparently valid default with no log line — a data-integrity failure disguised as
      * success. {@code resultOrPartial(LOGGER::error)} logs the DataResult's own error message and
      * still yields the partial value when one exists; an absent key (the overwhelmingly common case,
-     * given §9.4's never-write-defaults rule) short-circuits above and logs nothing.
+     * given the never-write-defaults rule) short-circuits above and logs nothing.
      */
     public static <T> T read(ItemStack stack, String key, Codec<T> codec, T fallback) {
         CompoundTag root = stack.getTagElement(ROOT);
@@ -92,7 +92,7 @@ public final class StackData {
         return true;
     }
 
-    /** §9.4's never-write-defaults rule, generically. */
+    /** The never-write-defaults rule, generically. */
     public static <T> boolean writeOrRemove(ItemStack stack, String key, Codec<T> codec, T value, T defaultValue) {
         if (Objects.equals(value, defaultValue)) {
             remove(stack, key);
@@ -114,9 +114,9 @@ public final class StackData {
     }
 
     // --- Typed convenience pairs, self-contained components only. TermitesComponent is not
-    // wrapped here: it depends on TermitehiveBlockEntity.TermiteData, which does not exist in
-    // Forge form this pass. Call read/write above directly with
-    // TermitesComponent.CODEC and StackData.KEY_TERMITES once that lands. ---
+    // wrapped here: it depends on TermitehiveBlockEntity.TermiteData, which has no Forge form yet.
+    // Call read/write above directly with TermitesComponent.CODEC and StackData.KEY_TERMITES
+    // once that lands. ---
 
     public static StoredTimeComponent readStoredTime(ItemStack stack) {
         return read(stack, KEY_STORED_TIME, StoredTimeComponent.CODEC, new StoredTimeComponent(0));

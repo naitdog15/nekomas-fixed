@@ -26,7 +26,7 @@ public class WildfireAttackablesSensor extends NearestLivingEntitySensor<Wildfir
 			.stream()
 			.flatMap(Collection::stream)
 			.filter(EntitySelector.NO_CREATIVE_OR_SPECTATOR)
-			.filter(target -> Sensor.isEntityAttackable(level, wildFireEntity, target))
+			.filter(target -> Sensor.isEntityAttackable(wildFireEntity, target))
 			.filter(target -> target instanceof Player || target instanceof AgeableMob)
 			.findFirst()
 			.ifPresentOrElse(target -> wildFireEntity.getBrain().setMemory(MemoryModuleType.NEAREST_ATTACKABLE, target),

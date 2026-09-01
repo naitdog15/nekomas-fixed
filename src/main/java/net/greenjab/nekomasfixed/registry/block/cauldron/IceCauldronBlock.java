@@ -1,47 +1,32 @@
 package net.greenjab.nekomasfixed.registry.block.cauldron;
 
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.world.item.Item;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.InsideBlockEffectApplier;
-import net.minecraft.world.entity.InsideBlockEffectType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.AbstractCauldronBlock;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.Map;
 
 public class IceCauldronBlock extends AbstractCauldronBlock {
-    public static final MapCodec<IceCauldronBlock> CODEC = simpleCodec(IceCauldronBlock::new);
-    private static final VoxelShape ICE_SHAPE = Block.column(12.0, 4.0, 15.0);
-    private static final VoxelShape INSIDE_COLLISION_SHAPE = Shapes.or(AbstractCauldronBlock.SHAPE, ICE_SHAPE);
-
-    @Override
-    public MapCodec<IceCauldronBlock> codec() {
-        return CODEC;
-    }
 
     public IceCauldronBlock(BlockBehaviour.Properties settings) {
         super(settings, createBehaviorMap());
     }
 
-    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
+    @Override
+    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
         return Items.CAULDRON.getDefaultInstance();
     }
 
@@ -64,8 +49,12 @@ public class IceCauldronBlock extends AbstractCauldronBlock {
         });
     }
 
-    protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity, InsideBlockEffectApplier handler, boolean bl) {
-       handler.apply(InsideBlockEffectType.FREEZE);
+    /** Powder-snow flag is what drives the freeze counter, so standing in the ice chills the same way. */
+    @Override
+    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+        if (this.isEntityInsideContent(state, pos, entity)) {
+            entity.setIsInPowderSnow(true);
+        }
     }
 
     @Override
@@ -79,12 +68,7 @@ public class IceCauldronBlock extends AbstractCauldronBlock {
     }
 
     @Override
-    protected VoxelShape getEntityInsideCollisionShape(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {
-        return INSIDE_COLLISION_SHAPE;
-    }
-
-    @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         return 3;
     }
 }

@@ -109,7 +109,7 @@ public class WildfireJumpTask extends Behavior<WildfireEntity> {
 		Vec3 vec3d4 = vec3d3.subtract(vec3d);
 
 		double h = vec3d4.y;
-		double g = entity.getGravity();
+		double g = WildfireMovementUtil.MOB_GRAVITY;
 		double vy = Math.sqrt(2* g *h);
 		double vx = g *vec3d4.horizontalDistance()/ vy;
 

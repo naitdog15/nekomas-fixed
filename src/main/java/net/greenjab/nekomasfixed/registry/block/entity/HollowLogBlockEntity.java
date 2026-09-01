@@ -2,9 +2,10 @@ package net.greenjab.nekomasfixed.registry.block.entity;
 
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -18,8 +19,6 @@ import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.ValueInput;
-import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.shapes.Shapes;
 
 public class HollowLogBlockEntity extends BlockEntity implements Container {
@@ -27,7 +26,7 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
     private NonNullList<ItemStack> storedStack = NonNullList.withSize(1, ItemStack.EMPTY);
 
     public HollowLogBlockEntity(BlockPos pos, BlockState state) {
-        super(BlockEntityTypeRegistry.HOLLOW_LOG_BLOCK_ENTITY, pos, state);
+        super(BlockEntityTypeRegistry.HOLLOW_LOG_BLOCK_ENTITY.get(), pos, state);
     }
 
     public BlockState getStoredBlock() {
@@ -38,8 +37,8 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
     }
 
     @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        return saveWithoutMetadata(registries);
+    public CompoundTag getUpdateTag() {
+        return saveWithoutMetadata();
     }
 
     public void setStoredBlock(ItemStack stack, BlockState state) {
@@ -53,21 +52,24 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
     }
 
     @Override
-    protected void saveAdditional(ValueOutput view) {
-        super.saveAdditional(view);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
 
-        view.store("StoredBlock", BlockState.CODEC, storedBlock);
-        ContainerHelper.saveAllItems(view, this.storedStack, false);
+        BlockState.CODEC.encodeStart(NbtOps.INSTANCE, storedBlock)
+                .result().ifPresent(encoded -> tag.put("StoredBlock", encoded));
+        ContainerHelper.saveAllItems(tag, this.storedStack, false);
     }
 
     @Override
-    protected void loadAdditional(ValueInput view) {
-        super.loadAdditional(view);
+    public void load(CompoundTag tag) {
+        super.load(tag);
 
-        storedBlock = view.read("StoredBlock", BlockState.CODEC)
-                .orElse(Blocks.AIR.defaultBlockState());
+        storedBlock = tag.contains("StoredBlock", Tag.TAG_COMPOUND)
+                ? BlockState.CODEC.parse(NbtOps.INSTANCE, tag.get("StoredBlock"))
+                        .result().orElse(Blocks.AIR.defaultBlockState())
+                : Blocks.AIR.defaultBlockState();
         this.storedStack = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(view, this.storedStack);
+        ContainerHelper.loadAllItems(tag, this.storedStack);
     }
     @Override
     public int getContainerSize() {
@@ -108,7 +110,9 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
     @Override
     public void setItem(int slot, ItemStack stack) {
         this.getHeldStacks().set(slot, stack);
-        stack.limitSize(this.getMaxStackSize(stack));
+        if (stack.getCount() > this.getMaxStackSize()) {
+            stack.setCount(this.getMaxStackSize());
+        }
         this.setChanged();
     }
 
@@ -143,7 +147,7 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
         if (blockItemState.getShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO)==Shapes.block()) return true;
         if (!vertical) return blockItemState.is(BlockTags.SMALL_FLOWERS) || blockItemState.is(Blocks.FLOWER_POT)||
                 blockItemState.is(Blocks.TORCH) || blockItemState.is(Blocks.SOUL_TORCH) ||
-                blockItemState.is(BlockTags.LANTERNS);
+                blockItemState.is(Blocks.LANTERN) || blockItemState.is(Blocks.SOUL_LANTERN);
         return false;
     }
 

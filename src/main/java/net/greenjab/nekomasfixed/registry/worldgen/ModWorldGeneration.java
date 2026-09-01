@@ -16,9 +16,8 @@ import net.minecraftforge.registries.RegistryObject;
  * {@code DeferredRegister<Feature<?>>} on {@code ForgeRegistries.FEATURES}. The 4
  * {@code BiomeModifications.addFeature(...)} biome-linking calls that used to live in
  * {@code generateModWorldGen()} are Fabric-only and are dropped from Java entirely - on Forge that
- * linkage is 4 {@code data/nekomasfixed/forge/biome_modifier/} JSON files, which is {@code data/**}
- * (not this file's scope) - whoever authors those files needs the exact
- * biome/decoration-step/placed-feature specs for each.
+ * linkage is 4 {@code data/nekomasfixed/forge/biome_modifier/} JSON files instead; see
+ * {@code BiomeAdditions}'s javadoc for the biome/decoration-step/placed-feature spec of each.
  */
 public class ModWorldGeneration {
     public static final DeferredRegister<Feature<?>> FEATURES =

@@ -1,6 +1,5 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -10,7 +9,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.BaseTorchBlock;
+import net.minecraft.world.level.block.TorchBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -22,22 +21,18 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import org.jetbrains.annotations.Nullable;
 
-public class GlowTorchBlock extends BaseTorchBlock implements SimpleWaterloggedBlock {
-	public static final MapCodec<GlowTorchBlock> CODEC = simpleCodec(GlowTorchBlock::new);
+public class GlowTorchBlock extends TorchBlock implements SimpleWaterloggedBlock {
 	public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
-	@Override
-	public MapCodec<? extends GlowTorchBlock> codec() {
-		return CODEC;
-	}
-
 	public GlowTorchBlock(BlockBehaviour.Properties settings) {
-		super(settings);
+		// the glow particle only shows underwater, and animateTick below owns that entirely,
+		// but TorchBlock still wants a flame to hand out
+		super(settings, ParticleTypes.GLOW);
 		this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false));
 	}
 
 	@Override
-	protected BlockState updateShape(
+	public BlockState updateShape(
             BlockState state, Direction direction, BlockState neighborState,
             LevelAccessor level, BlockPos pos, BlockPos neighborPos
     ) {
@@ -48,7 +43,7 @@ public class GlowTorchBlock extends BaseTorchBlock implements SimpleWaterloggedB
 	}
 
 	@Override
-	protected FluidState getFluidState(BlockState state) {
+	public FluidState getFluidState(BlockState state) {
 		return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
 	}
 

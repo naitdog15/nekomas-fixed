@@ -20,9 +20,9 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 /**
  * {@code NetherFortressPieces.CastleEntrance} itself, {@code createPiece}/{@code addChildren}/
  * {@code postProcess} and {@code BoundingBox#orientBox} are all unchanged on 1.20.1 (VERIFIED
- * forge-1.20.1-mapped-src NetherFortressPieces.java:374, 104-etc.). Not a feature cut
- * — this is content unavailability, not a decision, the same category as
- * copper armor/the Mace): {@code Blocks.TRIAL_SPAWNER}/{@code TrialSpawnerBlockEntity} do not exist
+ * forge-1.20.1-mapped-src NetherFortressPieces.java:374, 104-etc.). What is missing is content this
+ * version of the game simply does not have, the same as copper armour or the
+ * Mace: {@code Blocks.TRIAL_SPAWNER}/{@code TrialSpawnerBlockEntity} do not exist
  * on 1.20.1 at all (Trial Chambers are a 1.21+ feature — VERIFIED: zero matches for
  * {@code TRIAL_SPAWNER} in Blocks.java). The room's own block-by-block construction (walls, floor,
  * fences, lava, magma) is fully portable and kept verbatim; only the trial-spawner placement at the
@@ -148,10 +148,10 @@ public class NetherFortressPiecesCastleEntranceMixin {
         piece.placeBlock(level, Blocks.LAVA.defaultBlockState(), XC, 3, XC-1, chunkBB);
         piece.placeBlock(level, Blocks.LAVA.defaultBlockState(), XC, 3, XC+1, chunkBB);
 
-        // NAMED GAP (class header): Blocks.TRIAL_SPAWNER does not exist on 1.20.1. The room itself
+        // Blocks.TRIAL_SPAWNER does not exist on 1.20.1 (see class header). The room itself
         // (everything above) is built; only the spawner that was meant to occupy its centre is
-        // absent. Left as plain air (already the case: the "air" box carved out above covers this
-        // position) rather than substituting a different spawner mechanism unreviewed.
+        // absent. Left as plain air — the "air" box carved out above already covers this position —
+        // rather than substituting a different spawner mechanism.
 
         ci.cancel();
     }

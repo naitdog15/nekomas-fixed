@@ -1,12 +1,12 @@
 package net.greenjab.nekomasfixed.registry.block;
 
+import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ParticleUtils;
 import net.minecraft.util.RandomSource;
-import net.minecraft.util.Util;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -20,6 +20,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
@@ -111,7 +113,7 @@ public class MelonBlock extends Block {
 	}
 
 	@Override
-	public InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+	public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
 
 		if (!player.getItemInHand(hand).isEmpty()) {
 			return InteractionResult.FAIL;
@@ -164,19 +166,20 @@ public class MelonBlock extends Block {
 
 
 	@Override
-	protected List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-		if (this.drops.isEmpty()) {
+	public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+		ResourceLocation lootTableId = this.getLootTable();
+		if (lootTableId == BuiltInLootTables.EMPTY) {
 			return Collections.emptyList();
 		} else {
 			LootParams lootContext = builder.withParameter(LootContextParams.BLOCK_STATE, state).create(LootContextParamSets.BLOCK);
 			ServerLevel level = lootContext.getLevel();
-			LootTable lootTable = level.getServer().reloadableRegistries().getLootTable(this.drops.get());
+			LootTable lootTable = level.getServer().getLootData().getLootTable(lootTableId);
 			List<ItemStack> stacks = lootTable.getRandomItems(lootContext);
 			int slices = (int) IntStream.range(0, 8).filter(j -> hasCorner(state, j)).count();
 			ArrayList<ItemStack> newstacks = new ArrayList<>(List.of());
 			stacks.forEach(stack -> {
 				if (stack.is(Items.MELON_SLICE) || stack.is(Items.GLISTERING_MELON_SLICE))
-					newstacks.add(stack.getItem().getDefaultInstance().copyWithCount(Math.min(stack.count(), slices)));
+					newstacks.add(stack.getItem().getDefaultInstance().copyWithCount(Math.min(stack.getCount(), slices)));
 				else newstacks.add(stack);
 			});
 			return newstacks;

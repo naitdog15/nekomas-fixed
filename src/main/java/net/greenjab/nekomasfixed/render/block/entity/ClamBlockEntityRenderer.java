@@ -29,7 +29,7 @@ import net.minecraft.world.level.block.state.BlockState;
  * interface (single {@code render(T, partialTick, PoseStack, MultiBufferSource, light, overlay)}
  * method, no {@code createRenderState}/{@code extractRenderState} split). The {@code SpriteId}/
  * {@code SpriteGetter}-based chest-atlas lookup collapses onto {@code TextureRegistry}'s four
- * {@link Material} constants (§2 item 1) — {@code Material#sprite()} pulls the baked
+ * {@link Material} constants — {@code Material#sprite()} pulls the baked
  * {@code TextureAtlasSprite} directly, no atlas-lookup indirection needed.
  */
 public class ClamBlockEntityRenderer implements BlockEntityRenderer<ClamBlockEntity> {
@@ -67,8 +67,8 @@ public class ClamBlockEntityRenderer implements BlockEntityRenderer<ClamBlockEnt
 		this.clamModel.renderToBuffer(poseStack, vertexConsumer, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
 		poseStack.popPose();
 
-		if (lidAnimationProgress > 0 && blockEntity instanceof ClamBlockEntity clamBlockEntity) {
-			NonNullList<ItemStack> items = clamBlockEntity.getItems();
+		if (lidAnimationProgress > 0) {
+			NonNullList<ItemStack> items = blockEntity.getItems();
 			ItemStack itemStack = items.get(0);
 			if (!itemStack.isEmpty()) {
 				renderItem(itemStack, poseStack, buffer, packedLight, -yaw, blockEntity);

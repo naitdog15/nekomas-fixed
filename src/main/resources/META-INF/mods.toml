@@ -34,3 +34,15 @@ license="${mod_license}"
     versionRange="[11,)"
     ordering="AFTER"
     side="CLIENT"
+[[dependencies.nekomasfixed]]
+    modId="vanillabackport"
+    mandatory=false
+    versionRange="[1,)"
+    ordering="AFTER"
+    side="BOTH"
+[[dependencies.nekomasfixed]]
+    modId="ntrials"
+    mandatory=false
+    versionRange="[1,)"
+    ordering="AFTER"
+    side="BOTH"

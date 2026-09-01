@@ -1,7 +1,7 @@
 package net.greenjab.nekomasfixed.registry.worldgen.tree;
 
 import com.google.common.collect.Lists;
-import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.greenjab.nekomasfixed.util.ModTrunkPlacers;
@@ -10,7 +10,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.LevelSimulatedReader;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,8 +27,8 @@ public class BaobabTrunkPlacer extends TrunkPlacer {
         super(baseHeight, firstRandomHeight, secondRandomHeight);
     }
 
-    public static final MapCodec<BaobabTrunkPlacer> CODEC =
-            RecordCodecBuilder.mapCodec(instance ->
+    public static final Codec<BaobabTrunkPlacer> CODEC =
+            RecordCodecBuilder.create(instance ->
                     trunkPlacerParts(instance).apply(instance, BaobabTrunkPlacer::new));
 
     @Override
@@ -37,7 +37,7 @@ public class BaobabTrunkPlacer extends TrunkPlacer {
     }
 
     @Override
-    public List<FoliagePlacer.FoliageAttachment> placeTrunk(WorldGenLevel level, BiConsumer<BlockPos, BlockState> trunkSetter, RandomSource random, int treeHeight, BlockPos origin, TreeConfiguration config) {
+    public List<FoliagePlacer.FoliageAttachment> placeTrunk(LevelSimulatedReader level, BiConsumer<BlockPos, BlockState> trunkSetter, RandomSource random, int treeHeight, BlockPos origin, TreeConfiguration config) {
         List<FoliagePlacer.FoliageAttachment> list = Lists.newArrayList();
         // PORT: net.minecraft.world.attribute.EnvironmentAttributes (a per-position attribute query
         // system) doesn't exist on 1.20.1; the vanilla 1.20.1 idiom for "does water evaporate here" is

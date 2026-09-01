@@ -17,13 +17,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * (no params) and {@code populateDefaultEquipmentSlots(RandomSource, DifficultyInstance)} are
  * unchanged, as is {@code Raider.HoldGroundAttackGoal(AbstractIllager, float)}.
  * <p>
- * NAMED GAP, not a feature cut: {@code net.minecraft.world.item.Items.IRON_SPEAR} and
+ * Still missing: {@code net.minecraft.world.item.Items.IRON_SPEAR} and
  * {@code net.minecraft.world.entity.ai.goal.SpearUseGoal} — both VANILLA-namespace types the
- * pristine source imports — do not exist anywhere in forge-1.20.1-mapped-src. Whatever spear weapon
+ * original source imports — do not exist anywhere in forge-1.20.1-mapped-src. Whatever spear weapon
  * 26.2 ships is a real vanilla addition with no 1.20.1 counterpart at all, unlike this mod's own
  * {@code registry.entity.SpearEntity} (a thrown projectile with no vanilla melee-AI goal to launch
  * it from a Pillager's hand). Reproducing {@code SpearUseGoal} from scratch would be new AI-goal
- * construction, not a mixin retarget, and is out of scope here — so {@code initSpearEquipment} keeps
+ * construction rather than a mixin retarget — so {@code initSpearEquipment} keeps
  * only its Crossbow branch (pillagers always get a crossbow, as they would with no mod installed)
  * and {@code spearGoal} is dropped outright.
  */

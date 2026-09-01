@@ -1,7 +1,6 @@
 package net.greenjab.nekomasfixed.registry.worldgen.tree;
 
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.registry.block.RopeBlock;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.greenjab.nekomasfixed.util.ModTreeDecorators;
@@ -19,7 +18,7 @@ import static net.greenjab.nekomasfixed.registry.block.BaobabFruitBlock.AGE;
 public class BaobabTreeDecorator extends TreeDecorator {
 
     private final float probability;
-    public static final MapCodec<BaobabTreeDecorator> CODEC = Codec.floatRange(0.0F, 1.0F).fieldOf("probability").xmap(BaobabTreeDecorator::new, (decorator) -> decorator.probability);
+    public static final Codec<BaobabTreeDecorator> CODEC = Codec.floatRange(0.0F, 1.0F).fieldOf("probability").xmap(BaobabTreeDecorator::new, (decorator) -> decorator.probability).codec();
 
     public BaobabTreeDecorator(float probability) {
         this.probability = probability;

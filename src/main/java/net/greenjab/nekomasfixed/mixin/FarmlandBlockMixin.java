@@ -15,14 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * 1.20.1 delta: {@code FarmlandBlock} is {@code FarmBlock} here (VERIFIED
- * forge-1.20.1-mapped-src: no {@code FarmlandBlock.java} exists, only {@code FarmBlock.java}), and
- * {@code fallOn}'s last parameter is {@code float}, not {@code double} (FarmBlock.java:86). The
- * 1.21+ {@code Holder}/registry-lookup enchantment API (no {@code Registries.ENCHANTMENT} on 1.20.1
- * — see BlockMixin's matching note) is replaced by direct
- * {@code EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FEATHER_FALLING, boots)}.
- */
+// Feather Falling boots stop you trampling crops, the same way they spare you the fall damage.
 @Mixin(FarmBlock.class)
 public class FarmlandBlockMixin {
 
@@ -30,7 +23,7 @@ public class FarmlandBlockMixin {
     private void preventTrample(Level level, BlockState state, BlockPos pos, Entity entity, float fallDistance, CallbackInfo ci) {
         if (entity instanceof LivingEntity livingEntity) {
             ItemStack boots = livingEntity.getItemBySlot(EquipmentSlot.FEET);
-            int eLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FEATHER_FALLING, boots);
+            int eLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FALL_PROTECTION, boots);
             if (eLevel > 0) ci.cancel();
         }
     }

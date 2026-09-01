@@ -93,14 +93,11 @@ public class WildfireMeleeTask extends Behavior<WildfireEntity> {
 					double h = Math.max(f * f + g * g, 0.1);
 					entity.push(f / h * 2.0, 0.2F, g / h * 2.0);
 					DamageSource damageSource = wildFireEntity.damageSources().mobAttack(wildFireEntity);
-					// entity.hurt(...) is the outgoing-damage dispatcher (routes to the target's own
-					// hurtServer override on the server); 1.20.1 has no unified doPostAttackEffects, so
-					// the two-call vanilla form is used instead (see WildfireTrident.onHitEntity).
+					// No unified doPostAttackEffects on 1.20.1 - the two-call vanilla form applies the
+					// attacker's and the victim's enchantment effects separately.
 					if (entity.hurt(damageSource, wildFireEntity.isSoulActive()?6.0F:4.0F)) {
-						if (entity instanceof LivingEntity hurtLiving) {
-							EnchantmentHelper.doPostHurtEffects(hurtLiving, wildFireEntity);
-							EnchantmentHelper.doPostDamageEffects(wildFireEntity, hurtLiving);
-						}
+						EnchantmentHelper.doPostHurtEffects(entity, wildFireEntity);
+						EnchantmentHelper.doPostDamageEffects(wildFireEntity, entity);
 					}
 				}
 			}

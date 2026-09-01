@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
  * 26.2's rename of 1.20.1's real {@code ElytraLayer} (VERIFIED — {@code HumanoidMobRenderer}'s own
  * constructor adds {@code ElytraLayer}, not {@code WingsLayer}).
  *
- * <p><b>Custom player-skin lookup is a documented cut, not a port</b>: {@code PlayerSkinRenderCache}/
+ * <p><b>Custom player-skin lookup is not restored here</b>: {@code PlayerSkinRenderCache}/
  * {@code ResolvableProfile} don't exist on 1.20.1 (both post-1.20.5). Resolving a real skin from a
  * profile pre-1.20.5 needs {@code SkinManager}/{@code GameProfile} plumbing that starts on the entity
  * side ({@code TargetDummy.getTargetDummyProfile()}'s return type), not the renderer, and still needs
@@ -71,6 +71,6 @@ public class TargetDummyEntityRenderer extends LivingEntityRenderer<TargetDummy,
 	protected RenderType getRenderType(TargetDummy entity, boolean bodyVisible, boolean translucent, boolean glowing) {
 		ResourceLocation texture = this.getTextureLocation(entity);
 		if (translucent) return RenderType.entityTranslucent(texture, false);
-		return bodyVisible ? RenderType.entityCutout(texture, false) : null;
+		return bodyVisible ? RenderType.entityCutout(texture) : null;
 	}
 }
