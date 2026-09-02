@@ -73,9 +73,7 @@ public final class NekomasFixedConfig {
 
         BUILDER.pop();
 
-        BUILDER.comment("Things this mod grows or hides in the world itself.",
-                        "Baobab trees are deliberately not listed here: the same feature is what a baobab",
-                        "sapling grows into, so switching it off would stop saplings growing as well.")
+        BUILDER.comment("Things this mod grows or hides in the world itself.")
                .push("world_features");
 
         COPPER_BUFF = BUILDER

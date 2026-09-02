@@ -64,9 +64,5 @@ public class CauldronBehaviour {
         MagmaCauldronBlock.registerInteractions();
         SlimeCauldronBlock.registerInteractions();
         IceCauldronBlock.registerInteractions();
-
-        // The soup cauldron's ingredient palette needs this mod's own items resolved, which is
-        // only true once every registry has been filled.
-        SoupCauldronBlock.registerFoodColors();
     }
 }

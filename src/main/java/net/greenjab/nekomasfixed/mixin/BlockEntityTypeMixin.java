@@ -23,12 +23,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * effect (this block entity type accepts that block) without needing to touch a private final field
  * at all — no AT, no {@code @Shadow}, no timing dependency on mod-block registration having already
  * run before some setup hook fires.
- * <p>
- * Still missing: there is no {@code BlockEntityType.SHELF} (or any single-item display-shelf
- * analogue) on 1.20.1 — only {@code CHISELED_BOOKSHELF}, a different block entirely.
- * {@code BAOBAB_SHELF} therefore has no vanilla
- * block entity type to attach to; giving it one means writing a dedicated {@code BlockEntityType} +
- * {@code BlockEntity} pair, which is new construction rather than a mixin retarget.
  */
 @Mixin(BlockEntityType.class)
 public abstract class BlockEntityTypeMixin {
@@ -36,15 +30,7 @@ public abstract class BlockEntityTypeMixin {
     @Inject(method = "isValid", at = @At("HEAD"), cancellable = true)
     private void nekomasfixed$acceptCustomBlocks(BlockState state, CallbackInfoReturnable<Boolean> cir) {
         BlockEntityType<?> self = (BlockEntityType<?>) (Object) this;
-        if (self == BlockEntityType.SIGN) {
-            if (state.is(BlockRegistry.BAOBAB_SIGN.get()) || state.is(BlockRegistry.BAOBAB_WALL_SIGN.get())) {
-                cir.setReturnValue(true);
-            }
-        } else if (self == BlockEntityType.HANGING_SIGN) {
-            if (state.is(BlockRegistry.BAOBAB_HANGING_SIGN.get()) || state.is(BlockRegistry.BAOBAB_WALL_HANGING_SIGN.get())) {
-                cir.setReturnValue(true);
-            }
-        } else if (self == BlockEntityType.SHULKER_BOX) {
+        if (self == BlockEntityType.SHULKER_BOX) {
             if (state.is(BlockRegistry.AMBER_SHULKER_BOX.get()) || state.is(BlockRegistry.AQUA_SHULKER_BOX.get())
                     || state.is(BlockRegistry.INDIGO_SHULKER_BOX.get()) || state.is(BlockRegistry.MAROON_SHULKER_BOX.get())) {
                 cir.setReturnValue(true);

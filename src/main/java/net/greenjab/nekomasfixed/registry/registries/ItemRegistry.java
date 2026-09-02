@@ -17,14 +17,11 @@ import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BundleItem;
-import net.minecraft.world.item.DoubleHighBlockItem;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.DyeItem;
-import net.minecraft.world.item.HangingSignItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Rarity;
-import net.minecraft.world.item.SignItem;
 import net.minecraft.world.item.SmithingTemplateItem;
 import net.minecraft.world.item.StandingAndWallBlockItem;
 import net.minecraft.world.item.Tiers;
@@ -191,40 +188,6 @@ public class ItemRegistry {
     public static final RegistryObject<Item> CHOCOLATE_CAKE = register(BlockRegistry.CHOCOLATE_CAKE, new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> BEETROOT_CAKE = register(BlockRegistry.BEETROOT_CAKE, new Item.Properties().stacksTo(1));
 
-    public static final RegistryObject<Item> BAOBAB_LOG = register(BlockRegistry.BAOBAB_LOG);
-    public static final RegistryObject<Item> BAOBAB_WOOD = register(BlockRegistry.BAOBAB_WOOD);
-    public static final RegistryObject<Item> STRIPPED_BAOBAB_LOG = register(BlockRegistry.STRIPPED_BAOBAB_LOG);
-    public static final RegistryObject<Item> STRIPPED_BAOBAB_WOOD = register(BlockRegistry.STRIPPED_BAOBAB_WOOD);
-    public static final RegistryObject<Item> BAOBAB_PLANKS = register(BlockRegistry.BAOBAB_PLANKS);
-    public static final RegistryObject<Item> BAOBAB_STAIRS = register(BlockRegistry.BAOBAB_STAIRS);
-    public static final RegistryObject<Item> BAOBAB_SLAB = register(BlockRegistry.BAOBAB_SLAB);
-    public static final RegistryObject<Item> BAOBAB_FENCE = register(BlockRegistry.BAOBAB_FENCE);
-    public static final RegistryObject<Item> BAOBAB_FENCE_GATE = register(BlockRegistry.BAOBAB_FENCE_GATE);
-    public static final RegistryObject<Item> BAOBAB_DOOR = register(BlockRegistry.BAOBAB_DOOR, DoubleHighBlockItem::new);
-    public static final RegistryObject<Item> BAOBAB_TRAPDOOR = register(BlockRegistry.BAOBAB_TRAPDOOR);
-    public static final RegistryObject<Item> BAOBAB_PRESSURE_PLATE = register(BlockRegistry.BAOBAB_PRESSURE_PLATE);
-    public static final RegistryObject<Item> BAOBAB_BUTTON = register(BlockRegistry.BAOBAB_BUTTON);
-    public static final RegistryObject<Item> BAOBAB_LEAVES = register(BlockRegistry.BAOBAB_LEAVES);
-    public static final RegistryObject<Item> BAOBAB_SAPLING = register(BlockRegistry.BAOBAB_SAPLING);
-    public static final RegistryObject<Item> BAOBAB_SEEDS = register("baobab_seeds", BaobabSeedsItem::new, new Item.Properties().stacksTo(64));
-    public static final FoodProperties BAOBAB_FRUIT_FOOD = new FoodProperties.Builder().nutrition(4).saturationMod(0.3F).build();
-    public static final RegistryObject<Item> BAOBAB_FRUIT = register("baobab_fruit", new Item.Properties().food(BAOBAB_FRUIT_FOOD));
-    public static final RegistryObject<Item> ROPE = register(BlockRegistry.ROPE, RopeItem::new);
-    public static final RegistryObject<Item> BAOBAB_SHELF = register(BlockRegistry.BAOBAB_SHELF);
-    // BAOBAB_SIGN/BAOBAB_HANGING_SIGN reference their wall variants - single-lambda form.
-    public static final RegistryObject<Item> BAOBAB_SIGN = register(BlockRegistry.BAOBAB_SIGN,
-            (block, settings) -> new SignItem(settings, block, BlockRegistry.BAOBAB_WALL_SIGN.get()), new Item.Properties().stacksTo(16));
-    public static final RegistryObject<Item> BAOBAB_HANGING_SIGN = register(BlockRegistry.BAOBAB_HANGING_SIGN,
-            (block, settings) -> new HangingSignItem(block, BlockRegistry.BAOBAB_WALL_HANGING_SIGN.get(), settings), new Item.Properties().stacksTo(16));
-    // Vanilla BoatItem can only place EntityType.BOAT/CHEST_BOAT with a Boat.Type variant stamped on
-    // top, which cannot express any of this mod's boat entity types - ModBoatItem is the same
-    // placement behaviour driven by a supplied entity type. The RegistryObject goes in as the
-    // supplier itself, so nothing is dereferenced during registration.
-    public static final RegistryObject<Item> BAOBAB_BOAT = register("baobab_boat", settings ->
-            new ModBoatItem(EntityTypeRegistry.BAOBAB_BOAT, settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BAOBAB_CHEST_BOAT = register("baobab_chest_boat", settings ->
-            new ModBoatItem(EntityTypeRegistry.BAOBAB_CHEST_BOAT, settings), new Item.Properties().stacksTo(1));
-
     public static final RegistryObject<Item> TERMITE_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.TERMITE, "termite", 0xBB7F3D, 0xE1C080);
     public static final RegistryObject<Item> TERMITE_BLOCK = register(BlockRegistry.TERMITE_BLOCK);
     public static final RegistryObject<Item> TERMITE_HIVE = register(BlockRegistry.TERMITE_HIVE);
@@ -240,7 +203,6 @@ public class ItemRegistry {
     public static final RegistryObject<Item> HOLLOW_BAMBOO_BLOCK = register(BlockRegistry.HOLLOW_BAMBOO_BLOCK);
     public static final RegistryObject<Item> HOLLOW_WARPED_STEM = register(BlockRegistry.HOLLOW_WARPED_STEM);
     public static final RegistryObject<Item> HOLLOW_CRIMSON_STEM = register(BlockRegistry.HOLLOW_CRIMSON_STEM);
-    public static final RegistryObject<Item> HOLLOW_BAOBAB_LOG = register(BlockRegistry.HOLLOW_BAOBAB_LOG);
 
     public static final RegistryObject<Item> BOAT_UPGRADE_TEMPLATE = register("boat_upgrade_template", () ->
             new SmithingTemplateItem(Component.translatable(Util.makeDescriptionId("item", NekomasFixed.id("boat")))
@@ -258,7 +220,6 @@ public class ItemRegistry {
     public static final RegistryObject<Item> BIG_CHERRY_BOAT = register("big_cherry_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_CHERRY_BOAT, settings), new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> BIG_PALE_OAK_BOAT = register("big_pale_oak_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_PALE_OAK_BOAT, settings), new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> BIG_BAMBOO_BOAT = register("big_bamboo_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_BAMBOO_BOAT, settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> BIG_BAOBAB_BOAT = register("big_baobab_boat", settings -> new ModBoatItem(EntityTypeRegistry.BIG_BAOBAB_BOAT, settings), new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> HUGE_OAK_BOAT = register("huge_oak_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_OAK_BOAT, settings), new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> HUGE_SPRUCE_BOAT = register("huge_spruce_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_SPRUCE_BOAT, settings), new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> HUGE_BIRCH_BOAT = register("huge_birch_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_BIRCH_BOAT, settings), new Item.Properties().stacksTo(1));
@@ -269,7 +230,6 @@ public class ItemRegistry {
     public static final RegistryObject<Item> HUGE_CHERRY_BOAT = register("huge_cherry_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_CHERRY_BOAT, settings), new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> HUGE_PALE_OAK_BOAT = register("huge_pale_oak_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_PALE_OAK_BOAT, settings), new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> HUGE_BAMBOO_BOAT = register("huge_bamboo_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_BAMBOO_BOAT, settings), new Item.Properties().stacksTo(1));
-    public static final RegistryObject<Item> HUGE_BAOBAB_BOAT = register("huge_baobab_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_BAOBAB_BOAT, settings), new Item.Properties().stacksTo(1));
 
     public static final RegistryObject<Item> SPECIAL_STEW = register("special_stew", SpecialSoupItem::new, new Item.Properties().stacksTo(1).food((new FoodProperties.Builder()).nutrition(0).saturationMod(0.0F).build()).craftRemainder(Items.BOWL));
     // Potion: 1.20.1 registers a plain Potion instance (registerForHolder is post-1.20.5) -

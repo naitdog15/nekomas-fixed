@@ -6,7 +6,6 @@ import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.util.AllDyes;
 import net.greenjab.nekomasfixed.util.BlockDyeMap;
 import net.greenjab.nekomasfixed.util.ItemDyeMap;
-import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.FinishedRecipe;
@@ -42,58 +41,6 @@ public class ModRecipeProvider extends RecipeProvider {
 
     @Override
     protected void buildRecipes(Consumer<FinishedRecipe> output) {
-        shapeless(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.BAOBAB_PLANKS.get(), 4)
-                .requires(ModTags.BAOBAB_LOGS)
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_LOG.get()), has(ItemRegistry.BAOBAB_LOG.get())).save(output);
-
-        shaped(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.BAOBAB_WOOD.get(), 3)
-                .pattern("##")
-                .pattern("##")
-                .define('#', ItemRegistry.BAOBAB_LOG.get())
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_LOG.get()), has(ItemRegistry.BAOBAB_LOG.get()))
-                .save(output);
-
-        shaped(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.STRIPPED_BAOBAB_WOOD.get(), 3)
-                .pattern("##")
-                .pattern("##")
-                .define('#', ItemRegistry.STRIPPED_BAOBAB_LOG.get())
-                .unlockedBy(getHasName(ItemRegistry.STRIPPED_BAOBAB_LOG.get()), has(ItemRegistry.STRIPPED_BAOBAB_LOG.get()))
-                .save(output);
-
-        woodenBoat(output, ItemRegistry.BAOBAB_BOAT.get(), ItemRegistry.BAOBAB_PLANKS.get());
-        chestBoat(output, ItemRegistry.BAOBAB_CHEST_BOAT.get(), ItemRegistry.BAOBAB_BOAT.get());
-
-        fenceBuilder(ItemRegistry.BAOBAB_FENCE.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
-                .save(output);
-        fenceGateBuilder(ItemRegistry.BAOBAB_FENCE_GATE.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
-                .save(output);
-        buttonBuilder(ItemRegistry.BAOBAB_BUTTON.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
-                .save(output);
-        doorBuilder(ItemRegistry.BAOBAB_DOOR.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
-                .save(output);
-        trapdoorBuilder(ItemRegistry.BAOBAB_TRAPDOOR.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
-                .save(output);
-        pressurePlateBuilder(RecipeCategory.REDSTONE, ItemRegistry.BAOBAB_PRESSURE_PLATE.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
-                .save(output);
-        signBuilder(ItemRegistry.BAOBAB_SIGN.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
-                .save(output);
-        // No hangingSignBuilder() on 1.20.1 - hangingSign(...) builds and saves the whole recipe
-        // itself (unlockedBy is fixed to "has_stripped_logs" inside it, same predicate either way).
-        hangingSign(output, ItemRegistry.BAOBAB_HANGING_SIGN.get(), ItemRegistry.BAOBAB_LOG.get());
-        slabBuilder(RecipeCategory.BUILDING_BLOCKS, ItemRegistry.BAOBAB_SLAB.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
-                .save(output);
-        stairBuilder(ItemRegistry.BAOBAB_STAIRS.get(), Ingredient.of(ItemRegistry.BAOBAB_PLANKS.get()))
-                .unlockedBy(getHasName(ItemRegistry.BAOBAB_PLANKS.get()), has(ItemRegistry.BAOBAB_PLANKS.get()))
-                .save(output);
-
         for (AllDyes colour : AllDyes.values()) {
             createRingRecipe(output, RecipeCategory.MISC, ItemDyeMap.DYE.get(colour), Items.BRUSH, ItemDyeMap.BRUSH.get(colour), "dyed_brush", 1)
                     .save(output);
@@ -134,8 +81,7 @@ public class ModRecipeProvider extends RecipeProvider {
                 // content gap, not an oversight).
                 Pair.of(Items.BAMBOO_PLANKS, ItemRegistry.HOLLOW_BAMBOO_BLOCK.get()),
                 Pair.of(Items.CRIMSON_PLANKS, ItemRegistry.HOLLOW_CRIMSON_STEM.get()),
-                Pair.of(Items.WARPED_PLANKS, ItemRegistry.HOLLOW_WARPED_STEM.get()),
-                Pair.of(ItemRegistry.BAOBAB_PLANKS.get(), ItemRegistry.HOLLOW_BAOBAB_LOG.get()));
+                Pair.of(Items.WARPED_PLANKS, ItemRegistry.HOLLOW_WARPED_STEM.get()));
         for (Pair<Item, Item> hollow : hollows) {
             shapeless(RecipeCategory.BUILDING_BLOCKS, hollow.getFirst(), 1)
                     .requires(hollow.getSecond())

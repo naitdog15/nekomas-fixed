@@ -55,12 +55,8 @@ public class BlockEntityTypeRegistry {
                     BlockRegistry.HOLLOW_PALE_OAK_LOG.get(),
                     BlockRegistry.HOLLOW_BAMBOO_BLOCK.get(),
                     BlockRegistry.HOLLOW_CRIMSON_STEM.get(),
-                    BlockRegistry.HOLLOW_WARPED_STEM.get(),
-                    BlockRegistry.HOLLOW_BAOBAB_LOG.get()
+                    BlockRegistry.HOLLOW_WARPED_STEM.get()
             ).build(null));
-
-    public static final RegistryObject<BlockEntityType<BaobabShelfBlockEntity>> BAOBAB_SHELF_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("baobab_shelf",
-            () -> BlockEntityType.Builder.of(BaobabShelfBlockEntity::new, BlockRegistry.BAOBAB_SHELF.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<StackedCakeBlockEntity>> STACKED_CAKE_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("cake",
             () -> BlockEntityType.Builder.of(StackedCakeBlockEntity::new,

@@ -3,8 +3,6 @@ package net.greenjab.nekomasfixed.registries;
 import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
 import net.greenjab.nekomasfixed.render.entity.*;
-import net.minecraft.client.model.BoatModel;
-import net.minecraft.client.model.ChestBoatModel;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -13,8 +11,6 @@ import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 
 /**
  * {@code ModEntityRendererRegistry…()} maps to Forge's {@code RegisterRenderers#registerEntityRenderer}.
- * {@code BAOBAB_BOAT}/{@code BAOBAB_CHEST_BOAT} use {@link SimpleBoatRenderer} — see that class's
- * javadoc for why vanilla's own {@code BoatRenderer} cannot be used verbatim here.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ModEntityRendererRegistry {
@@ -32,7 +28,6 @@ public class ModEntityRendererRegistry {
         event.registerEntityRenderer(EntityTypeRegistry.BIG_OAK_BOAT.get(), context -> new BigBoatRenderer<>(context, ModModelLayerRegistry.BIG_OAK_BOAT));
         event.registerEntityRenderer(EntityTypeRegistry.BIG_PALE_OAK_BOAT.get(), context -> new BigBoatRenderer<>(context, ModModelLayerRegistry.BIG_PALE_OAK_BOAT));
         event.registerEntityRenderer(EntityTypeRegistry.BIG_SPRUCE_BOAT.get(), context -> new BigBoatRenderer<>(context, ModModelLayerRegistry.BIG_SPRUCE_BOAT));
-        event.registerEntityRenderer(EntityTypeRegistry.BIG_BAOBAB_BOAT.get(), context -> new BigBoatRenderer<>(context, ModModelLayerRegistry.BIG_BAOBAB_BOAT));
 
         event.registerEntityRenderer(EntityTypeRegistry.HUGE_ACACIA_BOAT.get(), context -> new HugeBoatRenderer(context, ModModelLayerRegistry.HUGE_ACACIA_BOAT));
         event.registerEntityRenderer(EntityTypeRegistry.HUGE_BAMBOO_BOAT.get(), context -> new HugeBoatRenderer(context, ModModelLayerRegistry.HUGE_BAMBOO_BOAT));
@@ -44,10 +39,6 @@ public class ModEntityRendererRegistry {
         event.registerEntityRenderer(EntityTypeRegistry.HUGE_OAK_BOAT.get(), context -> new HugeBoatRenderer(context, ModModelLayerRegistry.HUGE_OAK_BOAT));
         event.registerEntityRenderer(EntityTypeRegistry.HUGE_PALE_OAK_BOAT.get(), context -> new HugeBoatRenderer(context, ModModelLayerRegistry.HUGE_PALE_OAK_BOAT));
         event.registerEntityRenderer(EntityTypeRegistry.HUGE_SPRUCE_BOAT.get(), context -> new HugeBoatRenderer(context, ModModelLayerRegistry.HUGE_SPRUCE_BOAT));
-        event.registerEntityRenderer(EntityTypeRegistry.HUGE_BAOBAB_BOAT.get(), context -> new HugeBoatRenderer(context, ModModelLayerRegistry.HUGE_BAOBAB_BOAT));
-
-        event.registerEntityRenderer(EntityTypeRegistry.BAOBAB_BOAT.get(), context -> new SimpleBoatRenderer(context, ModModelLayerRegistry.BAOBAB_BOAT, new BoatModel(context.bakeLayer(ModModelLayerRegistry.BAOBAB_BOAT))));
-        event.registerEntityRenderer(EntityTypeRegistry.BAOBAB_CHEST_BOAT.get(), context -> new SimpleBoatRenderer(context, ModModelLayerRegistry.BAOBAB_CHEST_BOAT, new ChestBoatModel(context.bakeLayer(ModModelLayerRegistry.BAOBAB_CHEST_BOAT))));
 
         event.registerEntityRenderer(EntityTypeRegistry.TARGET_DUMMY.get(), TargetDummyEntityRenderer::new);
         event.registerEntityRenderer(EntityTypeRegistry.SPEAR.get(), SpearRenderer::new);

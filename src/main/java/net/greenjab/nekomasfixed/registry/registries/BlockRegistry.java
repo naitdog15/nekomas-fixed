@@ -5,24 +5,17 @@ import net.greenjab.nekomasfixed.registry.block.*;
 import net.greenjab.nekomasfixed.registry.block.cauldron.*;
 import net.greenjab.nekomasfixed.registry.block.enums.ClamType;
 import net.greenjab.nekomasfixed.registry.block.enums.NautilusBlockType;
-import net.greenjab.nekomasfixed.registry.worldgen.ModConfiguredFeatures;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
-import net.minecraft.world.level.block.grower.AbstractTreeGrower;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
-import net.minecraft.world.level.block.state.properties.BlockSetType;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
-import net.minecraft.world.level.block.state.properties.WoodType;
-import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraftforge.registries.DeferredRegister;
@@ -37,10 +30,10 @@ import java.util.function.Supplier;
  * Two DeferredRegisters: {@link #BLOCKS} (nekomasfixed namespace) and {@link #VANILLA_BLOCKS}
  * (CLOCK/WALL_CLOCK stay minecraft: so existing worlds' placed clocks are not orphaned).
  * <p>
- * Vanilla's own {@code Blocks.leaves(...)}/{@code Blocks.woodenButton(...)}/{@code Blocks.shulkerBox(...)}
- * property recipes are private, as are {@code Blocks.never}/{@code Blocks.ocelotOrParrot}; the
- * equivalents are spelled out in this file's helpers instead of reached for through an access
- * transformer, so the properties stay readable next to the blocks that use them.
+ * Vanilla's own {@code Blocks.shulkerBox(...)} property recipe is private, as is
+ * {@code Blocks.never}; the equivalents are spelled out in this file's helpers instead of reached
+ * for through an access transformer, so the properties stay readable next to the blocks that use
+ * them.
  */
 public class BlockRegistry {
 
@@ -106,138 +99,6 @@ public class BlockRegistry {
     public static final RegistryObject<Block> CHOCOLATE_CAKE = register("chocolate_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
     public static final RegistryObject<Block> BEETROOT_CAKE = register("beetroot_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
 
-    static BlockSetType BAOBAB_BLOCKSETTYPE = BlockSetType.register(new BlockSetType("baobab"));
-    static WoodType BAOBAB_WOODTYPE = WoodType.register(new WoodType("baobab", BAOBAB_BLOCKSETTYPE));
-    // 1.20.1's sapling growth hook is an AbstractTreeGrower subclass handing back a configured-feature
-    // key; the level looks the key up in its own registry when the sapling actually grows, so holding
-    // the plain ResourceKey here is safe at class-init time.
-    static final AbstractTreeGrower BAOBAB_TREE_GROWER = new AbstractTreeGrower() {
-        @Override
-        protected ResourceKey<ConfiguredFeature<?, ?>> getConfiguredFeature(RandomSource random, boolean hasFlowers) {
-            return ModConfiguredFeatures.BAOBAB_KEY;
-        }
-    };
-    // StrippableBlockRegistry.register(...) / FireBlock.setFlammable(...) have
-    // no Forge equivalent (both mod-block-only, so both stay entirely inside these block classes -
-    // no AT, no map mutation, no mixin, no enqueueWork). Pre-existing source quirk preserved
-    // verbatim per parity: the Fabric registerBlocks() set STRIPPED_BAOBAB_LOG's flammability twice
-    // and never set STRIPPED_BAOBAB_WOOD's (5,5) - so stripped_baobab_wood stays non-flammable here
-    // too, exactly as it always has been.
-    // NOTE: `STRIPPED_BAOBAB_LOG::get` (a bound instance method reference) would capture that
-    // field's value - still null - at THIS lambda's creation time and NPE. `() -> ...get()` instead
-    // reads the static field lazily, when the supplier is actually invoked (well after all
-    // RegistryObjects exist). The class-qualified form is required: a *simple* name would be an
-    // illegal forward reference to a field declared further down this same class.
-    public static final RegistryObject<Block> BAOBAB_LOG = register("baobab_log",
-            settings -> new FlammableRotatedPillarBlock(settings, 5, 5, () -> BlockRegistry.STRIPPED_BAOBAB_LOG.get()),
-            BlockBehaviour.Properties.copy(Blocks.OAK_LOG).mapColor(MapColor.WOOD));
-    public static final RegistryObject<Block> BAOBAB_WOOD = register("baobab_wood",
-            settings -> new FlammableRotatedPillarBlock(settings, 5, 5, () -> BlockRegistry.STRIPPED_BAOBAB_WOOD.get()),
-            BlockBehaviour.Properties.copy(Blocks.OAK_WOOD));
-    public static final RegistryObject<Block> STRIPPED_BAOBAB_LOG = register(
-            "stripped_baobab_log", settings -> new FlammableRotatedPillarBlock(settings, 5, 5, null),
-            BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG));
-    public static final RegistryObject<Block> STRIPPED_BAOBAB_WOOD = register(
-            "stripped_baobab_wood", RotatedPillarBlock::new, BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_WOOD));
-    public static final RegistryObject<Block> BAOBAB_PLANKS = register("baobab_planks",
-            settings -> new FlammableBlock(settings, 5, 20), BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS));
-    public static final RegistryObject<Block> BAOBAB_STAIRS = register("baobab_stairs",
-            () -> new FlammableStairBlock(BAOBAB_PLANKS.get().defaultBlockState(),
-                    BlockBehaviour.Properties.copy(BAOBAB_PLANKS.get()), 5, 20));
-    public static final RegistryObject<Block> BAOBAB_SLAB = register(
-            "baobab_slab",
-            settings -> new FlammableSlabBlock(settings, 5, 20),
-            BlockBehaviour.Properties.of().mapColor(MapColor.WOOD).instrument(NoteBlockInstrument.BASS).strength(2.0F, 3.0F).sound(SoundType.WOOD).ignitedByLava()
-    );
-    public static final RegistryObject<Block> BAOBAB_FENCE = register(
-            "baobab_fence",
-            settings -> new FlammableFenceBlock(settings, 5, 20),
-            BlockBehaviour.Properties.of()
-                    .mapColor(state -> BAOBAB_PLANKS.get().defaultMapColor())
-                    .instrument(NoteBlockInstrument.BASS)
-                    .strength(2.0F, 3.0F)
-                    .sound(SoundType.WOOD).ignitedByLava()
-    );
-    public static final RegistryObject<Block> BAOBAB_FENCE_GATE = register(
-            "baobab_fence_gate",
-            settings -> new FlammableFenceGateBlock(BAOBAB_WOODTYPE, settings, 5, 20),
-            BlockBehaviour.Properties.of().mapColor(state -> BAOBAB_PLANKS.get().defaultMapColor()).forceSolidOn().instrument(NoteBlockInstrument.BASS).strength(2.0F, 3.0F).sound(SoundType.WOOD).ignitedByLava()
-    );
-    public static final RegistryObject<Block> BAOBAB_DOOR = register(
-            "baobab_door",
-            settings -> new DoorBlock(settings, BAOBAB_BLOCKSETTYPE),
-            BlockBehaviour.Properties.of()
-                    .mapColor(state -> BAOBAB_PLANKS.get().defaultMapColor())
-                    .instrument(NoteBlockInstrument.BASS)
-                    .strength(3.0F)
-                    .noOcclusion()
-                    .pushReaction(PushReaction.DESTROY)
-                    .sound(SoundType.WOOD).ignitedByLava()
-    );
-    public static final RegistryObject<Block> BAOBAB_TRAPDOOR = register(
-            "baobab_trapdoor",
-            settings -> new TrapDoorBlock(settings, BAOBAB_BLOCKSETTYPE),
-            BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.WOOD)
-                    .instrument(NoteBlockInstrument.BASS)
-                    .strength(3.0F)
-                    .noOcclusion()
-                    .isValidSpawn(BlockRegistry::neverSpawn)
-                    .sound(SoundType.WOOD).ignitedByLava()
-    );
-    public static final RegistryObject<Block> BAOBAB_PRESSURE_PLATE = register(
-            "baobab_pressure_plate",
-            settings -> new PressurePlateBlock(PressurePlateBlock.Sensitivity.EVERYTHING, settings, BAOBAB_BLOCKSETTYPE),
-            BlockBehaviour.Properties.of()
-                    .mapColor(state -> BAOBAB_PLANKS.get().defaultMapColor())
-                    .forceSolidOn()
-                    .instrument(NoteBlockInstrument.BASS)
-                    .noCollission()
-                    .strength(0.5F)
-                    .pushReaction(PushReaction.DESTROY).ignitedByLava()
-    );
-    // Wooden buttons on 1.20.1: 30-tick press, arrows can press them (vanilla's woodenButton recipe).
-    public static final RegistryObject<Block> BAOBAB_BUTTON = register(
-            "baobab_button",settings -> new ButtonBlock(settings, BAOBAB_BLOCKSETTYPE, 30, true), woodenButtonProperties().ignitedByLava()
-    );
-    // Leaves particles are a 1.21.4+ block type; 1.20.1's leaves are the plain LeavesBlock, which
-    // drops the falling-leaf particle and its tint colour with nothing to attach them to.
-    public static final RegistryObject<Block> BAOBAB_LEAVES = register("baobab_leaves", LeavesBlock::new, leavesProperties(SoundType.GRASS));
-    public static final RegistryObject<Block> BAOBAB_SAPLING = register("baobab_sapling",(settings) -> new SaplingBlock(BAOBAB_TREE_GROWER,  settings), BlockBehaviour.Properties.copy(Blocks.DARK_OAK_SAPLING));
-    public static final RegistryObject<Block> BAOBAB_FRUIT = register("baobab_fruit", BaobabFruitBlock::new, BlockBehaviour.Properties.of().randomTicks().strength(0.2f).isViewBlocking(BlockRegistry::never).ignitedByLava().instabreak());
-    public static final RegistryObject<Block> ROPE = register("rope", RopeBlock::new, BlockBehaviour.Properties.of().strength(0.2f).isRedstoneConductor(BlockRegistry::never).ignitedByLava().noCollission());
-    public static final RegistryObject<Block> BAOBAB_SHELF = register(
-            "baobab_shelf",
-            BaobabShelfBlock::new,
-            BlockBehaviour.Properties.of()
-                    .mapColor(state -> BAOBAB_PLANKS.get().defaultMapColor())
-                    .instrument(NoteBlockInstrument.BASS)
-                    .strength(2f,3.0F)
-                    .sound(SoundType.WOOD).ignitedByLava()
-    );
-    public static final RegistryObject<Block> BAOBAB_SIGN = register(
-            "baobab_sign",
-            settings -> new StandingSignBlock(settings, BAOBAB_WOODTYPE),
-            BlockBehaviour.Properties.of().mapColor(MapColor.WOOD).forceSolidOn().instrument(NoteBlockInstrument.BASS).noCollission().strength(1.0F).ignitedByLava()
-    );
-    public static final RegistryObject<Block> BAOBAB_WALL_SIGN = register(
-            "baobab_wall_sign",
-            () -> new WallSignBlock(
-                    copyLootTable(BAOBAB_SIGN).mapColor(MapColor.WOOD).forceSolidOn().instrument(NoteBlockInstrument.BASS).noCollission().strength(1.0F).ignitedByLava(),
-                    BAOBAB_WOODTYPE)
-    );
-    public static final RegistryObject<Block> BAOBAB_HANGING_SIGN = register(
-            "baobab_hanging_sign",
-            settings -> new CeilingHangingSignBlock(settings, BAOBAB_WOODTYPE),
-            BlockBehaviour.Properties.of().mapColor(MapColor.WOOD).forceSolidOn().instrument(NoteBlockInstrument.BASS).noCollission().strength(1.0F).ignitedByLava()
-    );
-    public static final RegistryObject<Block> BAOBAB_WALL_HANGING_SIGN = register(
-            "baobab_wall_hanging_sign",
-            () -> new WallHangingSignBlock(
-                    copyLootTable(BAOBAB_HANGING_SIGN).mapColor(MapColor.WOOD).forceSolidOn().instrument(NoteBlockInstrument.BASS).noCollission().strength(1.0F).ignitedByLava(),
-                    BAOBAB_WOODTYPE)
-    );
-
     public static final RegistryObject<Block> TERMITE_BLOCK = register("termite_block", BlockBehaviour.Properties.of().strength(1f));
     public static final RegistryObject<Block> TERMITE_HIVE = register("termite_hive", TermitehiveBlock::new, BlockBehaviour.Properties.of().strength(1f));
     public static final RegistryObject<Block> HOLLOW_OAK_LOG = register("hollow_oak_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.OAK_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
@@ -254,7 +115,6 @@ public class BlockRegistry {
     public static final RegistryObject<Block> HOLLOW_BAMBOO_BLOCK = register("hollow_bamboo_block", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.BAMBOO_BLOCK).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
     public static final RegistryObject<Block> HOLLOW_CRIMSON_STEM = register("hollow_crimson_stem", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.CRIMSON_HYPHAE).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
     public static final RegistryObject<Block> HOLLOW_WARPED_STEM = register("hollow_warped_stem", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.WARPED_HYPHAE).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
-    public static final RegistryObject<Block> HOLLOW_BAOBAB_LOG = register("hollow_baobab_log", () -> new HollowLogBlock(BlockBehaviour.Properties.copy(BAOBAB_LOG.get()).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL))));
 
 
     public static final RegistryObject<Block> GOAT_HORN = register("horn", GoatHornBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GRAY).lightLevel(state -> state.getValue(GoatHornBlock.TORCH).getLight()).strength(0.2F).sound(SoundType.TUFF).pushReaction(PushReaction.DESTROY));
@@ -534,22 +394,6 @@ public class BlockRegistry {
     private static boolean neverSpawn(BlockState state, BlockGetter world, BlockPos pos, EntityType<?> type) {
         return false;
     }
-    private static boolean ocelotOrParrot(BlockState state, BlockGetter world, BlockPos pos, EntityType<?> type) {
-        return type == EntityType.OCELOT || type == EntityType.PARROT;
-    }
-
-    /** Vanilla's private Blocks.leaves(SoundType) recipe. */
-    private static BlockBehaviour.Properties leavesProperties(SoundType sound) {
-        return BlockBehaviour.Properties.of().mapColor(MapColor.PLANT).strength(0.2F).randomTicks().sound(sound)
-                .noOcclusion().isValidSpawn(BlockRegistry::ocelotOrParrot).isSuffocating(BlockRegistry::never)
-                .isViewBlocking(BlockRegistry::never).ignitedByLava().pushReaction(PushReaction.DESTROY)
-                .isRedstoneConductor(BlockRegistry::never);
-    }
-
-    /** Vanilla's private Blocks.woodenButton(...) property recipe. */
-    private static BlockBehaviour.Properties woodenButtonProperties() {
-        return BlockBehaviour.Properties.of().noCollission().strength(0.5F).pushReaction(PushReaction.DESTROY);
-    }
 
     // No bounce-restitution property on 1.20.1: BedBlock.bounceUp() hard-codes the 0.66 factor, so
     // these beds already bounce exactly like vanilla ones without declaring it.
@@ -571,6 +415,6 @@ public class BlockRegistry {
     // registerBlocks()/registerBlockEntityType()-style no-op entrypoint methods are gone: no file
     // in the repo called this one (grepped repo-wide), and DeferredRegister's own RegisterEvent
     // dispatch (BLOCKS.register(modBus) from the aggregator, Registries.java) is what used to
-    // need this call site. The 5 cauldron RegistryObjects and the baobab-set flammability/stripping
-    // (formerly this method's body) both moved up into ordinary field declarations above.
+    // need this call site. The 5 cauldron RegistryObjects (formerly this method's body) moved up
+    // into ordinary field declarations above.
 }

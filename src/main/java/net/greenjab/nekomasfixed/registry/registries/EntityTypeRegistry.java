@@ -8,8 +8,6 @@ import net.greenjab.nekomasfixed.registry.entity.WildFire.WildfireEntity;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
-import net.minecraft.world.entity.vehicle.Boat;
-import net.minecraft.world.entity.vehicle.ChestBoat;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -57,7 +55,6 @@ public class EntityTypeRegistry {
     public static final RegistryObject<EntityType<BigBoat>> BIG_OAK_BOAT = bigBoatFactory("big_oak_boat", () -> ItemRegistry.BIG_OAK_BOAT.get());
     public static final RegistryObject<EntityType<BigBoat>> BIG_PALE_OAK_BOAT = bigBoatFactory("big_pale_oak_boat", () -> ItemRegistry.BIG_PALE_OAK_BOAT.get());
     public static final RegistryObject<EntityType<BigBoat>> BIG_SPRUCE_BOAT = bigBoatFactory("big_spruce_boat", () -> ItemRegistry.BIG_SPRUCE_BOAT.get());
-    public static final RegistryObject<EntityType<BigBoat>> BIG_BAOBAB_BOAT = bigBoatFactory("big_baobab_boat", () -> ItemRegistry.BIG_BAOBAB_BOAT.get());
 
     public static final RegistryObject<EntityType<HugeBoat>> HUGE_ACACIA_BOAT = hugeBoatFactory("huge_acacia_boat", () -> ItemRegistry.HUGE_ACACIA_BOAT.get());
     public static final RegistryObject<EntityType<HugeBoat>> HUGE_BAMBOO_BOAT = hugeBoatFactory("huge_bamboo_boat", () -> ItemRegistry.HUGE_BAMBOO_BOAT.get());
@@ -69,24 +66,16 @@ public class EntityTypeRegistry {
     public static final RegistryObject<EntityType<HugeBoat>> HUGE_OAK_BOAT = hugeBoatFactory("huge_oak_boat", () -> ItemRegistry.HUGE_OAK_BOAT.get());
     public static final RegistryObject<EntityType<HugeBoat>> HUGE_PALE_OAK_BOAT = hugeBoatFactory("huge_pale_oak_boat", () -> ItemRegistry.HUGE_PALE_OAK_BOAT.get());
     public static final RegistryObject<EntityType<HugeBoat>> HUGE_SPRUCE_BOAT = hugeBoatFactory("huge_spruce_boat", () -> ItemRegistry.HUGE_SPRUCE_BOAT.get());
-    public static final RegistryObject<EntityType<HugeBoat>> HUGE_BAOBAB_BOAT = hugeBoatFactory("huge_baobab_boat", () -> ItemRegistry.HUGE_BAOBAB_BOAT.get());
-
-    public static final RegistryObject<EntityType<Boat>> BAOBAB_BOAT = register("baobab_boat",
-            EntityType.Builder.of(getBoatFactory(() -> ItemRegistry.BAOBAB_BOAT.get()), MobCategory.MISC)
-                    .sized(1.375F, 0.5625F).clientTrackingRange(10));
-    public static final RegistryObject<EntityType<ChestBoat>> BAOBAB_CHEST_BOAT = register("baobab_chest_boat",
-            EntityType.Builder.of(getChestBoatFactory(() -> ItemRegistry.BAOBAB_CHEST_BOAT.get()), MobCategory.MISC)
-                    .sized(1.375F, 0.5625F).clientTrackingRange(10));
 
     // These two hand out the RegistryObjects themselves as Suppliers rather than resolved
     // EntityTypes, so building the list never calls .get() before RegisterEvent<EntityType> has
     // run; callers unwrap per element at use time, matching how the rest of the registry package
     // defers resolution.
     public static List<Supplier<EntityType<BigBoat>>> bigBoats() {
-        return List.of(BIG_ACACIA_BOAT, BIG_BAMBOO_BOAT, BIG_BIRCH_BOAT, BIG_CHERRY_BOAT, BIG_DARK_OAK_BOAT, BIG_JUNGLE_BOAT, BIG_MANGROVE_BOAT, BIG_OAK_BOAT, BIG_PALE_OAK_BOAT, BIG_SPRUCE_BOAT, BIG_BAOBAB_BOAT);
+        return List.of(BIG_ACACIA_BOAT, BIG_BAMBOO_BOAT, BIG_BIRCH_BOAT, BIG_CHERRY_BOAT, BIG_DARK_OAK_BOAT, BIG_JUNGLE_BOAT, BIG_MANGROVE_BOAT, BIG_OAK_BOAT, BIG_PALE_OAK_BOAT, BIG_SPRUCE_BOAT);
     }
     public static List<Supplier<EntityType<HugeBoat>>> hugeBoats() {
-        return List.of(HUGE_ACACIA_BOAT, HUGE_BAMBOO_BOAT, HUGE_BIRCH_BOAT, HUGE_CHERRY_BOAT, HUGE_DARK_OAK_BOAT, HUGE_JUNGLE_BOAT, HUGE_MANGROVE_BOAT, HUGE_OAK_BOAT, HUGE_PALE_OAK_BOAT, HUGE_SPRUCE_BOAT, HUGE_BAOBAB_BOAT);
+        return List.of(HUGE_ACACIA_BOAT, HUGE_BAMBOO_BOAT, HUGE_BIRCH_BOAT, HUGE_CHERRY_BOAT, HUGE_DARK_OAK_BOAT, HUGE_JUNGLE_BOAT, HUGE_MANGROVE_BOAT, HUGE_OAK_BOAT, HUGE_PALE_OAK_BOAT, HUGE_SPRUCE_BOAT);
     }
     public static final RegistryObject<EntityType<TargetDummy>> TARGET_DUMMY = register("target_dummy",
             EntityType.Builder.of(TargetDummy::new, MobCategory.MISC).sized(0.5F, 1.975F).clientTrackingRange(10));
@@ -154,24 +143,5 @@ public class EntityTypeRegistry {
     }
     private static EntityType.EntityFactory<HugeBoat> getHugeBoatFactory(Supplier<Item> itemSupplier) {
         return (type, world) -> new HugeBoat(type, world, itemSupplier);
-    }
-    // 1.20.1's Boat/ChestBoat pick their drop item off the closed Boat.Type enum, which has no
-    // baobab entry and cannot gain one. Overriding getDropItem() is the only hook - it also feeds
-    // getPickResult(), so middle-clicking a baobab boat still hands back the right item.
-    private static EntityType.EntityFactory<Boat> getBoatFactory(Supplier<Item> itemSupplier) {
-        return (type, world) -> new Boat(type, world) {
-            @Override
-            public Item getDropItem() {
-                return itemSupplier.get();
-            }
-        };
-    }
-    private static EntityType.EntityFactory<ChestBoat> getChestBoatFactory(Supplier<Item> itemSupplier) {
-        return (type, world) -> new ChestBoat(type, world) {
-            @Override
-            public Item getDropItem() {
-                return itemSupplier.get();
-            }
-        };
     }
 }

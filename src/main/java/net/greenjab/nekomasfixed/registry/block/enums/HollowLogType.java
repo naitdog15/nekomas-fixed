@@ -23,8 +23,7 @@ public enum HollowLogType {
     CHERRY(Blocks.CHERRY_LOG, BlockRegistry.HOLLOW_CHERRY_LOG),
     BAMBOO(Blocks.BAMBOO_BLOCK, BlockRegistry.HOLLOW_BAMBOO_BLOCK),
     CRIMSON(Blocks.CRIMSON_HYPHAE, BlockRegistry.HOLLOW_CRIMSON_STEM),
-    WARPED(Blocks.WARPED_HYPHAE, BlockRegistry.HOLLOW_WARPED_STEM),
-    BAOBAB(BlockRegistry.BAOBAB_LOG, BlockRegistry.HOLLOW_BAOBAB_LOG);
+    WARPED(Blocks.WARPED_HYPHAE, BlockRegistry.HOLLOW_WARPED_STEM);
 
     private final Supplier<Block> baseLog;
     private final Supplier<Block> hollowLog;

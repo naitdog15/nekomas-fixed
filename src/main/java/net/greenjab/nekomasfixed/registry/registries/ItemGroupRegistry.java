@@ -86,30 +86,6 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.CHOCOLATE_CAKE.get());
                         entries.accept(ItemRegistry.BEETROOT_CAKE.get());
 
-                        entries.accept(BlockRegistry.BAOBAB_LOG.get());
-                        entries.accept(BlockRegistry.BAOBAB_WOOD.get());
-                        entries.accept(BlockRegistry.STRIPPED_BAOBAB_LOG.get());
-                        entries.accept(BlockRegistry.STRIPPED_BAOBAB_WOOD.get());
-                        entries.accept(BlockRegistry.BAOBAB_PLANKS.get());
-                        entries.accept(BlockRegistry.BAOBAB_STAIRS.get());
-                        entries.accept(BlockRegistry.BAOBAB_SLAB.get());
-                        entries.accept(BlockRegistry.BAOBAB_FENCE.get());
-                        entries.accept(BlockRegistry.BAOBAB_FENCE_GATE.get());
-                        entries.accept(BlockRegistry.BAOBAB_DOOR.get());
-                        entries.accept(BlockRegistry.BAOBAB_TRAPDOOR.get());
-                        entries.accept(BlockRegistry.BAOBAB_PRESSURE_PLATE.get());
-                        entries.accept(BlockRegistry.BAOBAB_BUTTON.get());
-                        entries.accept(BlockRegistry.BAOBAB_LEAVES.get());
-                        entries.accept(BlockRegistry.BAOBAB_SAPLING.get());
-                        entries.accept(ItemRegistry.BAOBAB_SEEDS.get());
-                        entries.accept(ItemRegistry.BAOBAB_FRUIT.get());
-                        entries.accept(ItemRegistry.ROPE.get());
-                        entries.accept(ItemRegistry.BAOBAB_SHELF.get());
-                        entries.accept(ItemRegistry.BAOBAB_SIGN.get());
-                        entries.accept(ItemRegistry.BAOBAB_HANGING_SIGN.get());
-                        entries.accept(ItemRegistry.BAOBAB_BOAT.get());
-                        entries.accept(ItemRegistry.BAOBAB_CHEST_BOAT.get());
-
                         entries.accept(ItemRegistry.TERMITE_SPAWN_EGG.get());
                         entries.accept(ItemRegistry.TERMITE_HIVE.get());
                         entries.accept(ItemRegistry.TERMITE_BLOCK.get());
@@ -125,7 +101,6 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.HOLLOW_BAMBOO_BLOCK.get());
                         entries.accept(ItemRegistry.HOLLOW_CRIMSON_STEM.get());
                         entries.accept(ItemRegistry.HOLLOW_WARPED_STEM.get());
-                        entries.accept(ItemRegistry.HOLLOW_BAOBAB_LOG.get());
 
                         entries.accept(ItemRegistry.BOAT_UPGRADE_TEMPLATE.get());
                         entries.accept(ItemRegistry.BIG_OAK_BOAT.get());
@@ -138,7 +113,6 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.BIG_CHERRY_BOAT.get());
                         entries.accept(ItemRegistry.BIG_PALE_OAK_BOAT.get());
                         entries.accept(ItemRegistry.BIG_BAMBOO_BOAT.get());
-                        entries.accept(ItemRegistry.BIG_BAOBAB_BOAT.get());
 
                         entries.accept(ItemRegistry.HUGE_OAK_BOAT.get());
                         entries.accept(ItemRegistry.HUGE_SPRUCE_BOAT.get());
@@ -150,7 +124,6 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.HUGE_CHERRY_BOAT.get());
                         entries.accept(ItemRegistry.HUGE_PALE_OAK_BOAT.get());
                         entries.accept(ItemRegistry.HUGE_BAMBOO_BOAT.get());
-                        entries.accept(ItemRegistry.HUGE_BAOBAB_BOAT.get());
 
 
                     }).build());

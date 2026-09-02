@@ -27,15 +27,14 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * #minecraft:more_frequent_drowned_spawns       monster   drenched            5 1 2
  * flower_forest, sunflower_plains, meadow       creature  moobloom           30 1 2
  * </pre>
- * The 4 {@code forge:add_features} files, as biome selector / placed feature / decoration step:
+ * The 3 {@code forge:add_features} files, as biome selector / placed feature / decoration step:
  * <pre>
- * savanna, savanna_plateau, windswept_savanna           nekomasfixed:baobab          vegetal_decoration
  * savanna, savanna_plateau, windswept_savanna, desert   nekomasfixed:mound           local_modifications
  * crimson_forest, nether_wastes                         nekomasfixed:geyser_feature  local_modifications
  * warm_ocean                                            nekomasfixed:clam            vegetal_decoration
  * </pre>
- * Those four name their biomes one by one rather than using a tag, because no vanilla biome tag
- * matches any of the four sets exactly.
+ * Those three name their biomes one by one rather than using a tag, because no vanilla biome tag
+ * matches any of the three sets exactly.
  * <p>
  * The three features also answer to their own switches in the config, read inside
  * {@code Feature#place} rather than here - a biome modifier is plain data and cannot be conditioned

@@ -131,11 +131,9 @@ public class PatrolSpawnerMixin {
     }
 
     // The wood index the captain rolled also picks the escorts' wood. Every vanilla wood shares one
-    // boat entity type and differs only by its variant, so the index maps onto a variant here; only
-    // baobab needs an entity type of its own, and pale oak rides along on dark oak the way the rest
-    // of its content does.
+    // boat entity type and differs only by its variant, so the index maps onto a variant here;
+    // pale oak rides along on dark oak the way the rest of its content does.
     @Unique private Boat createSmallBoat(ServerLevel level, int boatType) {
-        if (boatType == 10) return EntityTypeRegistry.BAOBAB_BOAT.get().create(level);
         Boat boat = EntityType.BOAT.create(level);
         if (boat != null) {
             boat.setVariant(switch (boatType) {

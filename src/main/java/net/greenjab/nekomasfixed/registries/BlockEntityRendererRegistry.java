@@ -14,7 +14,6 @@ public class BlockEntityRendererRegistry {
 
     @SubscribeEvent
     public static void registerBlockEntityRenderer(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(BlockEntityTypeRegistry.BAOBAB_SHELF_BLOCK_ENTITY.get(), BaobabShelfBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY.get(), ClamBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(BlockEntityTypeRegistry.CLOCK_BLOCK_ENTITY.get(), ClockBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(BlockEntityTypeRegistry.ENDERMAN_HEAD_BLOCK_ENTITY.get(), EndermanHeadBlockEntityRenderer::new);

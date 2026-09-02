@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/template_sign_rot_3",
-  "textures": {
-    "all": "nekomasfixed:block/baobab_sign",
-    "particle": "nekomasfixed:block/baobab_planks"
-  }
-}

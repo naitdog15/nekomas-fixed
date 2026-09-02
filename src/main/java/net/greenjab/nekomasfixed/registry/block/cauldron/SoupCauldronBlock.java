@@ -171,10 +171,7 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
         return hunger;
     }
 
-    /**
-     * Vanilla entries only at class-load — this block is built during block registration, before
-     * any of the mod's items exist. {@link #registerFoodColors()} adds the mod's own entries later.
-     */
+    /** The ingredient palette: which foods tint the soup, and the colour each one lends it. */
     public static final Map<Item, Integer> FOOD_COLORS = new HashMap<>(Map.ofEntries(
             Map.entry(Items.POTION, 0x385DC6),
             Map.entry(Items.APPLE, 0xFC1C2A),
@@ -209,11 +206,6 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
             Map.entry(Items.MILK_BUCKET, 0xFCFCFC),
             Map.entry(Items.HONEY_BOTTLE, 0xFC8F16)
     ));
-
-    /** Runs from common setup, once every item this mod adds is resolvable. */
-    public static void registerFoodColors() {
-        FOOD_COLORS.put(ItemRegistry.BAOBAB_FRUIT.get(), 0x686D24);
-    }
 
     public static Optional<Integer> getFoodColor(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return Optional.empty();
