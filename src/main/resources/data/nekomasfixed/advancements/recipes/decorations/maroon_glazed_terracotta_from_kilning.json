@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:maroon_terracotta"
+            "items": [
+              "nekomasfixed:maroon_terracotta"
+            ]
           }
         ]
       },

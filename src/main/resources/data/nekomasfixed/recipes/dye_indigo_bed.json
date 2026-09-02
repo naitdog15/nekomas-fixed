@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:crafting_transmute",
+  "type": "nekomasfixed:crafting_transmute",
   "category": "misc",
   "group": "bed_dye",
   "input": "#minecraft:beds",

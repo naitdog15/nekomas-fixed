@@ -5,7 +5,7 @@
       "conditions": {
         "items": [
           {
-            "items": "#minecraft:eggs"
+            "tag": "minecraft:eggs"
           }
         ]
       },

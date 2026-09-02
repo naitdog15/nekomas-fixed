@@ -4,15 +4,20 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.greenjab.nekomasfixed.NekomasFixed;
+import net.greenjab.nekomasfixed.compat.CompatMods;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.item.WildfireShieldItem;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -24,8 +29,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Everything this mod adds to the damage pipeline: turtle-chestplate directional blocking, the
- * turtle boots' underwater fall behaviour, the wildfire shield's retaliation, and the leeching and
- * dismount enchantments.
+ * turtle helmet's mace soak, the turtle boots' underwater fall behaviour, the wildfire shield's
+ * retaliation, and the leeching and dismount enchantments.
  *
  * <p>{@code hurt(DamageSource, float)} is one monolithic method, so the injectors below anchor on
  * distinct calls inside it rather than on separate helper methods - order between them matters, and
@@ -61,10 +66,34 @@ public abstract class LivingEntityMixin {
             if (damage - f <= 0) return 0.00123f;
             return damage - f;
         }
-        // the turtle helmet also used to soak a mace's smash hit; there is no mace and no smash
-        // damage type on this version, so there is nothing here for it to catch
+        // the turtle helmet soaks a mace's smash outright, and takes the whole blow in durability
+        if (NekomasFixedConfig.MACE_INTERACTIONS.get()
+                && LE.getItemBySlot(EquipmentSlot.HEAD).is(Items.TURTLE_HELMET)
+                && isMaceSmash(source)) {
+            LE.getItemBySlot(EquipmentSlot.HEAD).hurtAndBreak((int) damage, LE,
+                    holder -> holder.broadcastBreakEvent(EquipmentSlot.HEAD));
+            return 0.00123f;
+        }
 
         return damage;
+    }
+
+    /**
+     * Whether a hit is a falling mace blow. A mace deals ordinary attack damage and raises no damage
+     * source of its own, so there is nothing on the hit itself to recognise; what makes a smash a
+     * smash is read off the swing instead - a mace in the attacker's hand and a drop behind it. The
+     * weapon is matched by id, which is also the presence check: with the mace's mod absent no item
+     * carries that id and this is simply never true.
+     */
+    @Unique
+    private static boolean isMaceSmash(DamageSource source) {
+        if (!(source.getDirectEntity() instanceof LivingEntity attacker) || attacker.fallDistance <= 1.5F) {
+            return false;
+        }
+        ResourceLocation weapon = ForgeRegistries.ITEMS.getKey(attacker.getMainHandItem().getItem());
+        return weapon != null
+                && weapon.getNamespace().equals(CompatMods.NEW_TRIALS)
+                && weapon.getPath().equals("mace");
     }
 
     // travel(Vec3) covers air, water and lava in one method here, and still routes falling motion
@@ -112,14 +141,20 @@ public abstract class LivingEntityMixin {
     // invulnerability-cooldown branch and the normal one, and leeching should heal off either
     @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;actuallyHurt(Lnet/minecraft/world/damagesource/DamageSource;F)V", shift = At.Shift.AFTER))
     private void leechingEnchant(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
+        if (!NekomasFixedConfig.LEECHING_ENCHANTMENT.get()) return;
         if (source.getEntity() instanceof Player PE) {
             int i = NekomasFixed.enchantLevel(PE.getMainHandItem(), "leeching");
             if (i != 0) PE.heal((i * 0.0125f + 0.0125f) * damage);
         }
     }
 
-    @Inject(method = "hurt", at = @At("HEAD"))
+    // shares the isSleeping() anchor with the chestplate rewrite above rather than sitting at the
+    // head of hurt(): everything before that point still runs on the client and still runs for hits
+    // the game is about to throw away, and yanking a rider off a mount is not something to do on a
+    // hit that never happened
+    @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isSleeping()Z"))
     private void dismountEnchant(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
+        if (!NekomasFixedConfig.DISMOUNT_ENCHANTMENT.get()) return;
         LivingEntity entity = (LivingEntity)(Object)this;
         if (source.getEntity() instanceof Player PE) {
             // no weapon stack hangs off the damage source here - the hand that swung is the weapon

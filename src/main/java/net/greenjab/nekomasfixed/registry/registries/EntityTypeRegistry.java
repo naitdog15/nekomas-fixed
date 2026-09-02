@@ -78,24 +78,16 @@ public class EntityTypeRegistry {
             EntityType.Builder.of(getChestBoatFactory(() -> ItemRegistry.BAOBAB_CHEST_BOAT.get()), MobCategory.MISC)
                     .sized(1.375F, 0.5625F).clientTrackingRange(10));
 
-    // NOTE: these two List.of(...) initialisers call .get() on this file's OWN RegistryObjects, but
-    // that is safe here (unlike a field referencing ANOTHER registry file) only because BlockRegistry-
-    // style ordering guarantees do NOT apply across different DeferredRegister instances the same
-    // way - so these are deliberately turned into Supplier-backed lazy lists instead of eager ones,
-    // matching how the rest of the registry package handles it.
+    // These two hand out the RegistryObjects themselves as Suppliers rather than resolved
+    // EntityTypes, so building the list never calls .get() before RegisterEvent<EntityType> has
+    // run; callers unwrap per element at use time, matching how the rest of the registry package
+    // defers resolution.
     public static List<Supplier<EntityType<BigBoat>>> bigBoats() {
         return List.of(BIG_ACACIA_BOAT, BIG_BAMBOO_BOAT, BIG_BIRCH_BOAT, BIG_CHERRY_BOAT, BIG_DARK_OAK_BOAT, BIG_JUNGLE_BOAT, BIG_MANGROVE_BOAT, BIG_OAK_BOAT, BIG_PALE_OAK_BOAT, BIG_SPRUCE_BOAT, BIG_BAOBAB_BOAT);
     }
     public static List<Supplier<EntityType<HugeBoat>>> hugeBoats() {
         return List.of(HUGE_ACACIA_BOAT, HUGE_BAMBOO_BOAT, HUGE_BIRCH_BOAT, HUGE_CHERRY_BOAT, HUGE_DARK_OAK_BOAT, HUGE_JUNGLE_BOAT, HUGE_MANGROVE_BOAT, HUGE_OAK_BOAT, HUGE_PALE_OAK_BOAT, HUGE_SPRUCE_BOAT, HUGE_BAOBAB_BOAT);
     }
-    // 1.20.1 has exactly two vanilla boat entity types - every wood shares them and differs only by
-    // the Boat.Type variant stored on the entity - so this list is those two plus the mod's own
-    // plain-tier baobab boat, not one entry per wood.
-    public static List<EntityType<? extends Boat>> vanillaBoats() {
-        return List.of(EntityType.BOAT, EntityType.CHEST_BOAT, BAOBAB_BOAT.get(), BAOBAB_CHEST_BOAT.get());
-    }
-
     public static final RegistryObject<EntityType<TargetDummy>> TARGET_DUMMY = register("target_dummy",
             EntityType.Builder.of(TargetDummy::new, MobCategory.MISC).sized(0.5F, 1.975F).clientTrackingRange(10));
 

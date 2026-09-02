@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.entity.SpearEntity;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
 import net.greenjab.nekomasfixed.util.ModTags;
@@ -18,14 +19,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 // A dispenser loaded with a spear plants it as a standing trap rather than tossing it as an item.
-// There is no vanilla spear on this version, so the tag driving it is the mod's own
-// (nekomasfixed:spears) and stays empty until something is added to it by a datapack or a future
-// spear item.
+// Membership is the mod's own nekomasfixed:spears tag, which pulls in whatever spears the game has
+// to offer and stays empty - and harmless - when it has none.
 @Mixin(DefaultDispenseItemBehavior.class)
 public abstract class DefaultDispenseItemBehaviorMixin {
 
     @Inject(at = @At("HEAD"), method = "execute", cancellable = true)
     public void SpearAttack(BlockSource source, ItemStack dispensed, CallbackInfoReturnable<ItemStack> cir) {
+        if (!NekomasFixedConfig.SPEAR_INTERACTIONS.get()) return;
 
         Level level = source.getLevel();
         if (level.isClientSide())  return;

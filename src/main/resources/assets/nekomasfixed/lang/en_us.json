@@ -445,6 +445,24 @@
   "advancements.husbandry.all_froglights.description": "Have all 20 froglights in your inventory",
   "advancements.husbandry.all_froglights.title": "Power Overloaded!",
 
+  "subtitles.nekomasfixed.wildfire.slide": "Wildfire slides",
+  "subtitles.nekomasfixed.wildfire.inhale": "Wildfire inhales",
+  "subtitles.nekomasfixed.wildfire.shoot": "Wildfire shoots",
+  "subtitles.nekomasfixed.wildfire.charge": "Wildfire charges",
+  "subtitles.nekomasfixed.wildfire.jump": "Wildfire jumps",
+  "subtitles.nekomasfixed.wildfire.land": "Wildfire lands",
+
+  "block.nekomasfixed.honey_cauldron": "Honey Cauldron",
+  "block.nekomasfixed.ice_cauldron": "Ice Cauldron",
+  "block.nekomasfixed.magma_cauldron": "Magma Cauldron",
+  "block.nekomasfixed.slime_cauldron": "Slime Cauldron",
+  "block.nekomasfixed.soup_cauldron": "Soup Cauldron",
+  "block.nekomasfixed.horn": "Horn",
+
+  "item.minecraft.potion.effect.lightning": "Potion of Lightning",
+  "item.minecraft.splash_potion.effect.lightning": "Splash Potion of Lightning",
+  "item.minecraft.lingering_potion.effect.lightning": "Lingering Potion of Lightning",
+  "item.minecraft.tipped_arrow.effect.lightning": "Arrow of Lightning",
 
   "option.namefield.optionA": "CyberMODDER",
   "option.namefield.optionB": "Akshaj"

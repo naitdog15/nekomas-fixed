@@ -65,8 +65,8 @@ public class FireBomb extends Projectile {
         this.updateRotation();
         this.checkInsideBlocks();
         super.tick();
-        // 1.20.1 projectiles have no deflection pass; the impact goes straight to onHit, gated by
-        // Forge's impact event the way every vanilla projectile does it.
+        // The impact goes straight through, gated by the projectile impact event the way every
+        // other projectile in the game gates it.
         if (hitResult.getType() != HitResult.Type.MISS && this.isAlive()
                 && !net.minecraftforge.event.ForgeEventFactory.onProjectileImpact(this, hitResult)) {
             this.onHit(hitResult);

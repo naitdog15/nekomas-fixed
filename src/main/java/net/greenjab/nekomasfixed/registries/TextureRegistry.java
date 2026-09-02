@@ -5,13 +5,12 @@ import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.resources.model.Material;
 
 /**
- * {@code TextureStitchEvent.Pre} does not exist on Forge 47.x (only
- * {@code Post} is live; Forge's own comment says "use atlas info JSON files instead"), so there is
- * <b>no event here at all</b> — vanilla's {@code chests.json} directory lister auto-stitches every
- * PNG under {@code assets/nekomasfixed/textures/entity/chest/} into the shared chest atlas the moment
- * the files exist on disk. This class is reduced to four {@link Material} constants (the
- * {@code Sheets.CHEST_SHEET} atlas id + the per-variant texture path), replacing the old
- * {@code SpriteId}/{@code CHEST_MAPPER} lookup.
+ * Where the clam's shell textures live on the chest atlas.
+ *
+ * <p>Nothing has to be stitched by hand: vanilla's own {@code chests.json} atlas definition lists
+ * the whole {@code textures/entity/chest} directory of every namespace, so the clam PNGs under
+ * {@code assets/nekomasfixed/textures/entity/chest/} join the chest sheet simply by being there.
+ * All that is needed here is the {@link Material} for each shell.
  */
 public class TextureRegistry {
 
@@ -24,8 +23,7 @@ public class TextureRegistry {
         return new Material(Sheets.CHEST_SHEET, NekomasFixed.id("entity/chest/" + name));
     }
 
-    /** Was {@code ClamBlockEntityRenderState.Variant} — the state class it lived on was deleted as
-     * part of the render-state consolidation, so the enum moves here with the rest of the clam texture lookup. */
+    /** Which shell a clam wears. Kept here, beside the materials it picks between. */
     public enum Variant {
         BLUE,
         PINK,

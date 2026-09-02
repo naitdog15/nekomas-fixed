@@ -12,7 +12,7 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.client.renderer.RenderType;
 
-/** See {@link EndermanHeadBlockModel}'s javadoc — identical collapse. */
+/** Eye layer for the enderman head block, rendered with the glowing eyes RenderType. */
 public class EndermanEyesBlockModel extends Model {
 	private final ModelPart root;
 	private final ModelPart head;

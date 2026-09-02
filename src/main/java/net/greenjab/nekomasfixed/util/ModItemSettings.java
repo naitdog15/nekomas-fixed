@@ -12,36 +12,28 @@ import net.minecraft.world.item.Tiers;
 import java.util.UUID;
 
 /**
- * PORT: 1.20.1's {@code Item.Properties} has no {@code .component(...)}
- * builder at all - the whole data-component system landed in 1.20.5. Every {@code .component(
- * DataComponents.X, ...)} call is therefore removed from the factory helpers below, including the
- * mod-owned {@code ComboComponent} default this file used to bake in (the only
- * factory helper that does so). Attribute modifiers move to 1.20.1's actual pre-component mechanism:
- * an {@code Item#getDefaultAttributeModifiers(EquipmentSlot)} override on the ITEM CLASS ITSELF
- * (verified against vanilla SwordItem - {@code Multimap<Attribute,AttributeModifier>}, not a
- * Properties setting). 26.2's material dispatch used {@code ToolMaterial}; 1.20.1's equivalent
- * interface is {@code Tier}/{@code Tiers} (verified: {@code getUses()}/{@code getSpeed()}/{@code
- * getAttackDamageBonus()} all present). {@code Item.BASE_ATTACK_DAMAGE_UUID}/{@code
- * BASE_ATTACK_SPEED_UUID} exist but are {@code protected} on {@code Item} (package-private access from
- * here), so this file defines its own stable UUIDs instead - functionally identical (any fixed UUID
- * works as a modifier-identity key; only reuse across an item's own modifiers matters).
- * {@code Attributes.ENTITY_INTERACTION_RANGE} also doesn't exist on 1.20.1 (a post-1.20.5 addition;
- * reach was not attribute-modifiable per-item before then) - the anchor's reach bonus simply has no
- * equivalent on this version.
+ * The shared numbers behind the mod's two hand-built weapons - the sickle family and the anchor -
+ * kept in one place so the tiers stay readable next to each other.
  * <p>
- * {@code Item.Properties} also has no {@code .repairable(Item)} on 1.20.1 - anvil repair material is
- * an {@code Item#isValidRepairItem(ItemStack, ItemStack)} override on the item class, so the sickle's
- * iron ingot and the anchor's prismarine shard belong on SickleItem/AnchorItem, not here.
+ * Only the plain settings live on {@code Item.Properties}: durability, and fire resistance where a
+ * tier earns it. Everything else is an override on the item class itself, because that is where the
+ * game looks for it:
+ * <ul>
+ *   <li>attribute modifiers come from {@code Item#getDefaultAttributeModifiers(EquipmentSlot)},
+ *       which is why {@link #sickleAttributeModifiers} and {@link #anchorAttributeModifiers} return
+ *       a multimap for the item to hand back rather than something to hang on the settings;</li>
+ *   <li>the anvil repair material is {@code Item#isValidRepairItem(ItemStack, ItemStack)} - the
+ *       sickle's iron ingot and the anchor's prismarine shard sit on those two classes;</li>
+ *   <li>the starting combo step is {@link #sickleDefaultCombo(Tier)}, which the sickle holds and
+ *       hands out as the fallback whenever a stack carries no combo value of its own. Reading a
+ *       flat zero there instead would leave every freshly crafted sickle advertising - and
+ *       dealing - no combo at all.</li>
+ * </ul>
+ * The two UUIDs per weapon are just stable identity keys for its own modifiers; any fixed pair
+ * works, they only have to stay distinct from each other.
  * <p>
- * What registry/item/** has to do to hold up its end: the sickle and
- * anchor Item subclasses need to (1) call {@link #sickleAttributeModifiers}/{@link
- * #anchorAttributeModifiers} from their own {@code getDefaultAttributeModifiers(EquipmentSlot)}
- * override, (2) override {@code isValidRepairItem} with the repair material named above, and
- * (3) when reading {@code ComboComponent} via {@code StackData}, use {@link
- * #sickleDefaultCombo(Tier)} as the fallback instead of {@code StackData.readCombo}'s generic
- * hard-coded {@code 0} - the 26.2 sickle bakes a material-dependent starting combo
- * ({@code 10 - material.attackDamageBonus()}), not zero, and silently losing that changes the
- * displayed combo multiplier on a freshly-crafted sickle before any swing.
+ * The anchor's extra reach is not here. Reach is not something an item can modify with an attribute
+ * on this version, so that part of the anchor is simply not present.
  */
 public class ModItemSettings {
 
@@ -64,7 +56,10 @@ public class ModItemSettings {
         return createAttributes(realDamage, speed, SICKLE_DAMAGE_MODIFIER, SICKLE_SPEED_MODIFIER);
     }
 
-    /** Material-dependent starting combo, matching the 26.2 sickle's own baked default exactly. */
+    /**
+     * The combo step a sickle of this tier starts on, in percent. The cheaper the metal the bigger
+     * the ramp, so a wooden sickle rewards the combo hardest and a netherite one barely needs it.
+     */
     public static int sickleDefaultCombo(Tier material) {
         return (int) (10 - material.getAttackDamageBonus());
     }
@@ -84,9 +79,6 @@ public class ModItemSettings {
                 .durability(2500);
     }
 
-    // PORT: Attributes.ENTITY_INTERACTION_RANGE doesn't exist on 1.20.1 - the anchor's reach bonus is
-    // dropped rather than reimplemented; per-item reach modification is a 1.20.5+ mechanic with no
-    // attribute to attach to here.
     public static Multimap<Attribute, AttributeModifier> anchorAttributeModifiers(float damage, float speed) {
         return createAttributes(damage, speed, ANCHOR_DAMAGE_MODIFIER, ANCHOR_SPEED_MODIFIER);
     }

@@ -1,11 +1,19 @@
 {
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "vanillabackport"
+    }
+  ],
   "parent": "minecraft:recipes/root",
   "criteria": {
     "has_dye": {
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:amber_dye"
+            "items": [
+              "nekomasfixed:amber_dye"
+            ]
           }
         ]
       },
@@ -30,8 +38,3 @@
     ]
   }
 }
-
-
-
-
-

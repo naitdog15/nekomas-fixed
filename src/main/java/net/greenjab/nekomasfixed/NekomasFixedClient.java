@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
  * <p>The two-method {@code BlockTintSource} ({@code color(state)} returning -1, {@code colorInWorld}
  * doing the real blend) collapses onto 1.20.1's single-method {@link BlockColor#getColor}: the
  * null-level branch IS the old {@code color(state)} branch, and the rest is {@code colorInWorld}
- * verbatim. Five lines, not a rewrite.
+ * verbatim.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class NekomasFixedClient {

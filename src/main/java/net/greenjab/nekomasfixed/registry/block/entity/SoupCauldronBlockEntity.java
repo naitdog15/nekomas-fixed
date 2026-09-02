@@ -1,5 +1,7 @@
 package net.greenjab.nekomasfixed.registry.block.entity;
 
+import com.mojang.logging.LogUtils;
+import com.mojang.serialization.DataResult;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.greenjab.nekomasfixed.util.SoupCauldronAnimator;
 import net.minecraft.core.BlockPos;
@@ -25,12 +27,14 @@ import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.LidBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEntity {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private final List<ItemStack> inputs = new ArrayList<>();
     public boolean hasStirred = false;
     private final SoupCauldronAnimator CookingAnimator = new SoupCauldronAnimator();
@@ -67,19 +71,28 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
         if (inputs.isEmpty()) return Items.AIR.getDefaultInstance();
         setChanged();
 
-        if(level != null && !level.isClientSide()) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         ItemStack removed = inputs.remove(inputs.size() - 1);
-        if (inputs.isEmpty()) level.setBlockAndUpdate(worldPosition, Blocks.WATER_CAULDRON.defaultBlockState().setValue(LayeredCauldronBlock.LEVEL, 3));
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+            // Emptied of ingredients it is no longer a soup cauldron, just a cauldron of water.
+            if (inputs.isEmpty()) {
+                level.setBlockAndUpdate(worldPosition, Blocks.WATER_CAULDRON.defaultBlockState().setValue(LayeredCauldronBlock.LEVEL, 3));
+            }
+        }
         return removed;
     }
 
+    // hasStirred is written every time: absent reads back as false, which is what a fresh pot is
+    // anyway. A failed ingredient encode writes no list at all rather than a partial one, so the
+    // pot loads back empty instead of holding items nobody can identify.
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
 
         tag.putBoolean("HasStirred", hasStirred);
-        ItemStack.CODEC.listOf().encodeStart(NbtOps.INSTANCE, inputs)
-                .result().ifPresent(encoded -> tag.put("inputs", encoded));
+        DataResult<Tag> encoded = ItemStack.CODEC.listOf().encodeStart(NbtOps.INSTANCE, inputs);
+        encoded.error().ifPresent(error -> LOGGER.error("nekomasfixed: could not save the soup cauldron's ingredients at {}: {}", this.worldPosition, error.message()));
+        encoded.result().ifPresent(value -> tag.put("inputs", value));
     }
 
     @Override
@@ -89,7 +102,8 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
         inputs.clear();
         if (tag.contains("inputs", Tag.TAG_LIST)) {
             ItemStack.CODEC.listOf().parse(NbtOps.INSTANCE, tag.get("inputs"))
-                    .result().ifPresent(inputs::addAll);
+                    .resultOrPartial(error -> LOGGER.error("nekomasfixed: unreadable soup cauldron ingredients at {}: {}", this.worldPosition, error))
+                    .ifPresent(inputs::addAll);
         }
     }
 
@@ -131,8 +145,8 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
         blockEntity.CookingAnimator.step();
         float progress = blockEntity.CookingAnimator.getProgress(0);
         if (progress>0&&progress<1){
-            blockEntity.level.addParticle(ParticleTypes.BUBBLE_POP, pos.getX()+0.5+ level.getRandom().nextGaussian()*0.25, pos.getY()+1, pos.getZ()+0.5+ level.getRandom().nextGaussian()*0.25, 0.0, 0.0, 0.0);
-            blockEntity.level.sendBlockUpdated(pos, state, state, 3);
+            level.addParticle(ParticleTypes.BUBBLE_POP, pos.getX()+0.5+ level.getRandom().nextGaussian()*0.25, pos.getY()+1, pos.getZ()+0.5+ level.getRandom().nextGaussian()*0.25, 0.0, 0.0, 0.0);
+            level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
         }
     }
 

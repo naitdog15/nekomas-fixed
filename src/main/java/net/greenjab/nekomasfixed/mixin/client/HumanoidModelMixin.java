@@ -18,18 +18,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import static net.minecraft.client.model.HumanoidModel.ArmPose.BOW_AND_ARROW;
 
 /**
- * 1.20.1's {@code HumanoidModel} has no {@code HumanoidRenderState} generic at all — it is
- * {@code HumanoidModel<T extends LivingEntity>}, and {@code poseRightArm}/{@code poseLeftArm} take
- * the {@code LivingEntity} directly (VERIFIED forge-1.20.1-mapped-src HumanoidModel.java:233,279).
- * {@code rightArmPose}/{@code leftArmPose} are already fields on the model itself (lines 39-40, this
- * mixin's own target class), not on a separate state object, so they are read as {@code this.}
- * fields rather than {@code state.}. {@code ticksUsingItem} and the held stack are derived from the
- * entity ({@code getTicksUsingItem()} — VERIFIED LivingEntity.java:3042 — and
- * {@code getItemInHand(...)}, resolved against {@code getMainArm()} the same way vanilla's own
- * dominant-hand logic does) instead of read off a pre-populated state field, and
- * {@code CrossbowItem.getChargeDuration(ItemStack)} (unchanged, static) is called directly here
- * instead of through {@code HumanoidMobRendererMixin}'s now-absorbed extraction-time halving — see
- * that file's own header.
+ * Gives a drawn bow or slingshot a proper two-handed pose: the holding arm follows the head, the
+ * pulling arm swings back as the draw builds, and a slingshot pulls further and reaches full draw in
+ * half the time a crossbow takes.
+ *
+ * <p>Both arm poses are replaced outright when the arm is in the bow pose. Everything the pose needs
+ * - which hand holds the weapon, how long it has been held, how long a full draw takes - comes off
+ * the entity being drawn, resolved against its main arm the way vanilla's own dominant-hand logic
+ * does.
  */
 @Mixin(HumanoidModel.class)
 public class HumanoidModelMixin<T extends LivingEntity> {
@@ -56,8 +52,7 @@ public class HumanoidModelMixin<T extends LivingEntity> {
         }
     }
 
-    /** Absorbs HumanoidMobRendererMixin's original halving of the crossbow charge duration for a
-     * slingshot — there is no separate render-state extraction step on 1.20.1 to hook instead. */
+    /** A slingshot reaches full draw in half the time a crossbow of the same enchantment would. */
     @Unique
     private static float chargeDuration(ItemStack stack) {
         float duration = CrossbowItem.getChargeDuration(stack);

@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:boat_upgrade_template"
+            "items": [
+              "nekomasfixed:boat_upgrade_template"
+            ]
           }
         ]
       },

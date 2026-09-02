@@ -9,12 +9,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-/**
- * Render-state collapse: 26.2's {@code BlockModelResolver}/{@code BlockModelRenderState} (an
- * extract-once-per-frame cache of a baked block model) has no 1.20.1 equivalent — the classic,
- * well-established API for "render an arbitrary BlockState's model at a transform" is
- * {@link BlockRenderDispatcher#renderSingleBlock}, called directly here each frame.
- */
+/** Draws whatever block is currently stored inside, scaled down, via {@link BlockRenderDispatcher#renderSingleBlock}. */
 public class HollowLogBlockEntityRenderer implements BlockEntityRenderer<HollowLogBlockEntity> {
     private final BlockRenderDispatcher blockRenderer;
 

@@ -1,7 +1,17 @@
 {
-  "parent": "minecraft:block/template_shelf_unconnected",
+  "parent": "minecraft:block/block",
   "textures": {
     "all": "nekomasfixed:block/baobab_shelf",
     "particle": "nekomasfixed:block/baobab_log"
-  }
+  },
+  "elements": [
+    {
+      "name": "shelf_face",
+      "from": [0, 4, 13],
+      "to": [16, 12, 13],
+      "faces": {
+        "north": {"uv": [8, 12, 16, 16], "texture": "#all"}
+      }
+    }
+  ]
 }

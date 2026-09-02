@@ -11,16 +11,7 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.client.renderer.RenderType;
 
-/**
- * 1.20.1's {@code Model} (VERIFIED against {@code forge-1.20.1-mapped-src}) is a plain, non-generic
- * abstract class — no {@code Model<T>} type parameter, no inherited {@code setupAnim}, and
- * {@code renderToBuffer} is abstract with no {@code root()}-based default. Every block-entity model
- * in {@code render/block/entity/model/**} ({@link ClamBlockModel}, {@link ClockBlockModel},
- * {@link EndermanHeadBlockModel}, {@link EndermanEyesBlockModel}) needed this same restructure:
- * store the root {@link ModelPart} directly, implement {@code renderToBuffer} as
- * {@code root.render(...)}, and keep the old {@code setupAnim(...)} as a plain (no longer overriding)
- * method the renderer calls directly before {@code renderToBuffer}.
- */
+/** Lid and hinge model for the clam block entity; {@link #setupAnim} takes the lid's open progress directly from the renderer. */
 public class ClamBlockModel extends Model {
 	private final ModelPart root;
 	private final ModelPart lid;

@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -142,6 +143,21 @@ public class NautilusBlock extends BaseEntityBlock {
 	@Override
 	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
 		return new NautilusBlockEntity(pos, state);
+	}
+
+	/**
+	 * Puts a captured passenger back when the shell is placed again. The occupied property rides
+	 * over in the placement tag, so without this the shell would show as occupied and be empty.
+	 * The stored blob goes straight back into the block entity - same bytes it was taken as - and
+	 * only on the server, since the client is told about the guest through the occupied property.
+	 */
+	@Override
+	public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+		super.setPlacedBy(level, pos, state, placer, itemStack);
+		if (level.isClientSide() || !StackData.contains(itemStack, StackData.KEY_ANIMAL)) return;
+		if (level.getBlockEntity(pos) instanceof NautilusBlockEntity nautilusBlockEntity) {
+			nautilusBlockEntity.restoreAnimal(StackData.readAnimal(itemStack));
+		}
 	}
 
 	@Override

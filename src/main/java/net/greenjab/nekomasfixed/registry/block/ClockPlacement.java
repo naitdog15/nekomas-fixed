@@ -1,6 +1,8 @@
 package net.greenjab.nekomasfixed.registry.block;
 
+import net.greenjab.nekomasfixed.registry.block.entity.ClockBlockEntity;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
+import net.greenjab.nekomasfixed.util.StackData;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -24,20 +26,19 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import javax.annotation.Nullable;
 
 /**
- * Every 1.20.1 {@code Item} constructor calls {@code BuiltInRegistries.ITEM.createIntrusiveHolder(this)},
+ * Every {@code Item} constructor calls {@code BuiltInRegistries.ITEM.createIntrusiveHolder(this)},
  * so a lazy, never-registered {@code StandingAndWallBlockItem} for clock placement would crash at
  * registry freeze - either immediately ("Registry is already frozen") if constructed after freeze,
  * or at freeze time ("Some intrusive holders were not registered") if constructed before it and
  * never registered. NO {@code Item} of any kind is instantiated anywhere in this class.
  * <p>
- * Reproduces {@code StandingAndWallBlockItem#getPlacementState}'s logic (attachmentDirection
+ * Mirrors {@code StandingAndWallBlockItem#getPlacementState}'s logic (attachmentDirection
  * = DOWN, the vanilla clock's own hardwired orientation) directly against the two clock {@link Block}
- * instances instead of through an {@code Item} subclass - the per-block placement logic itself
- * ({@code FloorClockBlock#getStateForPlacement}, {@code WallClockBlock#getStateForPlacement}/
- * {@code #canSurvive}) already lives on the block classes (both this package's own files) and needed
- * no Item involvement to begin with. The rest ({@link BlockItem#placeBlock}'s default body,
- * {@link BlockItem#updateCustomBlockEntityTag}) is called via BlockItem's own public STATIC helpers -
- * still zero Item instantiation.
+ * instances - the per-block placement logic itself ({@code FloorClockBlock#getStateForPlacement},
+ * {@code WallClockBlock#getStateForPlacement}/{@code #canSurvive}) already lives on the block classes
+ * (both this package's own files) and needs no Item involvement to begin with. The rest
+ * ({@link BlockItem#placeBlock}'s default body, {@link BlockItem#updateCustomBlockEntityTag}) is
+ * called via BlockItem's own public STATIC helpers - still zero Item instantiation.
  * <p>
  * Called from an {@code @Inject(method = "useOn", at = @At("HEAD"), cancellable = true)} on
  * {@code Item} (gated on {@code (Object) this == Items.CLOCK}) - see
@@ -76,6 +77,11 @@ public final class ClockPlacement {
         if (placedState.is(state.getBlock())) {
             placedState = updateBlockStateFromTag(pos, level, stack, placedState);
             BlockItem.updateCustomBlockEntityTag(level, player, pos, stack);
+            // The recorded alarm time travels on the stack's own nekomasfixed data, not in
+            // BlockEntityTag, so the vanilla restore above never carries it. Presence of the key is
+            // the question - 0 is a real (midnight) reading, and the block entity's own unset state
+            // stays untouched for a clock that never recorded one.
+            if (StackData.contains(stack, StackData.KEY_STORED_TIME) && level.getBlockEntity(pos) instanceof ClockBlockEntity clock) clock.setStoredTime(StackData.readStoredTime(stack).time());
             placedState.getBlock().setPlacedBy(level, pos, placedState, player, stack);
             if (player instanceof ServerPlayer serverPlayer) {
                 CriteriaTriggers.PLACED_BLOCK.trigger(serverPlayer, pos, stack);
@@ -124,10 +130,9 @@ public final class ClockPlacement {
      * {@code updateBlockStateFromTag} between placement and the follow-up block-entity NBT /
      * {@code setPlacedBy} / sound / game-event actions, applying any {@code BlockStateTag}
      * compound from the item's NBT (e.g. from {@code /give ... {BlockStateTag:{...}}}) to the
-     * freshly placed state. This helper reproduces {@code BlockItem#updateBlockStateFromTag}
-     * exactly (forge-1.20.1-mapped-src BlockItem.java:123-144) rather than exposing it via a
-     * mixin invoker, since it needs no access to any private field — only the public
-     * {@code StateDefinition}/{@code Property} API.
+     * freshly placed state. This helper mirrors {@code BlockItem#updateBlockStateFromTag}
+     * exactly rather than exposing it via a mixin invoker, since it needs no access to any
+     * private field — only the public {@code StateDefinition}/{@code Property} API.
      */
     private static BlockState updateBlockStateFromTag(BlockPos pos, Level level, ItemStack stack, BlockState placedState) {
         BlockState state = placedState;

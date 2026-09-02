@@ -8,12 +8,10 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * {@code FireBlock.setFlammable(block, ignite, burn)} has no Forge
- * equivalent on 1.20.1 - on Forge, per-block fire spread/flammability is an {@code IForgeBlock}
- * override, which {@link Block} already implements by default (Forge patches it in). Mod-block-only,
- * so this stays entirely inside the mod's own block classes: no AT, no map mutation, no mixin, no
- * enqueueWork. Used for {@code baobab_planks} (a plain {@link Block}, the only baobab-set entry with
- * no other special behaviour).
+ * Per-block fire spread and flammability, declared on the block itself rather than registered into
+ * {@code FireBlock}'s table. Everything stays inside the mod's own block classes: no AT, no map
+ * mutation, no mixin, no enqueueWork. Used for {@code baobab_planks} (a plain {@link Block}, the
+ * only baobab-set entry with no other special behaviour).
  */
 public class FlammableBlock extends Block {
     private final int igniteOdds;

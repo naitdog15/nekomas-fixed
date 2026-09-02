@@ -24,13 +24,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Render-state collapse: {@code BlockEntityRenderer<T extends BlockEntity & LidBlockEntity,
- * ClamBlockEntityRenderState>} → the plain 1.20.1 {@code BlockEntityRenderer<ClamBlockEntity>}
- * interface (single {@code render(T, partialTick, PoseStack, MultiBufferSource, light, overlay)}
- * method, no {@code createRenderState}/{@code extractRenderState} split). The {@code SpriteId}/
- * {@code SpriteGetter}-based chest-atlas lookup collapses onto {@code TextureRegistry}'s four
- * {@link Material} constants — {@code Material#sprite()} pulls the baked
- * {@code TextureAtlasSprite} directly, no atlas-lookup indirection needed.
+ * Renders the clam's lid, hinge and (once it's cracked open) whatever item is sitting inside.
+ * The chest-style sheet materials come straight from {@link TextureRegistry}'s four {@link Material}
+ * constants, one per clam colour variant.
  */
 public class ClamBlockEntityRenderer implements BlockEntityRenderer<ClamBlockEntity> {
 	private final ClamBlockModel clamModel;
@@ -56,10 +52,8 @@ public class ClamBlockEntityRenderer implements BlockEntityRenderer<ClamBlockEnt
 		float f = lidAnimationProgress;
 		f = 1.0F - f;
 		f = 1.0F - f * f * f;
-		// Chest-sheet materials are atlas-backed: the RenderType/VertexConsumer must be built against
-		// the shared atlas (material.atlasLocation()), with the consumer wrapped so mesh-local UVs are
-		// remapped into this sprite's region of that atlas — the same material.sprite().wrap(...)
-		// pattern vanilla's own BlockEntityWithoutLevelRenderer uses for the shield's banner pattern.
+		// Atlas-backed sheet: build the RenderType/VertexConsumer against the shared atlas and let
+		// the sprite wrapper remap the mesh's local UVs into this sprite's region of it.
 		Material material = TextureRegistry.getClamMaterial(variant);
 		RenderType renderType = this.clamModel.renderType(material.atlasLocation());
 		VertexConsumer vertexConsumer = material.sprite().wrap(buffer.getBuffer(renderType));

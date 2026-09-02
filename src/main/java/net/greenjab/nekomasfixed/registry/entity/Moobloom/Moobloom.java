@@ -122,8 +122,8 @@ public class Moobloom extends Cow {
         } else if (itemStack.is(Items.BOWL) && !this.isBaby()) {
             Level level = this.level();
             if (!level.isClientSide() && level instanceof ServerLevel) {
-                // PORT: 1.20.1 has no DataComponents.SUSPICIOUS_STEW_EFFECTS component; the pre-component
-                // API is SuspiciousStewItem.saveMobEffect(stack, MobEffect, durationTicks) (NBT-backed).
+                // This version has no DataComponents.SUSPICIOUS_STEW_EFFECTS component; the effect is
+                // stored via SuspiciousStewItem.saveMobEffect(stack, MobEffect, durationTicks) instead.
                 ItemStack stew = new ItemStack(Items.SUSPICIOUS_STEW);
                 MoobloomVariants variant = MoobloomVariants.fromPath(this.entityData.get(VARIANT));
                 SuspiciousStewItem.saveMobEffect(stew, variant.effect, variant.effectDuration);

@@ -1,4 +1,10 @@
 {
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "vanillabackport"
+    }
+  ],
   "parent": "minecraft:recipes/root",
   "criteria": {
     "has_the_recipe": {
@@ -12,19 +18,28 @@
       "conditions": {
         "items": [
           {
-            "items": ["minecraft:stick"]
+            "items": [
+              "minecraft:stick"
+            ]
           },
           {
-            "items": ["minecraft:copper_ingot"]
+            "items": [
+              "minecraft:copper_ingot"
+            ]
           }
         ]
       }
     }
   },
   "requirements": [
-    ["has_the_recipe", "has_ingredients"]
+    [
+      "has_the_recipe",
+      "has_ingredients"
+    ]
   ],
   "rewards": {
-    "recipes": ["nekomasfixed:copper_sickle"]
+    "recipes": [
+      "nekomasfixed:copper_sickle"
+    ]
   }
 }

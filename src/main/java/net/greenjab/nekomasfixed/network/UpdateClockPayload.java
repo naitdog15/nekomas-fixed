@@ -9,9 +9,9 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 /**
- * Frozen wire contract. Byte-for-byte the 26.2 {@code StreamCodec.composite} field order: x, y, z,
- * timer as VarInt, then hasBell, showsTime as boolean. Do not reorder, retype, add or remove a field
- * without also bumping {@link SyncHandler}'s {@code PROTOCOL}.
+ * Frozen wire contract. Field order is x, y, z, timer as VarInt, then hasBell, showsTime as boolean.
+ * Do not reorder, retype, add or remove a field without also bumping {@link SyncHandler}'s
+ * {@code PROTOCOL}.
  * <p>
  * Plain final class, not a record: {@code SimpleChannel#registerMessage} needs an instance
  * {@code encode(FriendlyByteBuf)} method reference and a static {@code decode(FriendlyByteBuf)}
@@ -73,7 +73,7 @@ public final class UpdateClockPayload {
     }
 
     /**
-     * Two Forge-specific requirements with no Fabric analogue — the work runs inside
+     * Two Forge-specific requirements — the work runs inside
      * {@code enqueueWork}, and {@code setPacketHandled(true)} is mandatory (omitting it logs a
      * warning per packet and, in some Forge builds, disconnects). {@link ClientSyncHandler} is
      * reached through {@link DistExecutor#unsafeRunWhenOn} — the one legitimate DistExecutor use

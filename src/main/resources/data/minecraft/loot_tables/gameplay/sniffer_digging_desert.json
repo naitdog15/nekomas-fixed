@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:gameplay",
+  "type": "minecraft:gift",
   "pools": [
     {
       "rolls": 1,
@@ -25,8 +25,9 @@
           "weight": 15
         },
         {
-          "type": "minecraft:item",
-          "name": "minecraft:copper_nugget",
+          "type": "minecraft:tag",
+          "name": "nekomasfixed:sniffer_desert_copper",
+          "expand": true,
           "weight": 20
         },
         {

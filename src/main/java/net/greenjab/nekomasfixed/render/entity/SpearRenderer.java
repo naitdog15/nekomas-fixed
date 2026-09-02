@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -14,10 +15,8 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Render-state collapse: 26.2's precomputed {@code ItemStackRenderState} (built once per frame in
- * {@code extractRenderState} via {@code ItemModelResolver}) has no 1.20.1 equivalent — items render
- * through the classic {@link ItemRenderer#renderStatic}, called directly here each frame instead of
- * through a cached intermediate object.
+ * Draws a planted spear as its own item model, crossed with itself so it reads as a shaft from every
+ * angle, and rides it up out of the ground over the first half-second it is there.
  */
 public class SpearRenderer extends EntityRenderer<SpearEntity> {
 	private final ItemRenderer itemRenderer;
@@ -27,9 +26,10 @@ public class SpearRenderer extends EntityRenderer<SpearEntity> {
 		this.itemRenderer = context.getItemRenderer();
 	}
 
+	/** Nothing here is drawn from an entity texture - the spear is its own item model. */
 	@Override
 	public ResourceLocation getTextureLocation(SpearEntity entity) {
-		return net.minecraft.client.renderer.texture.MissingTextureAtlasSprite.getLocation();
+		return MissingTextureAtlasSprite.getLocation();
 	}
 
 	@Override
@@ -55,13 +55,13 @@ public class SpearRenderer extends EntityRenderer<SpearEntity> {
 		poseStack.mulPose(Axis.YP.rotationDegrees(45));
 		poseStack.mulPose(Axis.ZP.rotationDegrees(-45));
 		poseStack.scale(1, 1, 0.01f);
-		this.itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, 15728880, OverlayTexture.NO_OVERLAY, poseStack, buffer, entity.level(), entity.getId());
+		this.itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, packedLight, OverlayTexture.NO_OVERLAY, poseStack, buffer, entity.level(), entity.getId());
 		poseStack.scale(1, 1, 100f);
 		poseStack.mulPose(Axis.ZP.rotationDegrees(45));
 		poseStack.mulPose(Axis.YP.rotationDegrees(90));
 		poseStack.mulPose(Axis.ZP.rotationDegrees(-45));
 		poseStack.scale(1, 1, 0.01f);
-		this.itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, 15728880, OverlayTexture.NO_OVERLAY, poseStack, buffer, entity.level(), entity.getId());
+		this.itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, packedLight, OverlayTexture.NO_OVERLAY, poseStack, buffer, entity.level(), entity.getId());
 		poseStack.scale(1, 1, 100f);
 		poseStack.popPose();
 	}

@@ -14,20 +14,13 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * 1.20.1 has no {@code FlameFeatureRenderer}/{@code AtlasManager}/{@code SpriteId}
- * (1.21.2+ deferred-render architecture); the on-fire overlay every entity gets is one shared
- * private method, {@code EntityRenderDispatcher#renderFlame(PoseStack, MultiBufferSource, Entity)},
- * reading two {@code ModelBakery.FIRE_0}/{@code FIRE_1} {@code Material} constants (VERIFIED
- * forge-1.20.1-mapped-src EntityRenderDispatcher.java:203-205; ModelBakery.java:65-66 — the same
- * {@code Material} type this port already uses for shulker boxes). There is no per-entity "which
- * atlas group" indirection to hook the way the pristine {@code AtlasManager#get(SpriteId)} call let
- * this mixin intercept per-{@code Submit} — but {@code renderFlame} already receives the burning
- * {@code Entity} itself as a parameter, so the Wildfire soul-fire check reads directly off it
- * ({@code WildfireEntity#isSoulActive()}, an existing method — VERIFIED
- * registry/entity/WildFire/WildfireEntity.java) instead of a {@code WildfireRenderState} field that
- * no longer exists. The soul-fire sprites are built the same way {@code ModelBakery.FIRE_0}/
- * {@code FIRE_1} themselves are (VERIFIED ModelBakery.java:65-66) pointed at vanilla's own soul-fire
- * block textures, which 1.20.1 already ships (soul campfires/soul fire use them).
+ * Burns a wildfire with soul fire instead of ordinary fire.
+ *
+ * <p>The on-fire overlay every entity gets is one shared method,
+ * {@code EntityRenderDispatcher#renderFlame}, drawn from the two {@code ModelBakery.FIRE_0}/
+ * {@code FIRE_1} materials. It is handed the burning entity itself, so the check is simply whether
+ * that entity is a wildfire with its soul flame lit; if it is, the two materials are swapped for
+ * ones built the same way off vanilla's soul-fire block textures.
  */
 @Mixin(EntityRenderDispatcher.class)
 public class FlameFeatureRendererMixin {

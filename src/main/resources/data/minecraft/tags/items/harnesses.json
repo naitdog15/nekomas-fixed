@@ -1,9 +1,21 @@
 {
   "replace": false,
   "values": [
-    "nekomasfixed:amber_harness",
-    "nekomasfixed:aqua_harness",
-    "nekomasfixed:indigo_harness",
-    "nekomasfixed:maroon_harness"
+    {
+      "id": "nekomasfixed:amber_harness",
+      "required": false
+    },
+    {
+      "id": "nekomasfixed:aqua_harness",
+      "required": false
+    },
+    {
+      "id": "nekomasfixed:indigo_harness",
+      "required": false
+    },
+    {
+      "id": "nekomasfixed:maroon_harness",
+      "required": false
+    }
   ]
 }

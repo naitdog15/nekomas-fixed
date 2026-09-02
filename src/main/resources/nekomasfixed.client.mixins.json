@@ -5,7 +5,7 @@
   "minVersion": "0.8",
   "client": [
     "AbstractMinecartEntityRendererMixin",
-    "ClientTooltipComponentMixin",
+    "BedRendererMixin",
     "EquipmentLayerRendererMixin",
     "FlameFeatureRendererMixin",
     "HumanoidMobRendererMixin",

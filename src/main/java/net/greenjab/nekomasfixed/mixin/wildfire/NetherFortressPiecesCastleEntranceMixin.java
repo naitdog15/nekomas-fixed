@@ -1,12 +1,19 @@
 package net.greenjab.nekomasfixed.mixin.wildfire;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import net.greenjab.nekomasfixed.compat.ntrials.TrialsContent;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -15,18 +22,16 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 /**
- * {@code NetherFortressPieces.CastleEntrance} itself, {@code createPiece}/{@code addChildren}/
- * {@code postProcess} and {@code BoundingBox#orientBox} are all unchanged on 1.20.1 (VERIFIED
- * forge-1.20.1-mapped-src NetherFortressPieces.java:374, 104-etc.). What is missing is content this
- * version of the game simply does not have, the same as copper armour or the
- * Mace: {@code Blocks.TRIAL_SPAWNER}/{@code TrialSpawnerBlockEntity} do not exist
- * on 1.20.1 at all (Trial Chambers are a 1.21+ feature — VERIFIED: zero matches for
- * {@code TRIAL_SPAWNER} in Blocks.java). The room's own block-by-block construction (walls, floor,
- * fences, lava, magma) is fully portable and kept verbatim; only the trial-spawner placement at the
- * very end is gapped out.
+ * Blows the fortress castle entrance out into a proper 17x15x17 arena and rebuilds its interior:
+ * fenced gallery walls, a magma-and-netherrack floor with corner fires, and a lava pool at the
+ * centre. The Wildfire's room.
+ *
+ * <p>A trial spawner sits in the middle of the pool when one is available. Nothing in the base game
+ * provides one, so the room asks New Trials for it at build time and leaves the middle alone when
+ * nothing answers - the room is laid out block by block anyway, so skipping one placement costs
+ * nothing.
  */
 @Mixin(NetherFortressPieces.CastleEntrance.class)
 public class NetherFortressPiecesCastleEntranceMixin {
@@ -37,12 +42,12 @@ public class NetherFortressPiecesCastleEntranceMixin {
     @Unique
     private static final int Y = 15;
 
-    @ModifyArgs(method = "createPiece", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/levelgen/structure/BoundingBox;orientBox(IIIIIIIIILnet/minecraft/core/Direction;)Lnet/minecraft/world/level/levelgen/structure/BoundingBox;"))
-    private static void largerRoom(Args args) {
-        args.set(3, -(XC-1));
-        args.set(6, X);
-        args.set(7, Y);
-        args.set(8, X);
+    // A wrap rather than @ModifyArgs: ModLauncher cannot load the synthetic Args classes Mixin
+    // generates for that injector (NoClassDefFoundError at StructurePieceType bootstrap).
+    @WrapOperation(method = "createPiece", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/levelgen/structure/BoundingBox;orientBox(IIIIIIIIILnet/minecraft/core/Direction;)Lnet/minecraft/world/level/levelgen/structure/BoundingBox;"))
+    private static BoundingBox largerRoom(int minX, int minY, int minZ, int xOff, int yOff, int zOff,
+                                          int xSize, int ySize, int zSize, Direction facing, Operation<BoundingBox> original) {
+        return original.call(minX, minY, minZ, -(XC-1), yOff, zOff, X, Y, X, facing);
     }
 
     @ModifyConstant(method = "addChildren", constant = @Constant(intValue = 5))
@@ -148,11 +153,37 @@ public class NetherFortressPiecesCastleEntranceMixin {
         piece.placeBlock(level, Blocks.LAVA.defaultBlockState(), XC, 3, XC-1, chunkBB);
         piece.placeBlock(level, Blocks.LAVA.defaultBlockState(), XC, 3, XC+1, chunkBB);
 
-        // Blocks.TRIAL_SPAWNER does not exist on 1.20.1 (see class header). The room itself
-        // (everything above) is built; only the spawner that was meant to occupy its centre is
-        // absent. Left as plain air — the "air" box carved out above already covers this position —
-        // rather than substituting a different spawner mechanism.
+        placeTrialSpawner(piece, level, chunkBB);
 
         ci.cancel();
+    }
+
+    /**
+     * Drops a trial spawner into the middle of the lava pool and points it at the Wildfire, if a
+     * trial spawner exists to place. The spawner's settings go in as plain tag data - one mob per
+     * wave, one in total, and the room's own two reward tables - so the room never has to hold a
+     * reference to a block it may not be running alongside.
+     */
+    @Unique
+    private static void placeTrialSpawner(NetherFortressPieces.NetherBridgePiece piece, WorldGenLevel level, BoundingBox chunkBB) {
+        if (!NekomasFixedConfig.TRIAL_SPAWNERS_IN_FORTRESS_ROOMS.get() || !TrialsContent.TRIAL_SPAWNER.isPresent()) {
+            return;
+        }
+        BlockPos spawnerPos = piece.getWorldPos(XC, 3, XC).immutable();
+        if (!chunkBB.isInside(spawnerPos)) {
+            return;
+        }
+        level.setBlock(spawnerPos, TrialsContent.TRIAL_SPAWNER.get().defaultBlockState(), 2);
+        BlockEntity blockEntity = level.getBlockEntity(spawnerPos);
+        if (blockEntity == null) {
+            return;
+        }
+        CompoundTag settings = new CompoundTag();
+        settings.putString("SpawnEntity", "nekomasfixed:wildfire");
+        settings.putInt("MobsPerWave", 1);
+        settings.putInt("TotalMobs", 1);
+        settings.putString("NormalLootTable", "nekomasfixed:spawners/wildfire");
+        settings.putString("OminousLootTable", "nekomasfixed:spawners/wildfire_ominous");
+        blockEntity.load(settings);
     }
 }

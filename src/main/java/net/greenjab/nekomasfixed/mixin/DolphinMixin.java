@@ -14,10 +14,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// Dolphin has no .dolphin subpackage on 1.20.1 (same dropped-segment pattern as boat/skeleton/
-// illager). defineSynchedData() takes no Builder argument here either (matches SheepMixin's note).
-// Uses the public getEntityData() accessor (already relied on below) rather than @Shadow-ing the
-// field directly.
+// Feeding a dolphin a tropical fish sets a flag it keeps for good, which the coral-reef goal below
+// reads. The flag goes on the dolphin's own synched data through the public accessor, so nothing
+// here has to shadow the field.
 @Mixin(Dolphin.class)
 public class DolphinMixin {
 

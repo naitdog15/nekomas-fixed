@@ -3,6 +3,7 @@ package net.greenjab.nekomasfixed.registry.block.entity;
 import com.google.common.collect.Lists;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
@@ -11,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.VisibleForDebug;
@@ -74,6 +76,13 @@ public class TermitehiveBlockEntity extends BlockEntity {
         super(BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY.get(), pos, state);
     }
 
+    /**
+     * Disturbing the hive empties it: anything that marks this block entity dirty is something
+     * happening to the mound, and the swarm comes straight out. That makes marking it dirty a
+     * destructive act, so anything restoring a populated hive has to go through
+     * {@link #addTermite} - which deliberately does not mark it - rather than loading a saved tag
+     * and calling this.
+     */
     @Override
     public void setChanged() {
         this.angerTermites(TermitehiveBlockEntity.TermiteState.EMERGENCY);
@@ -89,6 +98,10 @@ public class TermitehiveBlockEntity extends BlockEntity {
     }
 
     public void angerTermites(TermitehiveBlockEntity.TermiteState termiteState) {
+        // Nothing to swarm out into before the hive is in a world; the occupants stay put until it is.
+        if (this.level == null) {
+            return;
+        }
         List<Entity> list = Lists.newArrayList();
         this.termites.removeIf( termite -> releaseTermite(this.level, this.worldPosition, termite.createData(), list, termiteState));
         if (!list.isEmpty()) {
@@ -200,21 +213,25 @@ public class TermitehiveBlockEntity extends BlockEntity {
     public void load(CompoundTag tag) {
         super.load(tag);
         this.termites.clear();
-        if (tag.contains("termites")) {
+        if (tag.contains("termites", Tag.TAG_LIST)) {
             TermitehiveBlockEntity.TermiteData.LIST_CODEC.parse(NbtOps.INSTANCE, tag.get("termites"))
-                    .result().ifPresent(list -> list.forEach(this::addTermite));
+                    .resultOrPartial(error -> LOGGER.error("nekomasfixed: unreadable termites in the hive at {}: {}", this.worldPosition, error))
+                    .ifPresent(list -> list.forEach(this::addTermite));
         }
     }
 
     // No key at all when the hive is empty, so nothing copying this block entity onto a stack
-    // stamps it with a leftover empty list.
+    // stamps it with a leftover empty list. What gets written is the live tick counts, not the
+    // ones that were loaded, so a termite keeps its place in the queue across a save. An encode
+    // that fails writes nothing rather than half a swarm; the hive then loads back empty.
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         List<TermitehiveBlockEntity.TermiteData> data = this.createTermitesData();
         if (!data.isEmpty()) {
-            TermitehiveBlockEntity.TermiteData.LIST_CODEC.encodeStart(NbtOps.INSTANCE, data)
-                    .result().ifPresent(encoded -> tag.put("termites", encoded));
+            DataResult<Tag> encoded = TermitehiveBlockEntity.TermiteData.LIST_CODEC.encodeStart(NbtOps.INSTANCE, data);
+            encoded.error().ifPresent(error -> LOGGER.error("nekomasfixed: could not save the termites in the hive at {}: {}", this.worldPosition, error.message()));
+            encoded.result().ifPresent(value -> tag.put("termites", value));
         }
     }
 
@@ -222,11 +239,6 @@ public class TermitehiveBlockEntity extends BlockEntity {
     public List<TermitehiveBlockEntity.TermiteData> createTermitesData() {
         return this.termites.stream().map(TermitehiveBlockEntity.Termite::createData).toList();
     }
-
-   /* @Override
-    public void registerTracking(ServerWorld level, DebugTrackable.Tracker tracker) {
-        tracker.track(DebugSubscriptionTypes.TERMITE_HIVES, () -> TermiteHiveDebugData.fromTermitehive(this));
-    }*/
 
     static class Termite {
         private final TermitehiveBlockEntity.TermiteData data;

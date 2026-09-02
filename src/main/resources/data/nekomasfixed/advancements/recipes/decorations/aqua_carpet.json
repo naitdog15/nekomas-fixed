@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:aqua_wool"
+            "items": [
+              "nekomasfixed:aqua_wool"
+            ]
           }
         ]
       },

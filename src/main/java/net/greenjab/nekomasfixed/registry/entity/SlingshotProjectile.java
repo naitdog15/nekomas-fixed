@@ -1,6 +1,8 @@
 package net.greenjab.nekomasfixed.registry.entity;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
+import net.greenjab.nekomasfixed.compat.vanillabackport.BackportedContent;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ItemParticleOption;
@@ -8,6 +10,9 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.AreaEffectCloud;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityEvent;
 import net.minecraft.world.entity.EntityType;
@@ -22,6 +27,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.registries.RegistryObject;
 
 public class SlingshotProjectile extends ThrowableItemProjectile {
 
@@ -29,8 +35,6 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
     private int ticksStuck = 0;
     private ItemStack weapon = ItemStack.EMPTY;
 
-    // PORT: 1.20.1's ThrowableItemProjectile(EntityType, LivingEntity, Level) is 3-arg (verified
-    // against vanilla Snowball.java) - the carried stack is set separately via setItem(ItemStack).
     public SlingshotProjectile(Level level, LivingEntity owner, ItemStack stack, ItemStack weapon, boolean shatter) {
         super(EntityTypeRegistry.SLINGSHOT_PROJECTILE.get(), owner, level);
         this.setItem(stack);
@@ -85,9 +89,9 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
     }
 
     /**
-     * 1.20.1 has no enchantment-effect-component knockback modifier; Punch is read off the launching
-     * weapon and applied the same way {@code AbstractArrow} does it (normalized horizontal velocity
-     * scaled by level * 0.6 * knockback resistance, plus the fixed 0.1 vertical nudge).
+     * Punch is read off the slingshot that fired the shot and applied the way an arrow applies it:
+     * the horizontal travel direction scaled by level, 0.6 and the target's knockback resistance,
+     * plus the same small upward nudge.
      */
     protected void knockback(LivingEntity target) {
         double d = this.weapon.isEmpty() ? 0.0 : NekomasFixed.enchantLevel(this.weapon, "punch");
@@ -98,16 +102,25 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
         }
     }
 
-    // Copper nugget and resin clump are 1.21+ items with no 1.20.1 counterpart, so their ammo rows
-    // (2 and 1 damage) fall through to the default 2 here.
     private float getDamage(Item item) {
         int damage;
-        if (item==Items.GOLD_NUGGET) damage = 3;
+        if (isBackportedRound(item, BackportedContent.COPPER_NUGGET)) damage = 2;
+        else if (item==Items.GOLD_NUGGET) damage = 3;
         else if (item==Items.IRON_NUGGET) damage = 4;
         else if (item==Items.AMETHYST_SHARD) damage = 2;
+        else if (isBackportedRound(item, BackportedContent.RESIN_CLUMP)) damage = 1;
         else damage = 2;
         damage +=NekomasFixed.enchantLevel(weapon, "power");
         return damage;
+    }
+
+    /**
+     * Copper nuggets and resin clumps are not part of this version on their own; they only exist
+     * while another mod supplies them. Asking by name keeps the rounds working when they are around
+     * and costs nothing when they are not.
+     */
+    private static boolean isBackportedRound(Item item, RegistryObject<Item> round) {
+        return NekomasFixedConfig.BACKPORTED_SLINGSHOT_AMMO.get() && round.isPresent() && item == round.get();
     }
 
     @Override
@@ -153,8 +166,16 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
             }
         } else {
             super.onHit(hitResult);
-            // The resin-clump round's lingering slowness cloud has no 1.20.1 ammo item to hang off
-            // (resin clump is 1.21+), so nothing spawns here on this version.
+            if (isBackportedRound(this.getItem().getItem(), BackportedContent.RESIN_CLUMP)) {
+                AreaEffectCloud cloud = new AreaEffectCloud(this.level(), this.getX(), this.getY(), this.getZ());
+                cloud.setRadius(3.0F);
+                cloud.setRadiusOnUse(-0.5F);
+                cloud.setDuration(60);
+                cloud.setWaitTime(0);
+                cloud.setRadiusPerTick(-cloud.getRadius() / cloud.getDuration());
+                cloud.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 4));
+                this.level().addFreshEntity(cloud);
+            }
             if (!this.level().isClientSide()) {
                 this.level().broadcastEntityEvent(this, EntityEvent.DEATH);
                 this.discard();

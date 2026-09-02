@@ -39,8 +39,7 @@ public class WildfireShootTask extends Behavior<WildfireEntity> {
 	}
 
 	protected boolean checkExtraStartConditions(ServerLevel level, WildfireEntity wildFireEntity) {
-		// 1.20.1's Pose enum has no SHOOTING (that arrived with the Breeze); ROARING is the spare pose
-		// this mob's attack-mode state machine uses for the fireball volley.
+		// ROARING is the pose this mob's attack-mode state machine reserves for a fireball volley.
 		if (wildFireEntity.getPose() != Pose.ROARING) return false;
 		return wildFireEntity.getBrain()
                 .getMemory(MemoryModuleType.ATTACK_TARGET)
@@ -63,7 +62,7 @@ public class WildfireShootTask extends Behavior<WildfireEntity> {
 		wildFireEntity.setPose(Pose.STANDING);
 		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_CHARGING.get(), Unit.INSTANCE, SHOOT_CHARGING_EXPIRY);
 		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT.get(), Unit.INSTANCE,SHOOT_CHARGING_EXPIRY + RECOVER_EXPIRY);
-		wildFireEntity.playSound(WildfireRegistrations.BREEZE_INHALE.get(), 1.0F, 1.0F);
+		wildFireEntity.playSound(WildfireRegistrations.inhale(), 1.0F, 1.0F);
 		wildFireEntity.setFireActive(true);
 		wildFireEntity.eyeOffset = -6;
 	}
@@ -94,7 +93,7 @@ public class WildfireShootTask extends Behavior<WildfireEntity> {
 				SmallFireball smallFireballEntity = new SmallFireball(wildFireEntity.level(), wildFireEntity, aim.x, aim.y, aim.z);
 				smallFireballEntity.setPos(smallFireballEntity.getX(), wildFireEntity.getY(0.5) + 0.5, smallFireballEntity.getZ());
 				wildFireEntity.level().addFreshEntity(smallFireballEntity);
-				wildFireEntity.playSound(WildfireRegistrations.BREEZE_SHOOT_SOUND.get(), 1.5F, 1.0F);
+				wildFireEntity.playSound(WildfireRegistrations.shoot(), 1.5F, 1.0F);
 			}
 		}
 	}

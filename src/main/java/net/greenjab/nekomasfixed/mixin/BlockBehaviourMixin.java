@@ -35,16 +35,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * The retarget here is not a straight rename.
  * <p>
  * 1.20.1 delta 1: the 26.2 split {@code useItemOn(ItemStack, BlockState, Level, BlockPos, Player,
- * InteractionHand, BlockHitResult)} does not exist here (VERIFIED against
- * forge-1.20.1-mapped-src BlockBehaviour.java:172) — 1.20.1 has one combined
+ * InteractionHand, BlockHitResult)} does not exist here — 1.20.1 has one combined
  * {@code use(BlockState, Level, BlockPos, Player, InteractionHand, BlockHitResult)}; the item comes
  * from {@code player.getItemInHand(hand)} instead of a dedicated parameter.
  * <p>
  * 1.20.1 delta 2: {@code DataComponents.INSTRUMENT}/{@code InstrumentComponent} do not exist (data
  * components are 1.20.5+). Vanilla's own {@code InstrumentItem#getInstrument} is private, so the
  * instrument id is read directly off the stack's {@code "instrument"} NBT string tag — the same tag
- * vanilla's {@code InstrumentItem} reads/writes (VERIFIED against forge-1.20.1-mapped-src
- * InstrumentItem.java) — and resolved to a {@code ResourceKey<Instrument>}, matching
+ * vanilla's {@code InstrumentItem} reads/writes — and resolved to a {@code ResourceKey<Instrument>}, matching
  * {@code Instruments.CALL_GOAT_HORN} et al., which are themselves still {@code ResourceKey<Instrument>}
  * on 1.20.1 (unchanged shape).
  * <p>

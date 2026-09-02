@@ -12,9 +12,7 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.client.renderer.RenderType;
 
-/** See {@link ClamBlockModel}'s javadoc. {@code setupAnim(S state)} → a plain
- * {@code setupAnim(boolean powered, boolean wall)} taking the two fields the renderer used to read
- * off the render state, now read directly off the block entity / block state instead. */
+/** Head and mouth model for the enderman head block; {@link #setupAnim} nudges the parts when powered. */
 public class EndermanHeadBlockModel extends Model {
 	private final ModelPart root;
 	private final ModelPart head;

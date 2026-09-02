@@ -23,9 +23,9 @@ import java.util.Map;
 
 import static net.greenjab.nekomasfixed.util.ModColors.*;
 
-// 1.20.1 delta: DyeItem#tryApplyToSign(Level, SignBlockEntity, boolean, Player) has no ItemStack
-// parameter (VERIFIED forge-1.20.1-mapped-src DyeItem.java:49) — the dye identity comes from `this`
-// (the mixin's own target instance) instead, since it is an instance method on the dye item itself.
+// On 1.20.1, DyeItem#tryApplyToSign(Level, SignBlockEntity, boolean, Player) has no ItemStack
+// parameter — the dye identity comes from `this` (the mixin's own target instance) instead, since
+// it is an instance method on the dye item itself.
 @Mixin(DyeItem.class)
 public class DyeItemMixin {
 

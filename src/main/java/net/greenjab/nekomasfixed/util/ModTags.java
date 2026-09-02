@@ -33,4 +33,5 @@ public class ModTags {
     public static final TagKey<Item> FOOD_ITEMS = TagKey.create(Registries.ITEM, NekomasFixed.id("food_items"));
     public static final TagKey<Item> MOOBLOOM_FLOWERS = TagKey.create(Registries.ITEM, NekomasFixed.id("moobloom_flowers"));
     public static final TagKey<Item> SLINGSHOT_PROJECTILES = TagKey.create(Registries.ITEM, NekomasFixed.id("slingshot_projectiles"));
+    public static final TagKey<Item> COPPER_ARMOUR = TagKey.create(Registries.ITEM, NekomasFixed.id("copper_armour"));
 }

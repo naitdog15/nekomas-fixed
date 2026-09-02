@@ -8,8 +8,7 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.renderer.RenderType;
 
-/** See {@link ClamBlockModel}'s javadoc. This model is an (already-empty) placeholder mesh — the
- * clock face itself renders via three item-model insets in {@code ClockBlockEntityRenderer}. */
+/** Empty placeholder mesh — the clock face itself renders via three item-model insets in {@code ClockBlockEntityRenderer}. */
 public class ClockBlockModel extends Model {
 	private final ModelPart root;
 

@@ -3,6 +3,7 @@ package net.greenjab.nekomasfixed.render.other;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.greenjab.nekomasfixed.NekomasFixed;
+import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -24,18 +25,18 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * The floating damage number. 1.20.1's particle pipeline draws textured quads off a single sprite
- * sheet and hands {@link Particle#render} nothing but a raw {@code VertexConsumer} - no font, no
- * {@link MultiBufferSource} - so the digits cannot be drawn from inside the particle engine at all.
- * The particle therefore carries only the motion, the lifetime and the age/damage curve, takes
+ * The number that floats off whatever you just hit, showing how much damage it took.
+ *
+ * <p>The particle engine draws textured quads off a single sprite sheet and hands
+ * {@link Particle#render} nothing but a raw {@code VertexConsumer} - no font, no
+ * {@link MultiBufferSource} - so digits cannot be drawn from inside it. The particle therefore
+ * carries only the motion, the lifetime and the age/damage curve, takes
  * {@link ParticleRenderType#NO_RENDER}, and the text is drawn a stage later, from a
  * {@link RenderLevelStageEvent.Stage#AFTER_PARTICLES} handler that has a real buffer source to
  * batch glyphs into.
  *
  * <p>The billboard transform is vanilla's own name-tag one (camera rotation, then the -0.025 flip),
- * scaled by the same age/damage curve as before, and the digits are drawn with a shadow and no
- * background - which is exactly the look the old renderer got by submitting the number AS a name tag
- * and having two mixins force those two flags.
+ * scaled by the age/damage curve, and the digits get a drop shadow and no background plate.
  */
 public class NumberParticle extends Particle {
 
@@ -113,9 +114,14 @@ public class NumberParticle extends Particle {
         public Factory() {
         }
 
+        /**
+         * Returning null simply spawns nothing, so the switch is read here rather than in the draw:
+         * with the numbers turned off none of them is created, ticked or drawn.
+         */
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level,
                                         double x, double y, double z, double damage, double h, double i) {
+            if (!NekomasFixedClientConfig.FLOATING_DAMAGE_NUMBERS.get()) return null;
             return new NumberParticle(level, x, y, z, damage);
         }
     }

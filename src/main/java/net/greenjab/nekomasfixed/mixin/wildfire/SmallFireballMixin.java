@@ -13,11 +13,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// SmallFireball has no .hurtingprojectile subpackage on 1.20.1. hurtServer(ServerLevel,...) -> hurt
-// (see the top-level LivingEntityMixin's header) — Entity#hurt(DamageSource,float) still returns
-// boolean here. EnchantmentHelper.doPostAttackEffects does not exist; doPostDamageEffects(LivingEntity
-// attacker, Entity victim) is 1.20.1's matching post-attack hook (VERIFIED
-// forge-1.20.1-mapped-src EnchantmentHelper.java:192).
+// A Wildfire's fireballs hit harder than a blaze's, and harder again once it is soul-lit. This is an
+// extra hit on top of vanilla's, not a replacement for it - the inject does not cancel.
 @Mixin(SmallFireball.class)
 public class SmallFireballMixin {
 
@@ -28,7 +25,7 @@ public class SmallFireballMixin {
         if (ownerEntity instanceof WildfireEntity wildFireEntity) {
             Entity hitEntity = hitResult.getEntity();
             DamageSource damageSource = SFE.damageSources().mobProjectile(SFE, ownerEntity);
-            if (SFE.level() instanceof ServerLevel serverWorld && hitEntity.hurt(damageSource, wildFireEntity.isSoulActive()?3.0F:2.0F)) {
+            if (SFE.level() instanceof ServerLevel && hitEntity.hurt(damageSource, wildFireEntity.isSoulActive()?3.0F:2.0F)) {
                 EnchantmentHelper.doPostDamageEffects(ownerEntity, hitEntity);
             }
         }

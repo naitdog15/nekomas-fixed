@@ -8,11 +8,15 @@
           "type": "minecraft:item",
           "functions": [
             {
-              "function": "minecraft:copy_components",
-              "include": [
-                "minecraft:stored_time"
-              ],
-              "source": "block_entity"
+              "function": "minecraft:copy_nbt",
+              "source": "block_entity",
+              "ops": [
+                {
+                  "source": "storedTime",
+                  "target": "nekomasfixed.stored_time",
+                  "op": "replace"
+                }
+              ]
             }
           ],
           "name": "minecraft:clock"

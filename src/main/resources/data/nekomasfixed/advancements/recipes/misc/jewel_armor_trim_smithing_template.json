@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:jewel_armor_trim_smithing_template"
+            "items": [
+              "nekomasfixed:jewel_armor_trim_smithing_template"
+            ]
           }
         ]
       },
@@ -21,7 +23,7 @@
   "requirements": [
     [
       "has_the_recipe",
-     "has_jewel_armor_trim"
+      "has_jewel_armor_trim"
     ]
   ],
   "rewards": {

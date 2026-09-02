@@ -12,19 +12,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
- * The behaviour here stays, retargeted to 1.20.1's single-pass render that swaps the Material
- * directly — ShulkerBoxRenderStateMixin (the {@code SpriteId} holder) is deleted; this file replaces
- * the whole indirection.
- * <p>
- * 1.20.1 has no {@code ShulkerBoxRenderState}/{@code extractRenderState}/{@code submit(...)} split
- * (1.21.2+ deferred-render architecture) or sprite-atlas shulker textures — there is one
- * {@code render(ShulkerBoxBlockEntity, float, PoseStack, MultiBufferSource, int, int)} that computes
- * a local {@code Material} (sheet {@code Sheets.SHULKER_SHEET}, path unchanged from what the
- * pristine sprite id used) from the block entity's colour and feeds it straight into
- * {@code material.buffer(...)} (VERIFIED forge-1.20.1-mapped-src ShulkerBoxRenderer.java) — no
- * {@code SpriteId}/atlas involved, so this modifies that {@code Material} local directly instead of
- * stashing a {@code SpriteId} on a render state that no longer exists. The block entity itself is
- * already a direct method parameter, so the colour-block lookup no longer needs a render-state cast.
+ * Gives the four extra shulker-box colours their own shells.
+ *
+ * <p>The renderer picks a material off the box's dye colour and feeds it straight to the buffer, and
+ * the four added colours all share a slot with a vanilla one, so the box's block is what identifies
+ * them. The material is swapped just before it is used.
  */
 @Mixin(ShulkerBoxRenderer.class)
 public class ShulkerBoxRendererMixin {

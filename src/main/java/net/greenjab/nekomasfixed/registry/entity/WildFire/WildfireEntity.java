@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -39,21 +40,23 @@ import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.registries.ForgeRegistries;
 import javax.annotation.Nullable;
 
 /**
- * PORT: {@code registerDebugValues}/{@code WildfireDebugData} deleted outright (26.x-only F3
- * telemetry with a {@code DebugValueSource} type that has no 1.20.1 counterpart at all - zero
- * gameplay, no replacement needed). Brain construction rewritten onto 1.20.1's real shape
- * ({@code brainProvider()} + {@code makeBrain(Dynamic<?>)} delegating to a static
- * {@code WildfireAi.makeBrain(mob, brain)} - see that class), verified against vanilla
- * Piglin.java/PiglinAi.java. {@code customServerAiStep} is no-arg on 1.20.1 (uses
- * {@code this.level().getProfiler()}, not a passed-in profiler or {@code Profiler.get()}).
- * {@code WindCharge} does not exist on any version before 1.21 (Breeze is the only vanilla source of
- * it), so the shield-block instanceof check against it is simply dead code removed, not a feature cut
- * - nothing on 1.20.1 can ever satisfy it.
+ * A nether-fortress boss that fights the way a breeze does - sliding, leaping and lobbing fire -
+ * behind a ring of four spinning shield plates that thin out as its health drops. Killing it the
+ * first time only strips the plates: it comes back soul-lit at full health for a second phase (see
+ * the wildfire {@code LivingEntityMixin}).
+ *
+ * <p>Its brain is the standard imperative kind - {@link #brainProvider()} declares the memories and
+ * sensors, {@link WildfireAi} wires the activities - and everything it needs beyond the base game's
+ * vocabulary lives in {@link WildfireRegistrations}.
  */
 public class WildfireEntity extends Monster {
+
+	/** Wind charges only exist alongside New Trials, so the plates ask for it by id. */
+	private static final ResourceLocation WIND_CHARGE = ResourceLocation.fromNamespaceAndPath("ntrials", "wind_charge_projectile");
 	public float eyeOffset = 0.5F;
 	public float clientFireTime = 0;
 	public float clientExtraSpin = 0;
@@ -251,8 +254,7 @@ public class WildfireEntity extends Monster {
 			int newShields = (int)Mth.clamp(5*this.getHealth()/this.getMaxHealth(), 0, 4);
 			setShieldsActive(newShields);
 			if (newShields < lastShields) {
-				// Wolf armour doesn't exist on 1.20.1; the shield-break sound is the closest match
-				// for a plate popping off.
+				// The shield break is the closest thing in the sound library to a plate popping off.
 				level.playSound(null, this, SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS, 1.0F, 1.0F);
 			} else if (newShields > lastShields) {
 				level.playSound(null, this, SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.7F, 2.0F);
@@ -341,7 +343,7 @@ public class WildfireEntity extends Monster {
 		if(this == source.getEntity())return false;
 		if (!isOnFire() && this.level() instanceof ServerLevel level) {
 			Entity entity = source.getDirectEntity();
-			if (entity instanceof AbstractArrow) {
+			if (entity != null && (entity instanceof AbstractArrow || isWindCharge(entity))) {
 				if (random.nextInt(4)<getShieldsActive()) {
 					level.playSound(null, this, SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1.0F, 1.0F);
 					return false;
@@ -349,5 +351,13 @@ public class WildfireEntity extends Monster {
 			}
 		}
 		return super.hurt(source, amount);
+	}
+
+	/**
+	 * The plates bat wind charges away as readily as arrows. Matched by id rather than by type, so
+	 * this costs nothing and means nothing when no wind charge is installed.
+	 */
+	private static boolean isWindCharge(Entity entity) {
+		return WIND_CHARGE.equals(ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()));
 	}
 }

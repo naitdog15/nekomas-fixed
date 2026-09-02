@@ -3,26 +3,28 @@ package net.greenjab.nekomasfixed.util;
 import net.minecraft.world.inventory.RecipeBookType;
 
 /**
- * Restores the Kiln's 3
- * recipe-book tabs via Forge's extensible {@code RecipeBookType}/{@code RecipeBookCategories} +
- * {@code RegisterRecipeBookCategoriesEvent}, rather than dropping them.
- * <p>
- * A NEW {@code RecipeBookType} is required here rather than reusing vanilla's {@code
- * RecipeBookType.FURNACE}: {@code RecipeBookCategories.getCategories(RecipeBookType)} is a hard
- * switch over the 4 vanilla types with a {@code default -> RecipeBookManager.getCustomCategoriesOrEmpty}
- * branch for Forge's extensible ones (verified against forge-1.20.1-mapped-src/net/minecraft/client/
- * RecipeBookCategories.java) - reusing {@code FURNACE} would take the vanilla case every time and
- * silently make any custom {@code registerBookCategories(FURNACE, ...)} call dead code, and would
- * additionally cross-contaminate the vanilla Furnace/Smoker/BlastFurnace screens' own tab sets. It
- * is the smallest deviation from the original KilnMenu the Forge API allows.
- * <p>
- * {@code RecipeBookType} is common code (referenced from {@code KilnMenu}, which both dists load) -
- * unlike the 3 new {@code RecipeBookCategories} constants and the event handler, which are
- * {@code @OnlyIn(Dist.CLIENT)} and live in {@code screen/KilnRecipeBookClient.java} instead.
+ * The kiln's own recipe-book type, so the kiln screen gets its own set of tabs.
+ *
+ * <p>It has to be a new type rather than a reuse of {@code RecipeBookType.FURNACE}:
+ * {@code RecipeBookCategories.getCategories(RecipeBookType)} switches over the four built-in types
+ * and only falls through to the registered custom ones in its default branch, so borrowing
+ * {@code FURNACE} would take the built-in case every time - the kiln's tabs would never be asked
+ * for, and the furnace, smoker and blast-furnace screens would inherit them if they were.
+ *
+ * <p>Kept apart from the tabs themselves ({@code screen/KilnRecipeBookClient}) because those are
+ * client-only and this is not: {@code KilnMenu} names it on both sides.
+ *
+ * <p>{@link #init()} exists because a player's recipe-book settings are sized from the list of
+ * types the moment that player is created. Touching this class during mod loading makes sure
+ * {@link #KILN} is on that list before the first player ever is.
  */
 public final class ModRecipeBookType {
     private ModRecipeBookType() {
     }
 
     public static final RecipeBookType KILN = RecipeBookType.create("KILN");
+
+    /** Forces {@link #KILN} into existence. Call once while the mod is loading; does nothing else. */
+    public static void init() {
+    }
 }

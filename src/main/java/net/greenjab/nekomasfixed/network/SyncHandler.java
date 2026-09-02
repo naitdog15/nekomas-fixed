@@ -9,9 +9,7 @@ import java.util.Optional;
 
 /**
  * The frozen wire contract. One packet, server -> client, syncing a ClockBlockEntity.
- * {@code CustomPacketPayload}/{@code StreamCodec}/{@code PayloadTypeRegistry} are all 1.20.5+ with
- * no 1.20.1 equivalent on either loader; on Forge 47.4.10 {@code SimpleChannel} is the API, not a
- * legacy fallback.
+ * {@code SimpleChannel} is the current Forge networking API here, not a legacy fallback.
  * <p>
  * {@link #init()} is called from {@link NekomasFixed}'s constructor, not from
  * {@code FMLCommonSetupEvent} — channel construction must complete before

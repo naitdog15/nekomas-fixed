@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 
 import net.greenjab.nekomasfixed.registry.entity.WildfireTrident;
+import net.greenjab.nekomasfixed.render.entity.NekomasFixedBEWLR;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -25,6 +27,9 @@ import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+
+import java.util.function.Consumer;
 
 public class WildfireTridentItem extends Item {
 
@@ -112,5 +117,20 @@ public class WildfireTridentItem extends Item {
             user.startUsingItem(hand);
             return InteractionResultHolder.consume(itemStack);
         }
+    }
+
+    /**
+     * The trident is a real model rather than a flat sprite, so it draws through the mod's own
+     * item renderer. That only takes over for a model that asks for it; a plain sprite model
+     * simply ignores this.
+     */
+    @Override
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(new IClientItemExtensions() {
+            @Override
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                return NekomasFixedBEWLR.instance();
+            }
+        });
     }
 }

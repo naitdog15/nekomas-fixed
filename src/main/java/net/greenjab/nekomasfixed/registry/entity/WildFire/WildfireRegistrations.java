@@ -2,6 +2,8 @@ package net.greenjab.nekomasfixed.registry.entity.WildFire;
 
 import com.mojang.serialization.Codec;
 import net.greenjab.nekomasfixed.NekomasFixed;
+import net.greenjab.nekomasfixed.compat.ntrials.TrialsContent;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.Unit;
@@ -13,22 +15,18 @@ import net.minecraftforge.registries.RegistryObject;
 import java.util.Optional;
 
 /**
- * NEW CONSTRUCTION, not a port. The Wildfire AI (a Breeze-alike
- * hand-built entirely on vanilla's real Breeze memory/sound names) references 8 {@code
- * MemoryModuleType.BREEZE_*} constants and 6 {@code SoundEvents.BREEZE_*} constants that only exist
- * because vanilla's own Breeze exists - on 1.20.1, Breeze was not added until 1.21, so none of these
- * 14 constants exist on this version at all (verified: zero "BREEZE" occurrences anywhere in
- * forge-1.20.1-mapped-src/net/minecraft/sounds/SoundEvents.java). This file is their mod-owned
- * replacement, registered under the {@code nekomasfixed} namespace so the Wildfire AI files
- * (WildfireAi, WildfireJumpTask, WildfireShootTask, WildfireMeleeTask, WildfireBombTask,
- * WildfireSlideTowardsTargetTask, WildfireAttackablesSensor, WildfireEntity) can keep referencing the
- * same field names with {@code .get()} added. Value types match how each memory is actually written
- * in the ported AI (7 are {@code Unit}-valued cooldown/flag memories, 1 - BREEZE_JUMP_TARGET - carries
- * a {@code BlockPos}) so call sites type-check without an unchecked cast.
- * <p>
- * The 6 sound registrations each need a matching {@code sounds.json} entry, mapped from the
- * equivalent vanilla Blaze/fire sounds. Registering a SoundEvent with no sounds.json mapping does
- * not error; it plays silence.
+ * The brain memories and the voice the Wildfire runs on. The mob's AI is built the way a breeze
+ * behaves - charge, leap, land, inhale, shoot, slide - and none of that vocabulary exists in the
+ * base game, so all of it is registered here under this mod's own namespace.
+ *
+ * <p>Eight memory modules: seven plain flag/cooldown memories carrying nothing but {@code Unit},
+ * and the jump target, which carries a {@code BlockPos}. Typing them properly here is what lets the
+ * task classes read and write them without casting.
+ *
+ * <p>Six sounds, each mapped in {@code sounds.json} onto the closest blaze or fire sound this mod
+ * can reach. A sound event with no mapping is not an error - it just plays nothing - so the entries
+ * matter. When New Trials is installed it brings real breeze recordings with it, and those are
+ * swapped in at the point of play.
  */
 public final class WildfireRegistrations {
     private WildfireRegistrations() {
@@ -43,9 +41,7 @@ public final class WildfireRegistrations {
         return MEMORY_MODULE_TYPES.register(name, () -> new MemoryModuleType<>(Optional.<Codec<Unit>>empty()));
     }
 
-    // The 8 BREEZE_* memory modules the Wildfire AI needs (WildfireAi, WildfireJumpTask,
-    // WildfireShootTask, WildfireMeleeTask, WildfireBombTask, WildfireSlideTowardsTargetTask) - 7
-    // Unit-valued cooldown/flag memories, 1 BlockPos-valued jump target.
+    // The cooldowns and flags the attack tasks pass between each other, plus the jump target.
     public static final RegistryObject<MemoryModuleType<Unit>> BREEZE_SHOOT = unitMemory("breeze_shoot");
     public static final RegistryObject<MemoryModuleType<Unit>> BREEZE_LEAVING_WATER = unitMemory("breeze_leaving_water");
     public static final RegistryObject<MemoryModuleType<Unit>> BREEZE_SHOOT_COOLDOWN = unitMemory("breeze_shoot_cooldown");
@@ -56,7 +52,7 @@ public final class WildfireRegistrations {
     public static final RegistryObject<MemoryModuleType<Unit>> BREEZE_JUMP_COOLDOWN = unitMemory("breeze_jump_cooldown");
     public static final RegistryObject<MemoryModuleType<Unit>> BREEZE_JUMP_INHALING = unitMemory("breeze_jump_inhaling");
 
-    // The 6 BREEZE_* sounds, mapped from the equivalent vanilla Blaze/fire sounds.
+    // The six sounds the Wildfire speaks with, mapped in sounds.json onto blaze and fire sounds.
     public static final RegistryObject<SoundEvent> BREEZE_SLIDE = SOUND_EVENTS.register("breeze_slide",
             () -> SoundEvent.createVariableRangeEvent(NekomasFixed.id("breeze_slide")));
     public static final RegistryObject<SoundEvent> BREEZE_INHALE = SOUND_EVENTS.register("breeze_inhale",
@@ -69,4 +65,47 @@ public final class WildfireRegistrations {
             () -> SoundEvent.createVariableRangeEvent(NekomasFixed.id("breeze_jump")));
     public static final RegistryObject<SoundEvent> BREEZE_LAND = SOUND_EVENTS.register("breeze_land",
             () -> SoundEvent.createVariableRangeEvent(NekomasFixed.id("breeze_land")));
+
+    /** The wind-up before a bomb or a fireball volley. */
+    public static SoundEvent inhale() {
+        return breezeVoice(BREEZE_INHALE, TrialsContent.BREEZE_INHALE);
+    }
+
+    /** The launch itself. */
+    public static SoundEvent shoot() {
+        return breezeVoice(BREEZE_SHOOT_SOUND, TrialsContent.BREEZE_SHOOT);
+    }
+
+    /** Crouching down before a leap. */
+    public static SoundEvent charge() {
+        return breezeVoice(BREEZE_CHARGE, TrialsContent.BREEZE_INHALE);
+    }
+
+    /** Leaving the ground. */
+    public static SoundEvent jump() {
+        return breezeVoice(BREEZE_JUMP_SOUND, TrialsContent.BREEZE_JUMP);
+    }
+
+    /** Hitting the ground again. */
+    public static SoundEvent land() {
+        return breezeVoice(BREEZE_LAND, TrialsContent.BREEZE_DEFLECT);
+    }
+
+    /** Skating around between attacks. */
+    public static SoundEvent slide() {
+        return breezeVoice(BREEZE_SLIDE, TrialsContent.BREEZE_AMBIENT_CAVE);
+    }
+
+    /**
+     * Picks the voice to play with. New Trials ships real breeze recordings, and they beat this
+     * mod's blaze-flavoured stand-ins every time, so they are used when they are there and the
+     * option is on. The handle can be empty even with New Trials installed - a pack is free to turn
+     * its content off - so this always has the mod's own sound to fall back on.
+     */
+    private static SoundEvent breezeVoice(RegistryObject<SoundEvent> own, RegistryObject<SoundEvent> trials) {
+        if (NekomasFixedConfig.BREEZE_SOUNDS.get() && trials.isPresent()) {
+            return trials.get();
+        }
+        return own.get();
+    }
 }

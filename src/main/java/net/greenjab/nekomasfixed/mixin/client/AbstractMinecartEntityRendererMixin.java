@@ -1,6 +1,7 @@
 package net.greenjab.nekomasfixed.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
 import net.minecraft.client.renderer.entity.MinecartRenderer;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
@@ -8,15 +9,12 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Points every minecart at the rebuilt cart texture. There is one
- * {@code MinecartRenderer<T extends AbstractMinecart>} here with a public, overridable
- * {@code getTextureLocation(T)} rather than a static field read inside a submit method, so the swap
- * is a plain return-value override. The generic bound means the class also carries a synthetic
- * {@code getTextureLocation(Entity)} bridge - hence the explicit descriptor, so the injector lands
- * on the real method only.
+ * Points every minecart at the rebuilt cart's texture. The renderer is generic over its cart type,
+ * so it also carries a bridge method of the same name - hence the explicit descriptor, which keeps
+ * the injector on the real one.
  *
- * <p>Geometry and wheel spin now live in {@link MinecartModelMixin}; nothing needs replacing on the
- * renderer's model field.
+ * <p>The cart's shape and its turning wheels are {@link MinecartModelMixin}'s half of the same
+ * switch.
  */
 @Mixin(MinecartRenderer.class)
 public class AbstractMinecartEntityRendererMixin {
@@ -26,6 +24,7 @@ public class AbstractMinecartEntityRendererMixin {
 
     @ModifyReturnValue(method = "getTextureLocation(Lnet/minecraft/world/entity/vehicle/AbstractMinecart;)Lnet/minecraft/resources/ResourceLocation;", at = @At("RETURN"))
     private ResourceLocation useCustomMinecartTexture(ResourceLocation original) {
+        if (!NekomasFixedClientConfig.CUSTOM_MINECART_MODEL.get()) return original;
         return NEKOMASFIXED$NEW_MINECART_LOCATION;
     }
 }

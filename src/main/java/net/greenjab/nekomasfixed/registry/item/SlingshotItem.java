@@ -3,6 +3,8 @@ package net.greenjab.nekomasfixed.registry.item;
 import java.util.function.Predicate;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
+import net.greenjab.nekomasfixed.compat.vanillabackport.BackportedContent;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.entity.SlingshotProjectile;
 import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.sounds.SoundEvents;
@@ -35,9 +37,11 @@ public class SlingshotItem extends ProjectileWeaponItem {
         if (f < 0.99F) return;
 
         if (!level.isClientSide) {
-            boolean shatter = NekomasFixed.enchantLevel(stack, "shatter") != 0;
+            boolean shatter = NekomasFixedConfig.SHATTER_ENCHANTMENT.get()
+                    && NekomasFixed.enchantLevel(stack, "shatter") != 0;
             SlingshotProjectile projectile = new SlingshotProjectile(level, playerEntity, itemStack, stack, shatter);
-            float speed = f * 3.0F * (itemStack.is(Items.AMETHYST_SHARD) ? (1 / 2F) : (2 / 3F));
+            boolean heavyRound = itemStack.is(Items.AMETHYST_SHARD) || isResinClump(itemStack);
+            float speed = f * 3.0F * (heavyRound ? (1 / 2F) : (2 / 3F));
             projectile.shootFromRotation(playerEntity, playerEntity.getXRot(), playerEntity.getYRot(), 0.0F, speed, 1.0F);
             level.addFreshEntity(projectile);
 
@@ -52,6 +56,18 @@ public class SlingshotItem extends ProjectileWeaponItem {
                 SoundEvents.ARROW_SHOOT, SoundSource.PLAYERS,
                 1.0F, 1.0F / (level.getRandom().nextFloat() * 0.4F + 1.2F) + f * 0.5F);
         playerEntity.awardStat(Stats.ITEM_USED.get(this));
+    }
+
+    /**
+     * A resin clump is the heaviest thing the slingshot will throw, so it leaves the sling at the
+     * same reduced speed an amethyst shard does. The clump is not part of this version on its own -
+     * it only exists while a mod is supplying it - so the round is asked for by name and quietly
+     * ignored when nothing answers.
+     */
+    private static boolean isResinClump(ItemStack stack) {
+        return NekomasFixedConfig.BACKPORTED_SLINGSHOT_AMMO.get()
+                && BackportedContent.RESIN_CLUMP.isPresent()
+                && stack.is(BackportedContent.RESIN_CLUMP.get());
     }
 
     public static float getPullProgress(int useTicks) {

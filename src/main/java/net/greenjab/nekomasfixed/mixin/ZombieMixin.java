@@ -8,22 +8,15 @@ import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LevelEvent;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Zombie has no .zombie subpackage on 1.20.1 (same dropped-segment pattern as Skeleton). EntityTypes
-// (plural holder) is EntityType (see boat.PatrolSpawnerMixin's note). Mob#convertTo has one overload,
-// convertTo(EntityType<T>, boolean): T (see SkeletonMixin's matching note) — no ConversionParams, no
-// callback. The unnamed `_` lambda parameter (JEP 456, Java 21+) is not legal at this mod's Java 17
-// compatibility level and is given a name instead.
+// A plain zombie stood in powder snow long enough turns into a rime. The type check keeps husks,
+// drowned and every other zombie subclass out of it - only the base zombie freezes over.
 @Mixin(Zombie.class)
 public abstract class ZombieMixin extends Monster {
-
-    @Shadow
-    public abstract EntityType<? extends Zombie> getType();
 
     @Unique private int inPowderSnowTime = 0;
 

@@ -2,6 +2,7 @@ package net.greenjab.nekomasfixed.screen;
 
 import com.google.common.collect.ImmutableList;
 import net.greenjab.nekomasfixed.NekomasFixed;
+import net.greenjab.nekomasfixed.registry.recipe.KilnRecipe;
 import net.greenjab.nekomasfixed.registry.registries.RecipeRegistry;
 import net.greenjab.nekomasfixed.util.ModRecipeBookType;
 import net.minecraft.client.RecipeBookCategories;
@@ -14,19 +15,21 @@ import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RegisterRecipeBookCategoriesEvent;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 import java.util.Set;
 
 /**
- * Restores the Kiln's 3 recipe-book tabs
- * (search / blocks / misc, mirroring 26.2's own {@code KilnScreen.TABS} icons) via Forge's real
- * extensible-enum API, rather than dropping them outright. Client-only: {@code
- * RecipeBookCategories} and {@code RegisterRecipeBookCategoriesEvent} are both {@code
- * @OnlyIn(Dist.CLIENT)} in Forge itself (verified against forge-1.20.1-mapped-src), so both the 3 new
- * category constants and the event handler live in this one file, kept separate from {@code
- * ModRecipeBookType.KILN} (common, referenced from the common {@code KilnMenu}).
+ * The kiln's recipe book: its three tabs (search / blocks / misc), the rule that sorts a kiln recipe
+ * into one of them, and the book component the screen hangs off.
+ *
+ * <p>Everything here is client-only - both {@link RecipeBookCategories} and the event that registers
+ * them are - which is why the tabs live in this file and {@link ModRecipeBookType#KILN}, which the
+ * common {@link KilnMenu} has to name, lives on its own beside the menus.
+ *
+ * <p>The search tab holds no recipes of its own; it is declared as an aggregate over the other two,
+ * the way vanilla's furnace search tab is, or it opens empty.
  */
 @OnlyIn(Dist.CLIENT)
 public final class KilnRecipeBookClient {
@@ -45,16 +48,17 @@ public final class KilnRecipeBookClient {
         @SubscribeEvent
         public static void onRegisterRecipeBookCategories(RegisterRecipeBookCategoriesEvent event) {
             event.registerBookCategories(ModRecipeBookType.KILN, ImmutableList.of(KILN_SEARCH, KILN_BLOCKS, KILN_MISC));
+            event.registerAggregateCategory(KILN_SEARCH, ImmutableList.of(KILN_BLOCKS, KILN_MISC));
             event.registerRecipeCategoryFinder(RecipeRegistry.KILN.get(), recipe -> {
-                if (recipe instanceof net.greenjab.nekomasfixed.registry.recipe.KilnRecipe kilnRecipe) {
-                    return kilnRecipe.category() == CookingBookCategory.BLOCKS ? KILN_BLOCKS : KILN_MISC;
+                if (recipe instanceof KilnRecipe kilnRecipe && kilnRecipe.category() == CookingBookCategory.BLOCKS) {
+                    return KILN_BLOCKS;
                 }
                 return KILN_MISC;
             });
         }
     }
 
-    /** {@code AbstractFurnaceRecipeBookComponent} has exactly one abstract method on 1.20.1. */
+    /** The book itself. Fuel is the same list the vanilla furnaces accept - a kiln burns anything they do. */
     public static final class KilnRecipeBookComponent extends AbstractFurnaceRecipeBookComponent {
         @Override
         protected Set<Item> getFuelItems() {

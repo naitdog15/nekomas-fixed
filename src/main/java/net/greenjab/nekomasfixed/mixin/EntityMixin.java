@@ -2,7 +2,9 @@ package net.greenjab.nekomasfixed.mixin;
 
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
+import net.greenjab.nekomasfixed.util.ModTags;
 import net.greenjab.nekomasfixed.util.SpottedSheepAccess;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -18,7 +20,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import net.greenjab.nekomasfixed.screen.config.ModConfigValues;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -73,7 +75,7 @@ public abstract class EntityMixin {
 
     @Inject(method = "thunderHit", at = @At("HEAD"))
     private void tickThunder(ServerLevel level, LightningBolt lightningBolt, CallbackInfo ci) {
-        if (ModConfigValues.enableCopperBuff) {
+        if (NekomasFixedConfig.COPPER_BUFF.get()) {
             if ((Entity)(Object)this instanceof ServerPlayer player) {
                 int armor = getCopperArmor(player);
                 if (armor > 0) {
@@ -84,11 +86,21 @@ public abstract class EntityMixin {
         }
     }
 
-    // Counts the copper armour pieces worn. There is no copper armour on this version - neither
-    // vanilla's nor any this mod registers - so nothing can occupy those slots yet and the count is
-    // always zero; the buff above wires straight back up once a copper set exists.
+    // Copper armour worn, counted a piece at a time. The mod's own copper crown always counts; the
+    // rest of the tag is armour another mod supplies, so it is only counted while the option asking
+    // for it is on.
+    @Unique
+    private static final EquipmentSlot[] COPPER_ARMOUR_SLOTS =
+            { EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD };
+
     @Unique
     private static int getCopperArmor(LivingEntity entity) {
-        return 0;
+        int worn = 0;
+        for (EquipmentSlot slot : COPPER_ARMOUR_SLOTS) {
+            ItemStack stack = entity.getItemBySlot(slot);
+            if (!stack.is(ModTags.COPPER_ARMOUR)) continue;
+            if (stack.is(ItemRegistry.COPPER_CROWN.get()) || NekomasFixedConfig.COPPER_ARMOUR_SET.get()) worn++;
+        }
+        return worn;
     }
 }

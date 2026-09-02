@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:crafting_transmute",
+  "type": "nekomasfixed:crafting_transmute",
   "category": "equipment",
   "group": "bundle_dye",
   "input": "#minecraft:bundles",

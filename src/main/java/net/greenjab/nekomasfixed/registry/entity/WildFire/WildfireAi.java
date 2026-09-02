@@ -24,13 +24,9 @@ import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.schedule.Activity;
 
 /**
- * PORT: 1.20.1's {@code Brain} has no {@code ActivityData}/single-call {@code Brain.provider(sensors,
- * activityFactory)} shape (26.2 restructured brain construction). Rewritten onto the real vanilla
- * idiom - verified against forge-1.20.1-mapped-src/.../monster/piglin/PiglinAi.java's own {@code
- * makeBrain(mob, brain)} - an imperative static helper that mutates the brain in place via {@code
- * addActivity}/{@code addActivityWithConditions} then {@code setCoreActivities}/{@code
- * setDefaultActivity}/{@code useDefaultActivity}. {@link WildfireEntity#brainProvider()} supplies the
- * two Collection args {@code Brain.provider(memoryTypes, sensorTypes)} now needs directly.
+ * Builds the Wildfire's brain the same way the piglin's is built: a static helper that fills in the
+ * core, idle and fight activities in place. The memories and sensors it runs on are declared by
+ * {@link WildfireEntity#brainProvider()}.
  */
 public class WildfireAi {
 
@@ -63,8 +59,8 @@ public class WildfireAi {
 
 	private static void initFightActivity(WildfireEntity wildfire, Brain<WildfireEntity> brain) {
 		brain.addActivityWithConditions(Activity.FIGHT, ImmutableList.of(
-				// 1.20.1's Sensor has no "was attackable for the last N ticks" memo, only the direct
-				// per-tick test, so the target is re-checked outright each tick instead.
+				// Nothing remembers whether the target was attackable a moment ago, so it is asked
+				// outright every tick.
 				Pair.of(0, StopAttackingIfTargetInvalid.create(target -> !Sensor.isEntityAttackable(wildfire, target))),
 				Pair.of(1, new WildfireShootTask()),
 				Pair.of(2, new WildfireMeleeTask()),
@@ -83,7 +79,7 @@ public class WildfireAi {
 		@Override
 		protected void start(ServerLevel level, Mob mobEntity, long l) {
 			super.start(level, mobEntity, l);
-			mobEntity.playSound(WildfireRegistrations.BREEZE_SLIDE.get());
+			mobEntity.playSound(WildfireRegistrations.slide());
 			mobEntity.setPose(Pose.STANDING);
 		}
 

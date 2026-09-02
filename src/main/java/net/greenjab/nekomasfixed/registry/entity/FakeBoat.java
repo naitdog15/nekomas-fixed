@@ -6,9 +6,11 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.animal.WaterAnimal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -25,12 +27,17 @@ public class FakeBoat extends Entity {
         super(fakeBoatEntityEntityType, level);
     }
 
-	// PORT: Entity#defineSynchedData() is abstract - FakeBoat extends Entity directly (like vanilla's
-	// own Boat), so there is no concrete super implementation to call (verified: Boat.defineSynchedData()
-	// itself does not call super either). Entity's own shared flags register through a separate,
-	// unconditional internal mechanism, not through this override.
+	// Nothing of this entity's own is synced - it is a positional stand-in for the hull it belongs to,
+	// and everything worth sending to the client already lives on the owner.
 	@Override
 	protected void defineSynchedData() {
+	}
+
+	// Sits flush with the hull it stands in for, so the eyes belong at the top of the box rather than
+	// at the usual fraction of it - the same place a boat puts them.
+	@Override
+	protected float getEyeHeight(Pose pose, EntityDimensions dimensions) {
+		return dimensions.height;
 	}
 
 	@Override
@@ -97,11 +104,9 @@ public class FakeBoat extends Entity {
 
 			for (Entity entity : list) {
 				if (!entity.hasPassenger(owner) && !owner.getPassengers().contains(entity)) {
-					// PORT: EntityTypeTags.CANNOT_BE_PUSHED_ONTO_BOATS doesn't exist on 1.20.1; excluding
-					// WaterAnimal directly is the closest available equivalent (matches vanilla Boat's own
-					// pre-tag push filter). hasEnoughSpaceFor was part of the removed ChestVehicle
-					// interface - getMaxPassengers() already accounts for hasChest(), so the passenger-count
-					// check above covers the same "is there room" gate.
+					// Water animals are shoved aside rather than boarded, the same exception vanilla makes
+					// for its own boats; the passenger count is the room check, and it already accounts
+					// for whether a chest is taking up a seat.
 					if (bl
 							&& owner.getPassengers().size() < owner.getMaxPassengers()
 							&& !entity.isPassenger()

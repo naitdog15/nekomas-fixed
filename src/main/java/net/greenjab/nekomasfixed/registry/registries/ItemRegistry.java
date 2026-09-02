@@ -1,6 +1,7 @@
 package net.greenjab.nekomasfixed.registry.registries;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
+import net.greenjab.nekomasfixed.compat.CompatMods;
 import net.greenjab.nekomasfixed.registry.item.*;
 import net.greenjab.nekomasfixed.util.*;
 import net.minecraft.ChatFormatting;
@@ -49,14 +50,14 @@ import java.util.function.Supplier;
  * used instead wherever an id is needed eagerly, since unlike {@code .get()} it never throws before
  * the registry freezes.
  * <p>
- * <b>What did NOT come along.</b> 1.20.1 predates the whole data-component system (1.20.5+), so
- * every {@code .component(...)}/{@code .delayedComponent(...)} call in the 26.2 source had to be
- * either (a) dropped outright where it named this mod's OWN now-deleted {@code ComponentRegistry}
- * (StackData's read-time default already reproduces the "declared default" behaviour those calls
- * expressed - see StackData.java), or (b) dropped as a real, still-unresolved parity gap where it
- * named a VANILLA post-1.20.1 component with no Properties-level substitute here (Equippable,
- * BlocksAttacks, Tool, Weapon, humanoidArmor). Each such drop is marked "DROPPED" at its call site
- * with its own reason.
+ * <b>Where the 26.2 branch's {@code .component(...)} calls went.</b> 1.20.1 predates the whole
+ * data-component system (1.20.5+), so no {@code .component(...)}/{@code .delayedComponent(...)}
+ * call appears below. Where the 26.2 branch declared a default for one of this mod's OWN
+ * components, StackData's read-time default already reproduces the "declared default" behaviour
+ * (see StackData.java) and nothing further is needed. Where it named a VANILLA post-1.20.1
+ * component with no Properties-level substitute here (Equippable, BlocksAttacks, Tool, Weapon,
+ * humanoidArmor), the behaviour lives on the item class instead, or the gap is noted at the
+ * registration it affects.
  */
 public class ItemRegistry {
 
@@ -70,11 +71,10 @@ public class ItemRegistry {
     public static final RegistryObject<Item> PEARL = register("pearl");
     public static final RegistryObject<Item> PEARL_BLOCK = register(BlockRegistry.PEARL_BLOCK);
 
-    // DROPPED: .component(ComponentRegistry.ANIMAL, AnimalComponent.DEFAULT) - StackData
-    // .readAnimal(stack) already returns AnimalComponent.DEFAULT when nothing is stored on the
-    // stack's NBT (no ROOT compound / no "animal" key), which is exactly what a Properties-level
-    // default declared. Nothing else needs to change: the mixin that actually WRITES a captured
-    // animal calls StackData.writeAnimal(...) directly.
+    // The shells declare no baked-on animal default: StackData.readAnimal(stack) already returns
+    // AnimalComponent.DEFAULT when nothing is stored on the stack's NBT (no root compound / no
+    // "animal" key), which is exactly what a Properties-level default would have declared. The
+    // mixin that actually WRITES a captured animal calls StackData.writeAnimal(...) directly.
     public static final RegistryObject<Item> NAUTILUS_BLOCK = register(BlockRegistry.NAUTILUS_BLOCK, new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> ZOMBIE_NAUTILUS_BLOCK = register(BlockRegistry.ZOMBIE_NAUTILUS_BLOCK, new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> CORAL_NAUTILUS_BLOCK = register(BlockRegistry.CORAL_NAUTILUS_BLOCK, new Item.Properties().stacksTo(1));
@@ -83,9 +83,10 @@ public class ItemRegistry {
     public static final RegistryObject<Item> KILN = register(BlockRegistry.KILN);
     public static final RegistryObject<Item> PYROTECHNICS_TABLE = register(BlockRegistry.PYROTECHNICS_TABLE);
     // ENDERMAN_HEAD's factory reads WALL_ENDERMAN_HEAD.get() - single-lambda form (BlockRegistry.java
-    // javadoc). DROPPED: Waypoint.addHideAttribute(...) - 26.x waypoint system, no 1.20.1
-    // analogue. Wearing the head is not a Properties setting on this version: AbstractEndermanHeadBlock
-    // implements Equipable and reports the HEAD slot, exactly as vanilla's own skull blocks do.
+    // javadoc). The 26.x waypoint system (Waypoint.addHideAttribute) has no 1.20.1 analogue, so the
+    // head hides nobody from anything here. Wearing the head is not a Properties setting on this
+    // version either: AbstractEndermanHeadBlock implements Equipable and reports the HEAD slot,
+    // exactly as vanilla's own skull blocks do.
     public static final RegistryObject<Item> ENDERMAN_HEAD = register(BlockRegistry.ENDERMAN_HEAD,
             (block, settings) -> new StandingAndWallBlockItem(block, BlockRegistry.WALL_ENDERMAN_HEAD.get(), settings, Direction.DOWN),
             new Item.Properties().rarity(Rarity.UNCOMMON));
@@ -94,10 +95,9 @@ public class ItemRegistry {
             (block, settings) -> new StandingAndWallBlockItem(block, BlockRegistry.GLOW_WALL_TORCH.get(), settings, Direction.DOWN));
     public static final RegistryObject<Item> TARGET_DUMMY = register("target_dummy", TargetDummyItem::new, new Item.Properties().stacksTo(1));
     // TURTLE_CHESTPLATE/LEGGINGS/BOOTS: ArmorMaterials.TURTLE already carries real defense values
-    // for all four slots on 1.20.1 (verified against forge-1.20.1-mapped-src), not just the vanilla
-    // Turtle Helmet's slot - so this is a straight retarget, not new construction. DROPPED on
-    // all three: .humanoidArmor(...) (1.20.5+ Properties convenience; 1.20.1 uses new ArmorItem(...)
-    // directly instead).
+    // for all four slots on 1.20.1, not just the vanilla Turtle Helmet's slot, so plain
+    // ArmorItem construction is all three need - .humanoidArmor(...) is a 1.20.5+ Properties
+    // convenience with no counterpart here.
     public static final RegistryObject<Item> TURTLE_CHESTPLATE = register("turtle_chestplate", settings -> new ArmorItem(ArmorMaterials.TURTLE, ArmorItem.Type.CHESTPLATE, settings), new Item.Properties());
     public static final RegistryObject<Item> TURTLE_LEGGINGS = register("turtle_leggings", settings -> new ArmorItem(ArmorMaterials.TURTLE, ArmorItem.Type.LEGGINGS, settings), new Item.Properties());
     public static final RegistryObject<Item> TURTLE_BOOTS = register("turtle_boots", settings -> new ArmorItem(ArmorMaterials.TURTLE, ArmorItem.Type.BOOTS, settings), new Item.Properties());
@@ -122,10 +122,10 @@ public class ItemRegistry {
     // vanilla 1.20.1's own templates. That constructor also takes one Component more than the newer
     // one - an "upgrade description" tooltip line that later versions replaced with the item's own
     // name - and nothing in the source supplies that text, so it stays empty here.
-    // The empty-slot icons every template below passes are BLOCK-atlas sprite ids on 1.20.1 (Slot#
-    // getNoItemIcon pairs them with InventoryMenu.BLOCK_ATLAS), not GUI-atlas ones - there is no GUI
-    // sprite atlas until 1.20.2. The mod's own icons keep their container/slot/* ids and are stitched
-    // in by assets/minecraft/atlases/blocks.json; vanilla's ingot icon is item/empty_slot_ingot.
+    // The empty-slot icons every template below passes are block-atlas sprite ids: Slot#getNoItemIcon
+    // pairs them with InventoryMenu.BLOCK_ATLAS, so the mod's container/slot/* sprites reach that
+    // atlas through assets/minecraft/atlases/blocks.json, and vanilla's ingot icon is
+    // item/empty_slot_ingot on the same atlas.
     public static final RegistryObject<Item> NETHER_HEART = register(
             "nether_heart", () -> new SmithingTemplateItem(
                     Component.translatable(
@@ -140,17 +140,16 @@ public class ItemRegistry {
                     List.of(NekomasFixed.id("container/slot/trident"), NekomasFixed.id("container/slot/shield")),
                     List.of(ResourceLocation.withDefaultNamespace("item/empty_slot_ingot")))
     );
-    // DROPPED: .attributes(...) and .component(DataComponents.TOOL, ...)/.component(
-    // DataComponents.WEAPON, ...) - attribute modifiers and mining/attack tool behaviour on 1.20.1
-    // are expressed as overrides on the item class, not Properties builder calls. The trident's
-    // modifiers live in WildfireTridentItem#getDefaultAttributeModifiers(EquipmentSlot).
+    // Attribute modifiers and mining/attack tool behaviour on 1.20.1 are expressed as overrides on
+    // the item class, not Properties builder calls (.attributes(...) and the TOOL/WEAPON components
+    // are 1.20.5+). The trident's modifiers live in
+    // WildfireTridentItem#getDefaultAttributeModifiers(EquipmentSlot).
     public static final RegistryObject<Item> WILDFIRE_TRIDENT = register("wildfire_trident", WildfireTridentItem::new, new Item.Properties()
             .rarity(Rarity.RARE).durability(1000).fireResistant());
     // .equippableUnswappable(EquipmentSlot.OFFHAND) needs nothing here: 1.20.1's ShieldItem already
     // implements Equipable and reports the OFFHAND slot, and its use() blocks rather than swapping.
-    // DROPPED: .delayedComponent(DataComponents.BLOCKS_ATTACKS, ...)/.component(DataComponents
-    // .BREAK_SOUND, ...) - the configurable shield-blocking-curve system is 1.21.2+ with no 1.20.1
-    // analogue at all; WildfireShieldItem keeps ShieldItem's own blocking instead.
+    // The configurable shield-blocking-curve system (BLOCKS_ATTACKS/BREAK_SOUND) is 1.21.2+ with no
+    // 1.20.1 analogue at all; WildfireShieldItem keeps ShieldItem's own blocking instead.
     public static final RegistryObject<Item> WILDFIRE_SHIELD = register("wildfire_shield", WildfireShieldItem::new,
             new Item.Properties().rarity(Rarity.RARE).durability(336).fireResistant());
     // The trim pattern this template applies is data/nekomasfixed/trim_pattern/jewel.json.
@@ -163,13 +162,11 @@ public class ItemRegistry {
                     .withStyle(ChatFormatting.BLUE), Component.nullToEmpty(""), Component.nullToEmpty(""), Component.nullToEmpty(""),
                     List.of(NekomasFixed.id("container/slot/helmet")),
                     List.of(NekomasFixed.id("container/slot/nether_heart"))));
-    // Crowns: new ArmorItem(...) directly (1.20.1 has no .humanoidArmor(...) Properties method -
-    // DROPPED on all five, along with .component(DataComponents.EQUIPPABLE, ...): the equip
-    // SOUND now comes from each ArmorMaterial's own getEquipSound(), and the custom render layer is
-    // EquipmentLayerRendererMixin (@ModifyExpressionValue on EquipmentAssetManager#get), not a
-    // Properties declaration - so nothing here is actually lost, just relocated). COPPER has no
-    // vanilla 1.20.1 ArmorMaterials constant (it is a new tier this mod adds) - see
-    // ModArmorMaterials.java, whose COPPER numbers are provisional.
+    // Crowns are plain ArmorItems: the equip sound comes from each ArmorMaterial's own
+    // getEquipSound(), and the crown render layer is EquipmentLayerRendererMixin (a
+    // @ModifyReturnValue on HumanoidArmorLayer#getArmorResource), so neither needs declaring here.
+    // COPPER is the one tier this mod adds itself - see ModArmorMaterials.java, whose COPPER
+    // numbers are provisional.
     public static final RegistryObject<Item> COPPER_CROWN = register("copper_crown", settings -> new ArmorItem(ModArmorMaterials.COPPER, ArmorItem.Type.HELMET, settings), new Item.Properties());
     public static final RegistryObject<Item> IRON_CROWN = register("iron_crown", settings -> new ArmorItem(ArmorMaterials.IRON, ArmorItem.Type.HELMET, settings), new Item.Properties());
     public static final RegistryObject<Item> GOLDEN_CROWN = register("golden_crown", settings -> new ArmorItem(ArmorMaterials.GOLD, ArmorItem.Type.HELMET, settings), new Item.Properties());
@@ -320,9 +317,9 @@ public class ItemRegistry {
     public static final RegistryObject<Item> INDIGO_STAINED_GLASSS_PANE = register(BlockRegistry.INDIGO_STAINED_GLASS_PANE);
     public static final RegistryObject<Item> MAROON_STAINED_GLASSS_PANE = register(BlockRegistry.MAROON_STAINED_GLASS_PANE);
 
-    // DROPPED on all four shulker boxes: .component(DataComponents.CONTAINER,
-    // ItemContainerContents.EMPTY) - same "default = absence of NBT" reasoning as NAUTILUS_BLOCK
-    // above; the block entity's own inventory (opened as a container in-world) is unaffected.
+    // None of the four shulker boxes declares an empty-container default - same "default = absence
+    // of NBT" reasoning as NAUTILUS_BLOCK above; the block entity's own inventory (opened as a
+    // container in-world) is unaffected.
     public static final RegistryObject<Item> AMBER_SHULKER_BOX = register(BlockRegistry.AMBER_SHULKER_BOX, new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> AQUA_SHULKER_BOX = register(BlockRegistry.AQUA_SHULKER_BOX, new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> INDIGO_SHULKER_BOX = register(BlockRegistry.INDIGO_SHULKER_BOX, new Item.Properties().stacksTo(1));
@@ -338,23 +335,21 @@ public class ItemRegistry {
     public static final RegistryObject<Item> INDIGO_CANDLE = register(BlockRegistry.INDIGO_CANDLE);
     public static final RegistryObject<Item> MAROON_CANDLE = register(BlockRegistry.MAROON_CANDLE);
 
-    // BUNDLE_CONTENTS component dropped (stored via ItemStack NBT directly on 1.20.1, no
-    // Properties declaration needed). NOTE: on 1.20.1 bundles sit behind FeatureFlags.BUNDLE
-    // (experimental); BundleItem is used as-is (no .requiredFeatures(...) added) so these register
-    // exactly like every other mod item. Worth confirming in-game that they behave.
+    // The four keep their contents in the stack's own data rather than needing anything declared in
+    // their properties. They do not ask for the bundle experiment either, so they work whether or not
+    // it is switched on - that flag only ever governed the vanilla bundle.
     public static final RegistryObject<Item> AMBER_BUNDLE = register("amber_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> AQUA_BUNDLE = register("aqua_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> INDIGO_BUNDLE = register("indigo_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> MAROON_BUNDLE = register("maroon_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
 
-    // DROPPED on all four harnesses: .component(DataComponents.EQUIPPABLE,
-    // HarnessHelper.ofHarness(...)) - Happy Ghast (the only entity a harness equips onto) does not
-    // exist on 1.20.1 at all (26.x-only mob), so the items are still registered and obtainable but
-    // there is nothing on this version to equip them onto. See HarnessHelper.java.
-    public static final RegistryObject<Item> AMBER_HARNESS = register("amber_harness", (new Item.Properties()).stacksTo(1));
-    public static final RegistryObject<Item> AQUA_HARNESS = register("aqua_harness", (new Item.Properties()).stacksTo(1));
-    public static final RegistryObject<Item> INDIGO_HARNESS = register("indigo_harness", (new Item.Properties()).stacksTo(1));
-    public static final RegistryObject<Item> MAROON_HARNESS = register("maroon_harness", (new Item.Properties()).stacksTo(1));
+    // A harness needs a happy ghast to go on, and that comes from another mod, so the four are only
+    // registered when it is installed. Everything downstream reads them through the handle rather
+    // than assuming they exist - see ItemGroupRegistry and the minecraft:harnesses tag.
+    public static final RegistryObject<Item> AMBER_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "amber_harness", (new Item.Properties()).stacksTo(1));
+    public static final RegistryObject<Item> AQUA_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "aqua_harness", (new Item.Properties()).stacksTo(1));
+    public static final RegistryObject<Item> INDIGO_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "indigo_harness", (new Item.Properties()).stacksTo(1));
+    public static final RegistryObject<Item> MAROON_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "maroon_harness", (new Item.Properties()).stacksTo(1));
 
     // The DyeColor each one borrows is the same one its wool/carpet family uses in BlockRegistry -
     // see ModDyeItems for why a real DyeColor is unavoidable here.
@@ -560,6 +555,16 @@ public class ItemRegistry {
 
     private static RegistryObject<Item> register(String id, Item.Properties settings) {
         return register(id, Item::new, settings);
+    }
+    /**
+     * Registers {@code id} only when {@code present}; otherwise hands back a handle for an id that
+     * nothing ever fills. The handle is live either way, so a field declared with it keeps the same
+     * type and every reader just has to ask whether it is there before using it.
+     */
+    private static RegistryObject<Item> registerIf(boolean present, String id, Item.Properties settings) {
+        return present
+                ? register(id, settings)
+                : RegistryObject.create(NekomasFixed.id(id), ForgeRegistries.Keys.ITEMS, NekomasFixed.NAMESPACE);
     }
     private static RegistryObject<Item> register(String id, Function<Item.Properties, Item> factory, Item.Properties settings) {
         return ITEMS.register(id, () -> factory.apply(settings));

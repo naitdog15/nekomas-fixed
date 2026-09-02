@@ -218,10 +218,10 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.INDIGO_BUNDLE.get());
                         entries.accept(ItemRegistry.MAROON_BUNDLE.get());
 
-                        entries.accept(ItemRegistry.AMBER_HARNESS.get());
-                        entries.accept(ItemRegistry.AQUA_HARNESS.get());
-                        entries.accept(ItemRegistry.INDIGO_HARNESS.get());
-                        entries.accept(ItemRegistry.MAROON_HARNESS.get());
+                        ItemRegistry.AMBER_HARNESS.ifPresent(entries::accept);
+                        ItemRegistry.AQUA_HARNESS.ifPresent(entries::accept);
+                        ItemRegistry.INDIGO_HARNESS.ifPresent(entries::accept);
+                        ItemRegistry.MAROON_HARNESS.ifPresent(entries::accept);
 
                         entries.accept(ItemRegistry.AMBER_DYE.get());
                         entries.accept(ItemRegistry.AQUA_DYE.get());

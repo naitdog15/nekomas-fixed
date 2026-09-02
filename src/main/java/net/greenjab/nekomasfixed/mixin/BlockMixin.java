@@ -23,8 +23,7 @@ public class BlockMixin {
     // Enchantment instance; ItemStack#getEnchantments() (an ItemEnchantments view) becomes
     // EnchantmentHelper.getItemEnchantmentLevel/getEnchantments(ItemStack). playerDestroy's own
     // signature (Level, Player, BlockPos, BlockState, BlockEntity, ItemStack) is unchanged between
-    // 26.2 and 1.20.1 (VERIFIED against forge-1.20.1-mapped-src Block.java:352) so the injection
-    // point itself needs no retarget.
+    // 26.2 and 1.20.1, so the injection point itself needs no retarget.
     @Inject(method = "playerDestroy", at = @At("HEAD"))
     private void customAfterBreak(Level level, Player player, BlockPos pos, BlockState state, BlockEntity blockEntity, ItemStack destroyedWith, CallbackInfo ci) {
         if (state.is(Blocks.MAGMA_BLOCK) && player != null) {

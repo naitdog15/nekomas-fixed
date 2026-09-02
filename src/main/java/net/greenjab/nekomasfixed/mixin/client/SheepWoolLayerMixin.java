@@ -12,19 +12,12 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * The spotted-sheep behaviour re-sources directly from the {@code Sheep} entity here;
- * SheepRenderStateMixin (the spotted-flag holder on a render state) and SheepRendererMixin (the
- * extractor that copied it there) are both deleted, and this file replaces the whole indirection.
- * <p>
- * 1.20.1 has no {@code SheepRenderState}/{@code submit(...)} deferred-render architecture (that is
- * 1.21.2+); {@code SheepWoolLayer} is renamed {@code SheepFurLayer} and its {@code render(...)}
- * receives the {@code Sheep} directly as a parameter (VERIFIED forge-1.20.1-mapped-src
- * SheepFurLayer.java) — so {@code ((SpottedSheepAccess) sheep).nekomasfixed$isSpotted()} can be read
- * right there, no state-stashing needed at all. {@code Identifier} (26.2) is
- * {@code ResourceLocation} here; the field itself is {@code SHEEP_FUR_LOCATION}, not
- * {@code SHEEP_WOOL_LOCATION}. It is read twice in {@code render} (the glowing-outline branch and
- * the normal-colour branch); both should show the spotted texture, so this is left unordinaled to
- * apply to both, matching the field's every use.
+ * Gives a spotted sheep its spotted fleece.
+ *
+ * <p>The layer is handed the sheep itself, so the spotted flag is read straight off it. The fur
+ * texture is used twice while the layer draws - once for the glowing outline, once for the ordinary
+ * coloured pass - and both should show the spots, so this deliberately matches every use of the
+ * field rather than picking one.
  */
 @Mixin(SheepFurLayer.class)
 public abstract class SheepWoolLayerMixin {

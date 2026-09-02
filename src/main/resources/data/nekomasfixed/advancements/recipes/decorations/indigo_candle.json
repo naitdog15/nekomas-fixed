@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:indigo_dye"
+            "items": [
+              "nekomasfixed:indigo_dye"
+            ]
           }
         ]
       },

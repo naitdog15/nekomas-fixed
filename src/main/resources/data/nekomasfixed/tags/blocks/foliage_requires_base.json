@@ -1,6 +1,9 @@
 {
   "values": [
-    "#minecraft:edible_for_sheep",
+    {
+      "id": "#minecraft:edible_for_sheep",
+      "required": false
+    },
     "#minecraft:flowers"
   ]
 }

@@ -63,7 +63,7 @@ public class WildfireMeleeTask extends Behavior<WildfireEntity> {
 		wildFireEntity.setPose(Pose.STANDING);
 		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_CHARGING.get(), Unit.INSTANCE, MELEE_CHARGING_EXPIRY);
 		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT.get(), Unit.INSTANCE,MELEE_CHARGING_EXPIRY + MELEE_EXPIRY);
-		wildFireEntity.playSound(WildfireRegistrations.BREEZE_INHALE.get(), 1.0F, 1.0F);
+		wildFireEntity.playSound(WildfireRegistrations.inhale(), 1.0F, 1.0F);
 		wildFireEntity.setFireActive(true);
 	}
 
@@ -93,8 +93,8 @@ public class WildfireMeleeTask extends Behavior<WildfireEntity> {
 					double h = Math.max(f * f + g * g, 0.1);
 					entity.push(f / h * 2.0, 0.2F, g / h * 2.0);
 					DamageSource damageSource = wildFireEntity.damageSources().mobAttack(wildFireEntity);
-					// No unified doPostAttackEffects on 1.20.1 - the two-call vanilla form applies the
-					// attacker's and the victim's enchantment effects separately.
+					// The shove lands either way; the enchantment effects only fire on a hit that
+					// actually connected.
 					if (entity.hurt(damageSource, wildFireEntity.isSoulActive()?6.0F:4.0F)) {
 						EnchantmentHelper.doPostHurtEffects(entity, wildFireEntity);
 						EnchantmentHelper.doPostDamageEffects(wildFireEntity, entity);

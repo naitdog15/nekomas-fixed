@@ -10,19 +10,20 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Shared by {@code AnimalComponent} and
- * {@code TermitehiveBlockEntity.TermiteData}, which use the identical shape with different
- * denylists; a helper owned by either would be reimplemented by the other and the two would
- * diverge.
+ * Stashing a live entity in a block entity or on an item stack, and getting it back. Shared by
+ * {@code AnimalComponent} and {@code TermitehiveBlockEntity.TermiteData}, which use the identical
+ * shape with different denylists; a helper owned by either would be reimplemented by the other and
+ * the two would drift apart.
  * <p>
- * 1.20.1's only loader is {@code EntityType.loadEntityRecursive(CompoundTag, Level,
- * Function<Entity,Entity>)}, which reads the type OUT OF THE TAG via {@code EntityType.by(tag)} —
- * the {@code (type, tag, level, ...)} overload the 26.2 source uses does not exist here. So
- * {@link #store} must write an explicit {@code "id"} key alongside {@code saveWithoutId}.
+ * The loader, {@code EntityType.loadEntityRecursive(CompoundTag, Level, Function<Entity,Entity>)},
+ * reads the entity type OUT OF THE TAG via {@code EntityType.by(tag)}, so {@link #store} has to
+ * write an explicit {@code "id"} key alongside {@code saveWithoutId} — without it the blob loads
+ * back as nothing at all.
  * <p>
- * Do not substitute {@code Entity#save(CompoundTag)}: on 1.20.1 its body is
- * {@code return this.isPassenger() ? false : this.saveAsPassenger(tag);} — it silently writes
- * nothing for a passenger, a data-loss path with no compile error and no log line.
+ * Do not substitute {@code Entity#save(CompoundTag)} for {@code saveWithoutId} here: its body is
+ * {@code return this.isPassenger() ? false : this.saveAsPassenger(tag);}, so it silently writes
+ * nothing for an entity that happens to be riding something. That is a data-loss path with no
+ * compile error and no log line.
  */
 public final class EntityNbtHelper {
     private EntityNbtHelper() {

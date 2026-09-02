@@ -1,8 +1,11 @@
 package net.greenjab.nekomasfixed.registry.item;
 
 import com.google.common.collect.Multimap;
+import net.greenjab.nekomasfixed.registry.other.ComboComponent;
 import net.greenjab.nekomasfixed.util.ModItemSettings;
 import net.greenjab.nekomasfixed.util.ModTags;
+import net.greenjab.nekomasfixed.util.StackData;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
@@ -15,7 +18,11 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+
+import javax.annotation.Nullable;
+import java.util.List;
 
 public class SickleItem extends Item {
 
@@ -23,9 +30,29 @@ public class SickleItem extends Item {
 
     private final Multimap<Attribute, AttributeModifier> defaultModifiers;
 
+    /**
+     * The combo step this sickle's tier is worth. There is no way to bake a starting value onto a
+     * stack at craft time, so the item holds it and hands it out as the fallback for any stack
+     * that carries none of its own.
+     */
+    private final int comboMultiplier;
+
     public SickleItem(Tier material, Item.Properties settings) {
         super(settings);
         this.defaultModifiers = ModItemSettings.sickleAttributeModifiers(material, SPEED);
+        this.comboMultiplier = ModItemSettings.sickleDefaultCombo(material);
+    }
+
+    /** What a fresh sickle of this tier starts its combo ramp at, in percent per step. */
+    public int comboMultiplier() {
+        return this.comboMultiplier;
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        tooltip.addAll(StackData.read(stack, StackData.KEY_COMBO_MULTIPLIER, ComboComponent.CODEC,
+                new ComboComponent(this.comboMultiplier)).tooltipLines());
     }
 
     @Override

@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:amber_stained_glass"
+            "items": [
+              "nekomasfixed:amber_stained_glass"
+            ]
           }
         ]
       },

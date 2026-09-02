@@ -45,8 +45,8 @@ public class Termite extends Monster {
 
     public Termite(EntityType<? extends Monster> entityType, Level level) {
         super(entityType, level);
-        // PORT: Attributes.STEP_HEIGHT/SAFE_FALL_DISTANCE don't exist on 1.20.1 (post-1.20.5 attribute
-        // additions); 1.20.1 uses setMaxUpStep(float) / an overridden getMaxFallDistance() instead.
+        // Step height and safe fall distance are set via setMaxUpStep(float) / an overridden
+        // getMaxFallDistance() rather than attributes.
         this.setMaxUpStep(1.0F);
     }
 

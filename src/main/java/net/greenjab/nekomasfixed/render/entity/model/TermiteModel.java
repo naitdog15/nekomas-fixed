@@ -12,15 +12,7 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 
-/**
- * Render-state collapse: {@code EntityModel<TermiteRenderState>} → {@link HierarchicalModel}{@code <Termite>}
- * — {@code HierarchicalModel} is the base that provides {@code animate(AnimationState, AnimationDefinition,
- * float)}, 1.20.1's real equivalent of 26.2's precomputed {@code KeyframeAnimation.bake(root).apply(...)}
- * (neither {@code KeyframeAnimation} as a standalone baked type nor {@code AnimationDefinition#bake}
- * exists on 1.20.1; {@code TermiteAnimations} itself needed no change — {@code AnimationDefinition}/
- * {@code AnimationChannel}/{@code Keyframe}/{@code KeyframeAnimations} are all real 1.20.1 vanilla
- * classes already).
- */
+/** Body, legs and antler/pincher mesh for the termite; the swipe animation plays through {@link HierarchicalModel#animate}. */
 public class TermiteModel extends HierarchicalModel<Termite> {
     private final ModelPart root;
     private final ModelPart head;

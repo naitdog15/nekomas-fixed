@@ -21,31 +21,18 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Replaces {@code SpecialModelRenderersMixin} (a mixin injecting into
- * {@code IClientItemExtensions#getCustomRenderer()}). 26.2's {@code SpecialModelRenderer<T>}/
- * {@code NoDataSpecialModelRenderer} framework (the {@code WildfireTridentModelRenderer}/
- * {@code WildfireShieldModelRenderer} classes this replaces) does not exist on 1.20.1 at all — the
- * 1.20.1-native mechanism for "this item needs a full 3D model instead of a flat sprite" is a
- * {@link BlockEntityWithoutLevelRenderer} (a "BEWLR") returned from {@code Item#initializeClient(...)}
- * ({@code IClientItemExtensions.getCustomRenderer()}'s own javadoc names this as the intended hook).
- * Modeled directly on Forge's own vanilla {@code BlockEntityWithoutLevelRenderer#renderByItem}
- * TRIDENT/SHIELD branches (read from {@code forge-1.20.1-mapped-src}) — same
- * {@code getFoilBufferDirect}/{@code scale(1,-1,-1)} shape, retargeted at this mod's two items and its
- * damage-based soul-shield texture swap.
- *
- * <p><b>Not wired up yet.</b> To use it, override
- * {@code Item#initializeClient(Consumer<IClientItemExtensions>)} on
- * {@code WildfireTridentItem}/{@code WildfireShieldItem}:
- * <pre>{@code
- * @Override
- * public void initializeClient(Consumer<IClientItemExtensions> consumer) {
- *     consumer.accept(new IClientItemExtensions() {
- *         @Override public BlockEntityWithoutLevelRenderer getCustomRenderer() {
- *             return NekomasFixedBEWLR.instance();
- *         }
- *     });
- * }
- * }</pre>
+ * Draws the wildfire trident and the wildfire shield as real models rather than flat sprites.
+ * An item that wants that asks for it through {@code Item#initializeClient(...)}, handing back this
+ * renderer from {@code IClientItemExtensions#getCustomRenderer()} — both items do exactly that. It
+ * only takes over for an item whose model declares {@code builtin/entity}; anything still pointing
+ * at a flat sprite draws as a sprite and never reaches here.
+ * <p>
+ * The two branches follow the shape of the game's own trident and shield rendering — same foil
+ * buffer, same {@code scale(1, -1, -1)} flip — with this mod's textures and the shield's swap to
+ * its soul face once it is past half worn.
+ * <p>
+ * Model geometry comes out of code rather than a resource pack, so baking it once is enough; only
+ * the textures are looked up per draw, and those are picked fresh every time.
  */
 public class NekomasFixedBEWLR extends BlockEntityWithoutLevelRenderer {
     private static final ResourceLocation TRIDENT_TEXTURE = NekomasFixed.id("textures/entity/wildfire_trident/default.png");
@@ -61,9 +48,8 @@ public class NekomasFixedBEWLR extends BlockEntityWithoutLevelRenderer {
         super(dispatcher, modelSet);
     }
 
-    /** Lazily constructed the first time an item asks for it — mirrors how Forge itself constructs
-     * its own default BEWLR once, in {@code ItemRenderer}'s init, and hands out that same instance
-     * from {@code IClientItemExtensions.DEFAULT}. */
+    /** Built the first time an item asks for one, and shared from then on — the same one instance
+     * serves every stack of both items. */
     public static NekomasFixedBEWLR instance() {
         if (INSTANCE == null) {
             Minecraft mc = Minecraft.getInstance();

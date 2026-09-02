@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:nautilus_block"
+            "items": [
+              "nekomasfixed:nautilus_block"
+            ]
           }
         ]
       },

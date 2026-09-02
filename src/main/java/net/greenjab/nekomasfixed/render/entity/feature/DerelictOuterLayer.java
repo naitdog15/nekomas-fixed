@@ -12,9 +12,7 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Render-state collapse: {@code RenderLayer<ZombieRenderState, DerelictModel>} → {@code <Derelict,
- * DerelictModel>}, {@code submit(...)} (26.2's batched pipeline) → the classic {@code render(...)}
- * override. No dedicated baby model any more — see {@link DerelictModel}'s javadoc; only the texture
+ * Outer armor/clothing layer for the derelict. There's no separate baby model — only the texture
  * switches for the baby variant, matching vanilla Zombie/Husk/Drowned's own outer-layer handling.
  */
 public class DerelictOuterLayer extends RenderLayer<Derelict, DerelictModel> {

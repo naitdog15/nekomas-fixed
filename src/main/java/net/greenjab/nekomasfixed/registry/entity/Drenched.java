@@ -65,7 +65,7 @@ public class Drenched extends AbstractSkeleton {
         this.setMaxUpStep(1.0F);
     }
 
-    // PORT: Attributes.STEP_HEIGHT doesn't exist on 1.20.1; setMaxUpStep(float) in the constructor replaces it.
+    // Step height is set via setMaxUpStep(float) in the constructor - there's no STEP_HEIGHT attribute here.
     public static AttributeSupplier.Builder createDrenchedAttributes() {
         return Skeleton.createAttributes();
     }
@@ -110,11 +110,9 @@ public class Drenched extends AbstractSkeleton {
         return ItemRegistry.CLAM.get();
     }
 
-    // PORT: 1.20.1's MobSpawnType has no isSpawner()/ignoresLightRequirements() helpers (26.2-only
-    // conveniences); replaced with direct enum comparison, mirroring vanilla Drowned.checkDrownedSpawnRules
-    // (forge-1.20.1-mapped-src/.../monster/Drowned.java:95-100), which itself has no light-requirement
-    // bypass branch - so that OR-branch is dropped rather than invented: darkness is always required
-    // to spawn on 1.20.1, matching vanilla Drowned exactly.
+    // Mirrors vanilla Drowned.checkDrownedSpawnRules: direct spawnReason comparison instead of a
+    // spawner-type helper method, and no light-requirement bypass branch, so darkness is always
+    // required to spawn, same as a regular Drowned.
     public static boolean canSpawn(EntityType<Drenched> type, ServerLevelAccessor level, MobSpawnType spawnReason, BlockPos pos, RandomSource random) {
         if (!level.getFluidState(pos.below()).is(FluidTags.WATER) && spawnReason != MobSpawnType.SPAWNER) return false;
         Holder<Biome> registryEntry = level.getBiome(pos);

@@ -16,11 +16,12 @@ import net.minecraftforge.common.data.ExistingFileHelper;
 import java.util.concurrent.CompletableFuture;
 
 /** {@code FabricTagsProvider.BlockTagsProvider} → Forge's
- * {@code net.minecraftforge.common.data.BlockTagsProvider}. Forge's {@code TagAppender} has a
- * convenience {@code add(T)} overload taking the registry object directly, so {@code
- * BlockDyeMap}'s plain {@code Block} values (VERIFIED by reading {@code BlockDyeMap.java} directly —
- * an {@code EnumMap<AllDyes, Block>}, no {@code .properties().blockId()} indirection needed) tag
- * straight in, replacing 26.2's {@code b.properties().blockId()} chain. */
+ * {@code net.minecraftforge.common.data.BlockTagsProvider}. That one hands out an intrinsic-holder
+ * appender with an {@code add(Block)} overload, so {@code BlockDyeMap}'s plain {@code Block} values
+ * (it's an {@code EnumMap<AllDyes, Block>}) tag straight in, replacing 26.2's
+ * {@code b.properties().blockId()} chain. Mind the chaining though: only {@code addTag} keeps the
+ * intrinsic appender's type, while {@code addOptionalTag} drops back to the plain appender that
+ * takes resource keys only - so the block-form adds have to happen off a fresh {@code tag(...)}. */
 public class ModBlockTagProvider extends BlockTagsProvider {
     public ModBlockTagProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture, ExistingFileHelper existingFileHelper) {
         super(output, registriesFuture, NekomasFixed.NAMESPACE, existingFileHelper);
@@ -72,12 +73,11 @@ public class ModBlockTagProvider extends BlockTagsProvider {
                 .addOptionalTag(TagKey.create(Registries.BLOCK, ResourceLocation.withDefaultNamespace("concrete_powder")))
                 .addTag(ModTags.FROGLIGHTS)
                 .addOptionalTag(BlockTags.SHULKER_BOXES)
-                .addOptionalTag(BlockTags.BEDS)
-                .add(Blocks.GLASS)
-                .add(Blocks.GLASS_PANE)
-                .add(Blocks.BRICKS)
-                .add(Blocks.BRICK_SLAB)
-                .add(Blocks.BRICK_STAIRS)
-                .add(Blocks.BRICK_WALL);
+                .addOptionalTag(BlockTags.BEDS);
+        // Same tag, second appender: the optional-tag calls above hand back the plain appender,
+        // which only takes resource keys, and these six want to go in as blocks.
+        tag(ModTags.CAN_BE_DYED_WITH_BRUSH)
+                .add(Blocks.GLASS, Blocks.GLASS_PANE, Blocks.BRICKS,
+                        Blocks.BRICK_SLAB, Blocks.BRICK_STAIRS, Blocks.BRICK_WALL);
     }
 }

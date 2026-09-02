@@ -15,16 +15,13 @@ import net.minecraft.util.Mth;
 import java.util.Arrays;
 
 /**
- * Render-state collapse. {@code shieldAngle}/{@code shieldExtraSpin} were computed once per frame in
- * {@code extractRenderState} from {@code partialTick} — 1.20.1's equivalent per-frame,
- * partialTick-carrying hook is {@code prepareMobModel(entity, limbSwing, limbSwingAmount,
- * partialTick)}, called by the renderer just before {@code setupAnim}. {@code bodyRot} (the ring's
- * counter-rotation against the body's own world yaw) isn't derivable inside the model at all — neither
- * {@code prepareMobModel} nor {@code setupAnim} receives raw body yaw — so {@link
- * net.greenjab.nekomasfixed.render.entity.WildfireRenderer} sets it directly as a field before calling
- * {@code super.render(...)}, the same way vanilla itself hands models precomputed per-frame state
- * (c.f. {@code EntityModel.attackTime}/{@code young}/{@code riding}, all set the same way by
- * {@code LivingEntityRenderer.render()} itself).
+ * The Wildfire's rods and the ring of shield plates around them. The per-frame spin is worked out in
+ * {@code prepareMobModel}, which is the hook that still has the partial tick to hand.
+ *
+ * <p>{@link #bodyRot} is the odd one out: the ring counter-rotates against the mob's world yaw, and
+ * no animation hook is handed raw body yaw, so
+ * {@link net.greenjab.nekomasfixed.render.entity.WildfireRenderer} sets the field itself just before
+ * rendering - the same way the game hands models {@code attackTime} and friends.
  */
 public class WildfireModel extends HierarchicalModel<WildfireEntity> {
 	private final ModelPart root;

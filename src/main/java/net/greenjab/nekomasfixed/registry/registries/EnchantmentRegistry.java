@@ -4,36 +4,25 @@ import net.greenjab.nekomasfixed.NekomasFixed;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentCategory;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * In the 26.2 source these were {@code ResourceKey<Enchantment>} constants only, with the real
- * enchantments living as datapack JSON (empty {@code "effects": {}} - the gameplay lives entirely
- * in mixins). 1.20.1 has no datapack-JSON enchantment registry at all: enchantments are a plain
- * Java {@code DeferredRegister<Enchantment>}, and {@code Enchantment} is abstract with a
- * trivial {@code protected Enchantment(Rarity, EnchantmentCategory, EquipmentSlot[])} constructor -
- * three one-line subclasses, no other members, since the JSON's own effects were already empty.
- * <p>
- * Rarity/category/slot values below are read off {@code data/nekomasfixed/enchantment/*.json}
- * (still present, still the source of truth for these numbers even though the JSON registry path
- * itself is gone): all three have {@code "weight": 5} (-&gt; {@link Enchantment.Rarity#UNCOMMON},
- * the only 1.20.1 rarity whose own weight is 5) and {@code "slots": ["mainhand"]}. Category has no
- * clean 1:1 translation (1.20.1's {@code EnchantmentCategory} is a coarser per-item-class
- * classifier, not the JSON's tag-based {@code supported_items}) - chosen by nearest existing
- * category to the JSON's {@code supported_items} tag: dismount -&gt; spears/TRIDENT (matches
- * {@code #nekomasfixed:spears}), leeching -&gt; WEAPON (matches {@code
- * #minecraft:enchantable/melee_weapon}), shatter -&gt; BOW (matches {@code
- * #nekomasfixed:enchantable/slingshot}, a projectile launcher). This governs only which items the
- * enchantment table / anvil will OFFER the enchantment for - it does not gate whether the mixins
- * that implement the actual effects fire, since the effects blocks were already empty and no
- * behaviour moves.
- * <p>
- * The target dummy's "count Smite as if the dummy were undead" rule is not an enchantment concern
- * on this version: it lives in {@code mixin/target_dummy/LivingEntityMobTypeMixin}, which reports
- * the dummy's {@code MobType} instead, so 1.20.1's own {@code DamageEnchantment} damage bonus picks
- * it up without any hook on the three subclasses below.
+ * The three enchantments this mod adds. None of them carries any behaviour of its own: what each one
+ * does is applied where the effect belongs — Dismount and Leeching in the damage pipeline, Shatter on
+ * the slingshot — and these classes exist to give the enchanting table, the anvil and the tooltip
+ * something to name.
+ *
+ * <p>All three are uncommon, sit in the main hand, and take the costs and exclusivity rules written
+ * on each class below. Leeching is the odd one out twice over: it is the only one that goes past
+ * level I, and the only one the enchanting table will not offer, so it has to be found or traded for.
+ *
+ * <p>Which items each one is offered for is the enchantment's category, a coarse per-item-class test
+ * rather than a list. Dismount rides the trident category, Leeching the weapon category and Shatter
+ * the bow category; the mod's own sickle and slingshot are widened onto that in EnchantmentMixin, which
+ * is the one place that decides what those two accept.
  */
 public class EnchantmentRegistry {
 
@@ -48,17 +37,81 @@ public class EnchantmentRegistry {
         public DismountEnchantment() {
             super(Rarity.UNCOMMON, EnchantmentCategory.TRIDENT, new EquipmentSlot[]{EquipmentSlot.MAINHAND});
         }
+
+        @Override
+        public int getMinCost(int level) {
+            return 20;
+        }
+
+        @Override
+        public int getMaxCost(int level) {
+            return 50;
+        }
+
+        @Override
+        protected boolean checkCompatibility(Enchantment other) {
+            return super.checkCompatibility(other)
+                    && other != Enchantments.MULTISHOT
+                    && other != Enchantments.PIERCING
+                    && !(other instanceof ShatterEnchantment);
+        }
     }
 
     public static class LeechingEnchantment extends Enchantment {
         public LeechingEnchantment() {
             super(Rarity.UNCOMMON, EnchantmentCategory.WEAPON, new EquipmentSlot[]{EquipmentSlot.MAINHAND});
         }
+
+        @Override
+        public int getMaxLevel() {
+            return 3;
+        }
+
+        @Override
+        public int getMinCost(int level) {
+            return 5 + (level - 1) * 8;
+        }
+
+        @Override
+        public int getMaxCost(int level) {
+            return 20 + (level - 1) * 10;
+        }
+
+        /** Not offered at the enchanting table: it comes off loot and out of trades. */
+        @Override
+        public boolean isTreasureOnly() {
+            return true;
+        }
+
+        @Override
+        protected boolean checkCompatibility(Enchantment other) {
+            return super.checkCompatibility(other)
+                    && other != Enchantments.MENDING
+                    && other != Enchantments.INFINITY_ARROWS;
+        }
     }
 
     public static class ShatterEnchantment extends Enchantment {
         public ShatterEnchantment() {
             super(Rarity.UNCOMMON, EnchantmentCategory.BOW, new EquipmentSlot[]{EquipmentSlot.MAINHAND});
+        }
+
+        @Override
+        public int getMinCost(int level) {
+            return 20;
+        }
+
+        @Override
+        public int getMaxCost(int level) {
+            return 50;
+        }
+
+        @Override
+        protected boolean checkCompatibility(Enchantment other) {
+            return super.checkCompatibility(other)
+                    && other != Enchantments.MULTISHOT
+                    && other != Enchantments.PIERCING
+                    && !(other instanceof DismountEnchantment);
         }
     }
 }

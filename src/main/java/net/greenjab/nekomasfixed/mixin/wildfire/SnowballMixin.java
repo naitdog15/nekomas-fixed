@@ -8,10 +8,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-// Snowball has no .throwableitemprojectile subpackage on 1.20.1. Entity#hurt(DamageSource,float)
-// returns boolean here (not void — see the top-level LivingEntityMixin's header), so the @At
-// descriptor's trailing return type changes; the wrapped argument index (1, the float amount) is
-// unaffected by that.
+// Snowballs sting a Wildfire the way they sting a blaze - a snowball is water, and the Wildfire is
+// as sensitive to it as anything else made of fire.
 @Mixin(Snowball.class)
 public class SnowballMixin {
     @ModifyArg(method = "onHitEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z"), index = 1)

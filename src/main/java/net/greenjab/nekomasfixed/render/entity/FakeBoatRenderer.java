@@ -8,11 +8,9 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Render-state collapse: the original {@code createRenderState}/{@code submit} pair had no body
- * beyond delegating to the vanilla defaults (FakeBoat renders nothing itself — it exists purely as an
- * invisible collision/interaction anchor). {@code EntityRenderer<FakeBoat>} needs a
- * {@code getTextureLocation} override regardless (abstract on {@code EntityRenderer}); it is never
- * actually sampled since {@link #render} never submits any geometry.
+ * The hull extensions are invisible - they exist only to be hit, pushed and stood on - so this draws
+ * nothing at all. The texture below is never sampled; it is only there because every renderer has to
+ * name one.
  */
 public class FakeBoatRenderer extends EntityRenderer<FakeBoat> {
 

@@ -1,5 +1,7 @@
 package net.greenjab.nekomasfixed.registry.block.entity;
 
+import com.mojang.logging.LogUtils;
+import com.mojang.serialization.DataResult;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
@@ -20,8 +22,10 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.Shapes;
+import org.slf4j.Logger;
 
 public class HollowLogBlockEntity extends BlockEntity implements Container {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private BlockState storedBlock = Blocks.AIR.defaultBlockState();
     private NonNullList<ItemStack> storedStack = NonNullList.withSize(1, ItemStack.EMPTY);
 
@@ -51,12 +55,15 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
         }
     }
 
+    // A block that will not encode is written as no key at all, so the log loads back hollow
+    // rather than holding something the renderer cannot draw.
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
 
-        BlockState.CODEC.encodeStart(NbtOps.INSTANCE, storedBlock)
-                .result().ifPresent(encoded -> tag.put("StoredBlock", encoded));
+        DataResult<Tag> encoded = BlockState.CODEC.encodeStart(NbtOps.INSTANCE, storedBlock);
+        encoded.error().ifPresent(error -> LOGGER.error("nekomasfixed: could not save the block stored in the hollow log at {}: {}", this.worldPosition, error.message()));
+        encoded.result().ifPresent(value -> tag.put("StoredBlock", value));
         ContainerHelper.saveAllItems(tag, this.storedStack, false);
     }
 
@@ -66,7 +73,8 @@ public class HollowLogBlockEntity extends BlockEntity implements Container {
 
         storedBlock = tag.contains("StoredBlock", Tag.TAG_COMPOUND)
                 ? BlockState.CODEC.parse(NbtOps.INSTANCE, tag.get("StoredBlock"))
-                        .result().orElse(Blocks.AIR.defaultBlockState())
+                        .resultOrPartial(error -> LOGGER.error("nekomasfixed: unreadable block stored in the hollow log at {}: {}", this.worldPosition, error))
+                        .orElse(Blocks.AIR.defaultBlockState())
                 : Blocks.AIR.defaultBlockState();
         this.storedStack = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
         ContainerHelper.loadAllItems(tag, this.storedStack);

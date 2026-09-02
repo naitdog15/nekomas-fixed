@@ -5,6 +5,7 @@ import com.mojang.serialization.DataResult;
 import net.greenjab.nekomasfixed.registry.other.AnimalComponent;
 import net.greenjab.nekomasfixed.registry.other.ComboComponent;
 import net.greenjab.nekomasfixed.registry.other.StoredTimeComponent;
+import net.greenjab.nekomasfixed.registry.other.TermitesComponent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
@@ -18,19 +19,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The central NBT facade every one of the ~29 data-component consumer
- * files talks to instead of a 1.21+ {@code DataComponentType}. {@code ComponentRegistry.java} is
- * deleted; this class is its replacement.
+ * Every piece of item data this mod owns lives here, in one sub-compound of the stack tag, and is
+ * read and written through this class only — nothing else in the mod should touch that compound
+ * by name.
  * <p>
- * Network sync is free: 1.20.1 syncs the whole {@code ItemStack} tag to the client as part of the
- * stack's own network representation, so nothing here needs a packet.
+ * Reserved key names inside the compound: {@code stored_time}, {@code combo_multiplier},
+ * {@code clam_state}, {@code animal}, {@code termites}, and {@code ingredients} (the last one
+ * declared next to its reader on {@code SpecialSoupItem}). Nothing else may claim a name in here
+ * without being added to that list.
  * <p>
- * Never-write-defaults rule: never write a value equal to a component's default, and prune
- * the key — and {@link #ROOT} itself once it is empty — when a value returns to default. Use
- * {@link #writeOrRemove} rather than {@link #write} for every mod-owned default-carrying
- * declaration (exactly ten: the 3 nautilus blocks' {@code ANIMAL} and the 7
- * sickles' {@code COMBO_MULTIPLIER}) — most importantly the two unguarded {@code builder.set(...)}
- * sites in {@code NautilusBlockEntity}/{@code TermitehiveBlockEntity}, which must guard both.
+ * Network sync is free: the whole stack tag already goes to the client as part of the stack's own
+ * network representation, so none of this needs a packet of its own.
+ * <p>
+ * Never-write-defaults rule: a value equal to its default is never written, and the key — and the
+ * sub-compound itself once it is empty — is pruned instead. That keeps a stack that has been
+ * emptied of mod data byte-identical to a fresh one, so the two still stack together. Prefer
+ * {@link #writeOrRemove} (or one of the typed pairs below, which all use it) over the bare
+ * {@link #write} for anything that has a meaningful default.
  */
 public final class StackData {
     private StackData() {
@@ -39,7 +44,7 @@ public final class StackData {
     /** Codec failures are logged, never swallowed. */
     private static final Logger LOGGER = LoggerFactory.getLogger("nekomasfixed");
 
-    /** One sub-compound, never the bare stack tag — keeps this mod's NBT out of every other mod's way. */
+    /** One sub-compound, never the bare stack tag — keeps this mod's data out of every other mod's way. */
     private static final String ROOT = "nekomasfixed";
 
     public static final String KEY_STORED_TIME = "stored_time";
@@ -50,16 +55,24 @@ public final class StackData {
 
     private static final Codec<Integer> CLAM_STATE_CODEC = ExtraCodecs.intRange(0, 3);
 
-    // --- Generic core — every consumer, including TermitesComponent
-    // once it exists, may call these directly with its own Codec. ---
+    // --- Generic core. Any consumer may call these directly with its own codec, as
+    // SpecialSoupItem does for the stew's ingredient list. ---
+
+    /** True when {@code key} is present on this stack, without decoding it. */
+    public static boolean contains(ItemStack stack, String key) {
+        CompoundTag root = stack.getTagElement(ROOT);
+        return root != null && root.contains(key);
+    }
 
     /**
-     * An earlier written form
-     * was {@code .result().orElse(fallback)}, which turns malformed or version-incompatible stored
-     * NBT into an apparently valid default with no log line — a data-integrity failure disguised as
-     * success. {@code resultOrPartial(LOGGER::error)} logs the DataResult's own error message and
-     * still yields the partial value when one exists; an absent key (the overwhelmingly common case,
-     * given the never-write-defaults rule) short-circuits above and logs nothing.
+     * Reads {@code key}, falling back to {@code fallback} when it is absent or unreadable.
+     * <p>
+     * Decoding uses {@code resultOrPartial} rather than {@code result().orElse(fallback)}: the
+     * latter turns malformed or version-incompatible stored data into an apparently valid default
+     * with no log line at all, which is a data-integrity failure dressed up as success. This form
+     * logs the decoder's own error message and still yields a partial value when one exists. An
+     * absent key — the overwhelmingly common case, given the never-write-defaults rule — short
+     * circuits above and logs nothing.
      */
     public static <T> T read(ItemStack stack, String key, Codec<T> codec, T fallback) {
         CompoundTag root = stack.getTagElement(ROOT);
@@ -72,19 +85,20 @@ public final class StackData {
     }
 
     /**
-     * Observable success/failure contract: an earlier written form's
-     * {@code .result().ifPresent(...)} silently left the PREVIOUS value in NBT when encoding failed,
-     * so a caller believing it had written a new value would read back the stale one.
+     * Writes {@code value} under {@code key} and reports whether it landed.
      * <p>
-     * Documented policy on failure: the key is REMOVED (never left stale) and {@code false} is
-     * returned, so a failed write degrades to "absent" — which every reader resolves to the
-     * component's default — rather than to "silently unchanged". Returns {@code true} on success.
+     * A caller has to be able to tell: silently leaving the PREVIOUS value in place when encoding
+     * fails means a caller that believes it wrote a new value reads the stale one back. So on
+     * failure the key is REMOVED and {@code false} returned — a failed write degrades to "absent",
+     * which every reader resolves to the default, and never to "silently unchanged". A partial
+     * encode counts as a failure here for the same reason; half a value is not the value.
      */
     public static <T> boolean write(ItemStack stack, String key, Codec<T> codec, T value) {
         DataResult<Tag> encoded = codec.encodeStart(NbtOps.INSTANCE, value);
-        Optional<Tag> tag = encoded.resultOrPartial(
-                error -> LOGGER.error("nekomasfixed: failed to encode stack NBT under '{}/{}': {}", ROOT, key, error));
+        Optional<Tag> tag = encoded.result();
         if (tag.isEmpty()) {
+            LOGGER.error("nekomasfixed: failed to encode stack NBT under '{}/{}': {}", ROOT, key,
+                    encoded.error().map(DataResult.PartialResult::message).orElse("unknown error"));
             remove(stack, key);
             return false;
         }
@@ -101,7 +115,11 @@ public final class StackData {
         return write(stack, key, codec, value);
     }
 
-    /** Removes {@code key} from {@link #ROOT}, and prunes {@link #ROOT} itself once it is empty. */
+    /**
+     * Removes {@code key}, prunes the sub-compound once it is empty, and lets the stack tag itself
+     * go back to null once THAT is empty. The last step matters: a leftover empty tag is not equal
+     * to no tag, so a stack that kept one would refuse to stack with a fresh one.
+     */
     public static void remove(ItemStack stack, String key) {
         CompoundTag root = stack.getTagElement(ROOT);
         if (root == null) {
@@ -109,14 +127,12 @@ public final class StackData {
         }
         root.remove(key);
         if (root.isEmpty()) {
-            stack.getOrCreateTag().remove(ROOT);
+            stack.removeTagKey(ROOT);
         }
     }
 
-    // --- Typed convenience pairs, self-contained components only. TermitesComponent is not
-    // wrapped here: it depends on TermitehiveBlockEntity.TermiteData, which has no Forge form yet.
-    // Call read/write above directly with TermitesComponent.CODEC and StackData.KEY_TERMITES
-    // once that lands. ---
+    // --- Typed pairs. Each is read/writeOrRemove against the component's own default, so a
+    // caller never has to remember to prune. ---
 
     public static StoredTimeComponent readStoredTime(ItemStack stack) {
         return read(stack, KEY_STORED_TIME, StoredTimeComponent.CODEC, new StoredTimeComponent(0));
@@ -134,6 +150,7 @@ public final class StackData {
         return writeOrRemove(stack, KEY_COMBO_MULTIPLIER, ComboComponent.CODEC, value, new ComboComponent(0));
     }
 
+    /** 0 closed, 1 open, 2 open with a pearl. Anything else decodes back to 0. */
     public static int readClamState(ItemStack stack) {
         return read(stack, KEY_CLAM_STATE, CLAM_STATE_CODEC, 0);
     }
@@ -148,5 +165,13 @@ public final class StackData {
 
     public static boolean writeAnimal(ItemStack stack, AnimalComponent value) {
         return writeOrRemove(stack, KEY_ANIMAL, AnimalComponent.CODEC, value, AnimalComponent.DEFAULT);
+    }
+
+    public static TermitesComponent readTermites(ItemStack stack) {
+        return read(stack, KEY_TERMITES, TermitesComponent.CODEC, TermitesComponent.DEFAULT);
+    }
+
+    public static boolean writeTermites(ItemStack stack, TermitesComponent value) {
+        return writeOrRemove(stack, KEY_TERMITES, TermitesComponent.CODEC, value, TermitesComponent.DEFAULT);
     }
 }

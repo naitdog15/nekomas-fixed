@@ -10,11 +10,10 @@ import net.minecraft.world.entity.LivingEntity;
 import javax.annotation.Nullable;
 
 /**
- * 1.20.1 has no separate {@code InstantaneousMobEffect} class (that split is 26.x-only) — a
- * one-shot effect is a plain {@link MobEffect} overriding {@link #isInstantenous()} to return
- * {@code true} (note Mojang's own 1.20.1 spelling, missing the second "a") plus {@link
- * #applyInstantenousEffect}. {@code EntityType.LIGHTNING_BOLT.create(Level)} takes no spawn-reason
- * argument on 1.20.1 ({@code EntitySpawnReason} is 26.x-only).
+ * 1.20.1 has no separate {@code InstantaneousMobEffect} class — a one-shot effect is a plain
+ * {@link MobEffect} overriding {@link #isInstantenous()} to return {@code true} (note Mojang's own
+ * spelling, missing the second "a") plus {@link #applyInstantenousEffect}.
+ * {@code EntityType.LIGHTNING_BOLT.create(Level)} takes no spawn-reason argument here.
  */
 public class LightningEffect extends MobEffect {
     public LightningEffect(MobEffectCategory category, int color) {

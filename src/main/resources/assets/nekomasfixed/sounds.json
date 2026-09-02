@@ -1,0 +1,38 @@
+{
+  "breeze_slide": {
+    "subtitle": "subtitles.nekomasfixed.wildfire.slide",
+    "sounds": [
+      { "name": "minecraft:entity.blaze.burn", "type": "event", "volume": 0.9, "pitch": 0.8 }
+    ]
+  },
+  "breeze_inhale": {
+    "subtitle": "subtitles.nekomasfixed.wildfire.inhale",
+    "sounds": [
+      { "name": "minecraft:entity.blaze.ambient", "type": "event", "pitch": 0.7 }
+    ]
+  },
+  "breeze_shoot": {
+    "subtitle": "subtitles.nekomasfixed.wildfire.shoot",
+    "sounds": [
+      { "name": "minecraft:entity.blaze.shoot", "type": "event" }
+    ]
+  },
+  "breeze_charge": {
+    "subtitle": "subtitles.nekomasfixed.wildfire.charge",
+    "sounds": [
+      { "name": "minecraft:entity.blaze.burn", "type": "event", "pitch": 1.4 }
+    ]
+  },
+  "breeze_jump": {
+    "subtitle": "subtitles.nekomasfixed.wildfire.jump",
+    "sounds": [
+      { "name": "minecraft:entity.ghast.shoot", "type": "event", "pitch": 1.5 }
+    ]
+  },
+  "breeze_land": {
+    "subtitle": "subtitles.nekomasfixed.wildfire.land",
+    "sounds": [
+      { "name": "minecraft:entity.blaze.hurt", "type": "event", "volume": 1.0, "pitch": 0.6 }
+    ]
+  }
+}

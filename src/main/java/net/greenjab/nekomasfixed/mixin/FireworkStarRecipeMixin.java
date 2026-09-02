@@ -15,10 +15,10 @@ import java.util.List;
 /**
  * 1.20.1's {@code FireworkStarRecipe#assemble(CraftingContainer, RegistryAccess)} (not
  * {@code CraftingInput} — that abstraction is newer) collects dye colours into a plain
- * {@code List<Integer>}, not fastutil's {@code IntList} (VERIFIED forge-1.20.1-mapped-src
- * FireworkStarRecipe.java:92,104: {@code List<Integer> list = Lists.newArrayList(); ...
- * list.add(((DyeItem)itemstack1.getItem()).getDyeColor().getFireworkColor());}) — same intent
- * (intercept the colour value about to be recorded), different collection type to wrap.
+ * {@code List<Integer>} ({@code List<Integer> list = Lists.newArrayList(); ...
+ * list.add(((DyeItem)itemstack1.getItem()).getDyeColor().getFireworkColor());}), not fastutil's
+ * {@code IntList} — same intent (intercept the colour value about to be recorded), different
+ * collection type to wrap.
  */
 @Mixin(FireworkStarRecipe.class)
 public class FireworkStarRecipeMixin {

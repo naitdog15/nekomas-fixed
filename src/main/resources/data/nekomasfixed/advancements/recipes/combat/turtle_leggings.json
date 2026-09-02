@@ -7,11 +7,13 @@
       },
       "trigger": "minecraft:recipe_unlocked"
     },
-    "has_turtle_scute": {
+    "has_scute": {
       "conditions": {
         "items": [
           {
-            "items": "minecraft:turtle_scute"
+            "items": [
+              "minecraft:scute"
+            ]
           }
         ]
       },
@@ -21,7 +23,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_turtle_scute"
+      "has_scute"
     ]
   ],
   "rewards": {

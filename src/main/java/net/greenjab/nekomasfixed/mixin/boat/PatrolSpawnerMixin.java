@@ -130,8 +130,31 @@ public class PatrolSpawnerMixin {
         return true;
     }
 
+    // The wood index the captain rolled also picks the escorts' wood. Every vanilla wood shares one
+    // boat entity type and differs only by its variant, so the index maps onto a variant here; only
+    // baobab needs an entity type of its own, and pale oak rides along on dark oak the way the rest
+    // of its content does.
+    @Unique private Boat createSmallBoat(ServerLevel level, int boatType) {
+        if (boatType == 10) return EntityTypeRegistry.BAOBAB_BOAT.get().create(level);
+        Boat boat = EntityType.BOAT.create(level);
+        if (boat != null) {
+            boat.setVariant(switch (boatType) {
+                case 0 -> Boat.Type.ACACIA;
+                case 1 -> Boat.Type.BAMBOO;
+                case 2 -> Boat.Type.BIRCH;
+                case 3 -> Boat.Type.CHERRY;
+                case 5 -> Boat.Type.JUNGLE;
+                case 6 -> Boat.Type.MANGROVE;
+                case 7 -> Boat.Type.OAK;
+                case 9 -> Boat.Type.SPRUCE;
+                default -> Boat.Type.DARK_OAK;
+            });
+        }
+        return boat;
+    }
+
     @Unique boolean spawnSmallBoat(ServerLevel level, BlockPos pos, RandomSource random, int boatType){
-        Boat boatEntity = EntityTypeRegistry.vanillaBoats().get(boatType).create(level);
+        Boat boatEntity = createSmallBoat(level, boatType);
         if (boatEntity != null) {
             boatEntity.setPos(Vec3.atCenterOf(pos));
             PatrollingMonster patrolEntity = (PatrollingMonster) EntityType.PILLAGER.create(level);

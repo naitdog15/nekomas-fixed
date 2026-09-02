@@ -1,9 +1,21 @@
 {
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "vanillabackport"
+    }
+  ],
   "type": "minecraft:smithing_transform",
-  "addition": "minecraft:pale_oak_planks",
-  "base": "nekomasfixed:big_pale_oak_boat",
+  "addition": {
+    "item": "minecraft:pale_oak_planks"
+  },
+  "base": {
+    "item": "nekomasfixed:big_pale_oak_boat"
+  },
   "result": {
     "item": "nekomasfixed:huge_pale_oak_boat"
   },
-  "template": "nekomasfixed:boat_upgrade_template"
+  "template": {
+    "item": "nekomasfixed:boat_upgrade_template"
+  }
 }

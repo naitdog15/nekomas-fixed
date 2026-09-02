@@ -17,16 +17,14 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 
 /**
- * PORT: 1.20.1's {@code AbstractCookingRecipe} is not codec-based (that's the 1.21+ Recipe-as-data
- * system) - it takes a raw constructor {@code (RecipeType<?>, ResourceLocation id, String group,
- * CookingBookCategory, Ingredient, ItemStack result, float xp, int cookTime)}, matching vanilla's own
- * {@code SmeltingRecipe} exactly (verified against forge-1.20.1-mapped-src). {@code getSerializer()}
- * must be implemented directly - the {@code Recipe} interface declares it abstract on 1.20.1, with no
- * base default - and {@link #SERIALIZER} is what {@code RecipeRegistry} registers under the id
- * {@code kilning}. {@code recipeBookCategory()} (a per-recipe override) has no 1.20.1 hook at all; the
- * category-to-{@code RecipeBookCategories} mapping that used to live here is now a CLIENT-only Forge
- * event handler (see {@code screen/KilnRecipeBookClient.java}, which restores the kiln's 3
- * recipe-book tabs).
+ * The kiln's cooking recipe - an ordinary {@code AbstractCookingRecipe} with its own type and its own
+ * serializer, shaped exactly like vanilla's {@code SmeltingRecipe}. {@link #SERIALIZER} is what
+ * {@code RecipeRegistry} registers under the id {@code kilning}, and that id has to stay as it is or
+ * every kiln recipe file stops parsing.
+ * <p>
+ * The recipe book's three kiln tabs are not set up here: sorting recipes into
+ * {@code RecipeBookCategories} is a client-side concern and lives in
+ * {@code screen/KilnRecipeBookClient.java}.
  */
 public class KilnRecipe extends AbstractCookingRecipe {
 

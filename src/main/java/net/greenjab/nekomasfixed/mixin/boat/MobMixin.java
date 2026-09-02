@@ -10,10 +10,8 @@ import net.minecraft.world.level.block.Blocks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-// EntitySpawnReason (26.2) is MobSpawnType on 1.20.1 (VERIFIED forge-1.20.1-mapped-src
-// MobSpawnType.java has PATROL). checkMobSpawnRules(EntityType,LevelAccessor,MobSpawnType,BlockPos,
-// RandomSource) does call BlockState#isValidSpawn(BlockGetter,BlockPos,EntityType) internally
-// (VERIFIED Mob.java:831-834), so this injection point survives unchanged.
+// A pirate patrol spawns on open water, where the block below is never a valid spawn surface, so the
+// surface test is waived for patrol spawns in air.
 @Mixin(Mob.class)
 public class MobMixin {
 

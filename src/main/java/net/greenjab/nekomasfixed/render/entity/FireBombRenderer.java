@@ -12,12 +12,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Render-state collapse: {@code submitCustomGeometry(matrices, layer, (entry, vertexConsumer) -> {...})}
- * (26.2's batched pipeline) → a direct {@code VertexConsumer} quad built inline in the classic
- * {@code render(...)} override, using the 1.20.1 fluent {@code vertex().color().uv().overlayCoords()
- * .uv2().normal().endVertex()} builder chain. {@code cameraState.orientation} → the render
- * dispatcher's own {@code cameraOrientation()} (a protected field on {@code EntityRenderer}, the
- * classic billboard-facing hook).
+ * Draws the fire bomb as a single glowing billboard quad, turned to face the camera by the
+ * dispatcher's own orientation and lit at full brightness whatever the block light says.
  */
 public class FireBombRenderer extends EntityRenderer<FireBomb> {
 	private static final ResourceLocation TEXTURE = new ResourceLocation("minecraft", "textures/item/blaze_powder.png");

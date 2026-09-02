@@ -1,6 +1,8 @@
 package net.greenjab.nekomasfixed.registry.block.entity;
 
 import com.google.common.collect.Lists;
+import com.mojang.logging.LogUtils;
+import com.mojang.serialization.DataResult;
 import net.greenjab.nekomasfixed.registry.block.NautilusBlock;
 import net.greenjab.nekomasfixed.registry.other.AnimalComponent;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
@@ -8,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -17,10 +20,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 import java.util.List;
 
 public class NautilusBlockEntity extends BlockEntity {
+	private static final Logger LOGGER = LogUtils.getLogger();
 	private final List<AnimalComponent.StoredEntityData> animal = Lists.newArrayList();
 
 	public NautilusBlockEntity(BlockPos pos, BlockState state) {
@@ -98,24 +103,43 @@ public class NautilusBlockEntity extends BlockEntity {
 		return new AnimalComponent(List.copyOf(this.animal));
 	}
 
+	/**
+	 * Puts the passenger back when a captured shell is placed again. The shell stores exactly one
+	 * animal, so an already-occupied shell keeps what it has rather than doubling up. The stored
+	 * blob is the same bytes {@link #getAnimalComponent} handed out, so nothing is re-encoded on
+	 * the way through - but the animal comes back as a new entity with a new UUID, because the
+	 * capture deliberately drops the old one rather than risk two entities claiming it.
+	 */
+	public void restoreAnimal(AnimalComponent component) {
+		if (!this.animal.isEmpty() || component.animal().isEmpty()) {
+			return;
+		}
+		this.animal.addAll(component.animal());
+		super.setChanged();
+	}
+
 	@Override
 	public void load(CompoundTag tag) {
 		super.load(tag);
 		this.animal.clear();
-		if (tag.contains("animal")) {
+		if (tag.contains("animal", Tag.TAG_LIST)) {
 			AnimalComponent.StoredEntityData.LIST_CODEC.parse(NbtOps.INSTANCE, tag.get("animal"))
-					.result().ifPresent(this.animal::addAll);
+					.resultOrPartial(error -> LOGGER.error("nekomasfixed: unreadable nautilus occupant at {}: {}", this.worldPosition, error))
+					.ifPresent(this.animal::addAll);
 		}
 	}
 
 	// No key at all when the shell is empty, so an ordinary nautilus saves an empty tag and nothing
-	// copying this block entity onto a stack stamps it with a leftover empty list.
+	// copying this block entity onto a stack stamps it with a leftover empty list. An encode that
+	// fails writes nothing rather than half an animal: the shell then loads back empty, which is a
+	// state the rest of the block already handles.
 	@Override
 	protected void saveAdditional(CompoundTag tag) {
 		super.saveAdditional(tag);
 		if (!this.animal.isEmpty()) {
-			AnimalComponent.StoredEntityData.LIST_CODEC.encodeStart(NbtOps.INSTANCE, this.animal)
-					.result().ifPresent(encoded -> tag.put("animal", encoded));
+			DataResult<Tag> encoded = AnimalComponent.StoredEntityData.LIST_CODEC.encodeStart(NbtOps.INSTANCE, this.animal);
+			encoded.error().ifPresent(error -> LOGGER.error("nekomasfixed: could not save the nautilus occupant at {}: {}", this.worldPosition, error.message()));
+			encoded.result().ifPresent(value -> tag.put("animal", value));
 		}
 	}
 }

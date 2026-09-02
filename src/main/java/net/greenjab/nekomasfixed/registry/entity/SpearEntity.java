@@ -11,9 +11,14 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityEvent;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -39,9 +44,15 @@ public class SpearEntity extends Entity {
 	@Override
 	protected void defineSynchedData() {
 		this.entityData.define(DIRECTION, Direction.UP);
-		// No spear item exists on 1.20.1, so there is nothing to default the carried stack to; the
-		// dispenser wiring always calls setStack before the entity is added to the level.
+		// The dispenser always calls setStack before the entity reaches the level, so an empty
+		// default is only ever seen by an entity that never got planted.
 		this.entityData.define(SPEAR, ItemStack.EMPTY);
+	}
+
+	/** Low enough that the planted spear looks at the ankles rather than over the shoulder. */
+	@Override
+	protected float getEyeHeight(Pose pose, EntityDimensions dimensions) {
+		return 0.3F;
 	}
 
 	public void setDirection(Direction dir) {
@@ -83,7 +94,7 @@ public class SpearEntity extends Entity {
 				AABB box = this.getBoundingBox().inflate(b.x, b.y, b.z);
 				List<LivingEntity> list = this.level().getEntitiesOfClass(LivingEntity.class, box);
 				if (!list.isEmpty()) {
-					// 1.20.1 has no spear sound event; the trident stab is the nearest match.
+					// The trident stab is the closest thing in the game to a spear going in.
 					this.level().playLocalSound(this.getX(), this.getY(), this.getZ(), SoundEvents.TRIDENT_HIT,
 							this.getSoundSource(), 1.0F, 1f, false);
 					for (int i = 0; i < 12; i++) {
@@ -117,16 +128,21 @@ public class SpearEntity extends Entity {
 		}
 	}
 
-	// PORT: 26.2's PiercingWeapon/Weapon DataComponents,
-	// DataComponents.ATTRIBUTE_MODIFIERS-derived damage, and Player#stabAttack/onAttack/postPiercingAttack
-	// are all part of the 1.21.2+ combat rework and have no 1.20.1 counterpart (1.20.1's Item.Properties
-	// carries no components at all - components landed in 1.20.5). The fake-"Dispenser"-player positioning
-	// technique is preserved (still valid 1.20.1 API), but the piercing-weapon-component attack dispatch is
-	// replaced with a direct target.hurt(...) call using a fixed base damage plus the wielded stack's own
-	// Sharpness-family bonus (EnchantmentHelper.getDamageBonus, the 1.20.1 form). Per-spear-material damage
-	// scaling previously read from the stack's attribute-modifier component cannot be reproduced without the
-	// spear Item class exposing a damage value some other way.
+	/** What a planted spear hits for when its item declares no attack damage of its own. */
 	private static final float BASE_SPEAR_DAMAGE = 8.0F;
+
+	/**
+	 * A planted spear hits as hard as the spear it was made from. The stack's own attack-damage
+	 * modifiers are what carry that per-material difference, so they are read straight off the held
+	 * item and added to the one point of damage every swing starts from.
+	 */
+	private static float spearDamage(ItemStack stack) {
+		double bonus = 0.0;
+		for (AttributeModifier modifier : stack.getAttributeModifiers(EquipmentSlot.MAINHAND).get(Attributes.ATTACK_DAMAGE)) {
+			if (modifier.getOperation() == AttributeModifier.Operation.ADDITION) bonus += modifier.getAmount();
+		}
+		return bonus > 0.0 ? (float) (bonus + 1.0) : BASE_SPEAR_DAMAGE;
+	}
 
 	private void damage(LivingEntity target) {
 		if (target.isAlive() && !target.isInvulnerable()) {
@@ -153,11 +169,9 @@ public class SpearEntity extends Entity {
 				player.attackStrengthTicker = 1000;
 				player.getInventory().setItem(0, stack);
 				DamageSource damageSource = this.damageSources().playerAttack(player);
-				float damage = BASE_SPEAR_DAMAGE + EnchantmentHelper.getDamageBonus(stack, target.getMobType());
+				float damage = spearDamage(stack) + EnchantmentHelper.getDamageBonus(stack, target.getMobType());
 				if (target.hurt(damageSource, damage)) {
-					// 1.20.1 has no unified EnchantmentHelper.doPostAttackEffects(level, target, source);
-					// the two-call vanilla form is doPostHurtEffects(victim, attacker) + doPostDamageEffects(attacker, victim)
-					// (see ThrownTrident.onHitEntity for the real vanilla usage this mirrors).
+					// Both halves of the enchantment follow-up, the way a thrown trident does it.
 					EnchantmentHelper.doPostHurtEffects(target, player);
 					EnchantmentHelper.doPostDamageEffects(player, target);
 				}

@@ -19,6 +19,7 @@ version = mod_version
 group   = mod_group_id
 base { archivesName = mod_id }
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+jarJar.enable()
 
 minecraft {
     mappings channel: mapping_channel, version: mapping_version
@@ -60,11 +61,18 @@ mixin {
 repositories {
     maven { url 'https://maven.shedaniel.me/' }
     maven { url 'https://repo.spongepowered.org/repository/maven-public/' }
+    mavenCentral()
 }
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.3.5"))
+    // MixinExtras must also be on the runtime classpath and shipped inside the jar —
+    // Forge provides Mixin itself but not MixinExtras, and the @WrapOperation/@Local
+    // mixins fail to apply without it.
+    implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.3.5")) {
+        jarJar.ranged(it, "[0.3.5,)")
+    }
     implementation fg.deobf("me.shedaniel.cloth:cloth-config-forge:11.1.136")
 }
 

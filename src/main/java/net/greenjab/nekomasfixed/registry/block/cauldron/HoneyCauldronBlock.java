@@ -47,10 +47,9 @@ public class HoneyCauldronBlock extends AbstractCauldronBlock {
         builder.add(HONEY_LEVEL);
     }
 
-    // CauldronInteraction.Dispatcher/CauldronInteractions.ID_MAPPER (26.x) have
-    // no 1.20.1 equivalent - CauldronInteraction.newInteractionMap() (the exact static factory
-    // vanilla's own EMPTY/WATER/LAVA/POWDER_SNOW maps use) replaces both. Content is populated by
-    // registerInteractions(), not here - see its own javadoc.
+    // Built with the same factory vanilla's own EMPTY/WATER/LAVA/POWDER_SNOW maps use, so the
+    // honey cauldron behaves like any other. Content is populated by registerInteractions(), not
+    // here - see its own javadoc.
     public static final Map<Item, CauldronInteraction> HONEY = CauldronInteraction.newInteractionMap();
 
     private static Map<Item, CauldronInteraction> createBehaviorMap() {

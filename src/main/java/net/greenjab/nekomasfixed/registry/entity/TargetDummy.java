@@ -51,28 +51,23 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
- * PORT: 26.2's {@code Avatar} base class does not exist on 1.20.1;
- * retargeted to {@code net.minecraft.world.entity.decoration.ArmorStand}, whose real behaviour
- * surface matches every override in this file almost 1:1 (verified against
- * forge-1.20.1-mapped-src/.../decoration/ArmorStand.java - handleEntityEvent(ARMORSTAND_WOBBLE=32),
- * SoundEvents.ARMOR_STAND_*, getMainArm(), Fallsounds, per-slot equip() with y-position hit
- * detection). Because the real ArmorStand already carries head/body/arm/leg pose tracking natively
- * (setHeadPose/getHeadPose etc.), the 26.2 file's own hand-rolled TRACKER_*_ROTATION synced fields are
- * redundant here and are replaced by thin delegates to the base class's own accessors - same public
- * method names (setHeadRotation/getHeadRotation/...), same behaviour, less code. {@code
- * ResolvableProfile} (1.21.6+ profile-resolving component) has no 1.20.1 counterpart; retargeted to a
- * plain nullable {@code GameProfile} synced via {@code EntityDataSerializers.COMPOUND_TAG} + {@code
- * NbtUtils.writeGameProfile}/{@code readGameProfile} - the same NBT shape 1.20.1's own {@code
- * SkullBlockEntity} uses for player-head owners. {@code EquipmentSlot.BODY}/{@code SADDLE} don't
- * exist on 1.20.1 (only MAINHAND/OFFHAND/FEET/LEGS/CHEST/HEAD), so {@code canUseSlot} is trivially
- * true. {@code Attributes.STEP_HEIGHT} doesn't exist either (post-1.20.5); replaced with {@code
- * setMaxUpStep(0)} in the constructor. {@code getMovementEmission()} has no 1.20.1 hook and is
- * dropped (a minor, low-impact fidelity loss). The click-position-based "empty hand removes
- * whichever slot was clicked" branch (26.2's getSlotFromPosition) is simplified to vanilla
- * ArmorStand's own click-to-equip resolution via the static Mob.getEquipmentSlotForItem, since
- * 1.20.1's InteractionResult has no way to distinguish "nothing in hand, unequip by position" from
- * ArmorStand's own equip-by-click behaviour without re-deriving hit-position math that belongs with
- * the client renderer, not this data class.
+ * Built on top of {@code net.minecraft.world.entity.decoration.ArmorStand}, whose behaviour surface
+ * matches everything this class needs almost 1:1 - entity-event wobble handling, the armor-stand
+ * sound set, main-arm handling, fall sounds, per-slot equip with y-position hit detection. Since the
+ * real ArmorStand already carries head/body/arm/leg pose tracking natively (setHeadPose/getHeadPose
+ * etc.), a hand-rolled duplicate of that tracking would be redundant; this class instead exposes thin
+ * delegates to the base class's own accessors under the same public names
+ * (setHeadRotation/getHeadRotation/...), same behaviour, less code.
+ *
+ * <p>Profile ownership (for a player-head-styled dummy) is a plain nullable {@code GameProfile}
+ * synced via {@code EntityDataSerializers.COMPOUND_TAG} plus {@code NbtUtils.writeGameProfile}/
+ * {@code readGameProfile} - the same NBT shape {@code SkullBlockEntity} uses for player-head owners.
+ * {@code canUseSlot} is trivially true since every equipment slot this version has is fair game for a
+ * dummy. Step height is fixed at zero in the constructor. The click-position-based "empty hand removes
+ * whichever slot was clicked" behaviour falls through to vanilla ArmorStand's own click-to-equip
+ * resolution via the static {@code Mob.getEquipmentSlotForItem} - deriving hit-position math to
+ * distinguish "nothing in hand, unequip by position" from an ordinary equip-by-click belongs with the
+ * client renderer, not this data class.
  */
 public class TargetDummy extends ArmorStand implements Shearable {
 	protected static final EntityDataAccessor<CompoundTag> PROFILE = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.COMPOUND_TAG);
@@ -114,7 +109,7 @@ public class TargetDummy extends ArmorStand implements Shearable {
 		this.entityData.define(ZOMBIE, false);
 	}
 
-	/** {@code null} when no profile has been set - mirrors the 26.2 default (an empty resolvable profile). */
+	/** {@code null} when no profile has been set. */
 	@Nullable
 	public GameProfile getTargetDummyProfile() {
 		CompoundTag tag = this.entityData.get(PROFILE);
@@ -481,6 +476,11 @@ public class TargetDummy extends ArmorStand implements Shearable {
 	@Override
 	public EntityDimensions getDimensions(Pose pose) {
 		return this.getType().getDimensions();
+	}
+
+	@Override
+	protected float getStandingEyeHeight(Pose pose, EntityDimensions dimensions) {
+		return 1.7775F;
 	}
 
 	@Override

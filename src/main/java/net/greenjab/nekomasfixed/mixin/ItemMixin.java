@@ -1,8 +1,8 @@
 package net.greenjab.nekomasfixed.mixin;
 
-import net.greenjab.nekomasfixed.registry.other.StoredTimeComponent;
 import net.greenjab.nekomasfixed.util.StackData;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.StructureTags;
 import net.minecraft.world.InteractionResult;
@@ -10,6 +10,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,21 +19,37 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import javax.annotation.Nullable;
+import java.util.List;
+
 @Mixin(Item.class)
 public class ItemMixin {
 
-	// 1.20.1 delta: ComponentRegistry.STORED_TIME (a DataComponentType, 1.20.5+) is replaced by
-	// StackData's NBT facade. "hasNonDefault" becomes "value != default", which
-	// is exactly StackData's own never-write-defaults invariant read back.
-	// Item#isFoil(ItemStack) itself is unchanged: VERIFIED forge-1.20.1-mapped-src Item.java:284
-	// has the identical (ItemStack) -> boolean signature this injector already used.
+	// Presence of the recorded-time key is the question, not its value against a default: the
+	// recorded time is (dayTime + 6000) % 24000, which is 0 at midnight, and a clock stopped at
+	// midnight still has a recording. Comparing against a zero-valued default would read a
+	// midnight recording as "nothing stored".
 	@Inject(method="isFoil", at = @At(value = "HEAD"), cancellable = true)
 	private void clockHasStoredTime(ItemStack itemStack, CallbackInfoReturnable<Boolean> cir) {
-		if (!StackData.readStoredTime(itemStack).equals(new StoredTimeComponent(0))) cir.setReturnValue(true);
+		if (StackData.contains(itemStack, StackData.KEY_STORED_TIME)) cir.setReturnValue(true);
 	}
 
-	// Unchanged: Item#onUseTick(Level, LivingEntity, ItemStack, int) has the identical signature on
-	// 1.20.1 (VERIFIED forge-1.20.1-mapped-src Item.java:112).
+	/**
+	 * The two tooltip lines whose carriers have no item class of their own: the recorded time on a
+	 * clock, and the creature a nautilus shell is holding. The hook is Item#appendHoverText, and a
+	 * block item reaches this injection too because BlockItem's override calls super first.
+	 */
+	@Inject(method = "appendHoverText", at = @At("HEAD"))
+	private void modTooltipText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
+	                            TooltipFlag flag, CallbackInfo ci) {
+		if (StackData.contains(stack, StackData.KEY_ANIMAL)) {
+			StackData.readAnimal(stack).tooltipLine().ifPresent(tooltip::add);
+		}
+		if (stack.is(Items.CLOCK) && StackData.contains(stack, StackData.KEY_STORED_TIME)) {
+			tooltip.add(StackData.readStoredTime(stack).tooltipLine());
+		}
+	}
+
 	@Inject(method="onUseTick", at=@At("HEAD"))
 	private void customUsageTick(Level level, LivingEntity livingEntity, ItemStack itemStack, int ticksRemaining, CallbackInfo ci) {
 		if (!level.isClientSide() || !itemStack.is(Items.GOAT_HORN)) return;
@@ -47,18 +64,14 @@ public class ItemMixin {
 	}
 
 	/**
-	 * The vanilla-clock placement hijack, re-homed here from the deleted-content
-	 * {@code ItemsMixin} (see that file's own header comment). {@code Items.<clinit>} runs inside
-	 * {@code Bootstrap.bootStrap()}, strictly before {@code RegisterEvent}, so intercepting the
-	 * {@code Items.CLOCK} field assignment itself (what {@code ItemsMixin} did on 26.2) is
-	 * architecturally impossible on Forge; this HEAD injection on {@code Item#useOn}, gated on
-	 * identity, is the chosen replacement.
+	 * The vanilla-clock placement hijack. {@code Items.<clinit>} runs inside
+	 * {@code Bootstrap.bootStrap()}, strictly before any registration event fires, so there is no
+	 * point at which the {@code Items.CLOCK} field assignment itself can still be intercepted; this
+	 * HEAD injection on {@code Item#useOn}, gated on identity, is the replacement.
 	 * <p>
-	 * This used to call a mixin-package
-	 * {@code ClockPlacement.INSTANCE} that constructed a never-registered
-	 * {@code StandingAndWallBlockItem} — guaranteed {@code IllegalStateException} because every
-	 * {@code Item} ctor calls {@code BuiltInRegistries.ITEM.createIntrusiveHolder(this)}
-	 * (forge-1.20.1-mapped-src {@code Item.java:61}). That class is deleted; this now calls
+	 * Every {@code Item} constructor registers an intrusive holder for itself, so building a fresh,
+	 * never-registered {@code StandingAndWallBlockItem} here to delegate to would throw at registry
+	 * freeze. Instead this calls
 	 * {@link net.greenjab.nekomasfixed.registry.block.ClockPlacement#place(UseOnContext)}, which
 	 * reproduces {@code StandingAndWallBlockItem#getPlacementState} + {@code BlockItem#place}
 	 * against the two Block instances directly and instantiates no {@code Item} at all.

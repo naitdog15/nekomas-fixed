@@ -15,8 +15,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
-/** Render-state collapse: {@code EntityRenderer<WildfireTrident, ThrownTridentRenderState>} →
- * {@code EntityRenderer<WildfireTrident>}; {@code submit(...)} → the classic {@code render(...)}. */
+/** Renders a thrown wildfire trident the same way vanilla renders a thrown trident. */
 public class ThrownWildfireTridentRenderer extends EntityRenderer<WildfireTrident> {
 	public static final ResourceLocation TEXTURE = NekomasFixed.id("textures/entity/wildfire_trident/default.png");
 	private final TridentModel model;

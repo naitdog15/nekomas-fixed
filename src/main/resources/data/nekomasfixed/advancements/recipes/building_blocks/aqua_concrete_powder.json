@@ -1,4 +1,3 @@
-
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
@@ -6,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "minecraft:gravel"
+            "items": [
+              "minecraft:gravel"
+            ]
           }
         ]
       },
@@ -16,7 +17,9 @@
       "conditions": {
         "items": [
           {
-            "items": "minecraft:sand"
+            "items": [
+              "minecraft:sand"
+            ]
           }
         ]
       },
@@ -42,4 +45,3 @@
     ]
   }
 }
-

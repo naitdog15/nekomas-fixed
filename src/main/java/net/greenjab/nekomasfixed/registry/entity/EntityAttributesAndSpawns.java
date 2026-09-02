@@ -23,8 +23,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
  * Registers attributes for the 8 living entity types in this package (projectiles and vehicles -
  * SlownessSnowball, SlingshotProjectile, WildfireTrident, SpearEntity, FireBomb, BigBoat, HugeBoat,
  * FakeBoat - are not LivingEntity and need none). Rime and Derelict have no custom attribute builder
- * in the source (both plain Zombie subclasses) and reuse {@code Zombie.createAttributes()} directly,
- * matching what the 26.2 source's own registration call did.
+ * of their own (both plain Zombie subclasses) and reuse {@code Zombie.createAttributes()} directly.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class EntityAttributesAndSpawns {

@@ -15,15 +15,13 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * The single write site is EatGrassGoalMixin.java:28-39, a @WrapOperation on
- * EatBlockGoal#tick — the target class name was already 1.20.1's own (VERIFIED: {@code EatBlockGoal}
- * exists directly, no rename needed). The retarget is the anchor, not the class: 1.20.1's
- * {@code canUse()}/{@code tick()} check the tall-grass case via a {@code Predicate<BlockState>}
- * (unrelated to this mixin) and the grass-block-below case via {@code BlockState#is(Block)} — a
- * single-overload method, not the generic {@code is(Object)} 26.2 apparently has (VERIFIED
- * forge-1.20.1-mapped-src EatBlockGoal.java: both {@code canUse} and {@code tick} call
- * {@code .is(Blocks.GRASS_BLOCK)} exactly once each). Preserve the {@code "Spotted"} NBT key this
- * writes through {@link SpottedSheepAccess}.
+ * Lets a sheep graze mycelium as well as grass, and marks it spotted while it does. Both hooks ride
+ * the goal's own grass-block check - {@code canUse} and {@code tick} each make exactly one - so the
+ * mycelium case slots in without touching the tall-grass branch, which takes a different route
+ * entirely.
+ *
+ * <p>The spotted flag goes through {@link SpottedSheepAccess}, which saves under the {@code
+ * "Spotted"} NBT key; see SheepMixin before renaming anything there.
  */
 @Mixin(EatBlockGoal.class)
 public abstract class EatGrassGoalMixin {

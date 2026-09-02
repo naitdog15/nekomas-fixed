@@ -39,9 +39,7 @@ public class BaobabTrunkPlacer extends TrunkPlacer {
     @Override
     public List<FoliagePlacer.FoliageAttachment> placeTrunk(LevelSimulatedReader level, BiConsumer<BlockPos, BlockState> trunkSetter, RandomSource random, int treeHeight, BlockPos origin, TreeConfiguration config) {
         List<FoliagePlacer.FoliageAttachment> list = Lists.newArrayList();
-        // PORT: net.minecraft.world.attribute.EnvironmentAttributes (a per-position attribute query
-        // system) doesn't exist on 1.20.1; the vanilla 1.20.1 idiom for "does water evaporate here" is
-        // dimensionType().ultraWarm() (used by LavaFluid/WaterFluid and Nether generation).
+        // Baobabs hold water in the trunk, but only where it would not boil straight back off.
         boolean water = false;
         if (level instanceof WorldGenRegion chunkRegion)
             if (!chunkRegion.getLevel().dimensionType().ultraWarm())

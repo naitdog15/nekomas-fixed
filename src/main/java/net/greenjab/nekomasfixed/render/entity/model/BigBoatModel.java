@@ -12,19 +12,16 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 
 /**
- * Render-state collapse: {@code EntityModel<S extends BigBoatRenderState>} → {@code
- * HierarchicalModel<T extends BigBoat>} (the model owns its root part and renders it, the way every
- * 1.20.1 model that isn't a flat {@code ListModel} does). Paddle angle needs {@code partialTick}
- * (unavailable inside {@code setupAnim}'s 5-float signature), so — same pattern as {@code
- * WildfireModel} — it's computed once per frame in {@code prepareMobModel} and read back in
- * {@code setupAnim}.
+ * The hull, its optional chest, and a paddle per rowing seat. Paddle angle has to be interpolated
+ * between ticks, which {@code setupAnim} has no partial tick for, so it is worked out once per frame
+ * in {@code prepareMobModel} and read back below.
  */
 public class BigBoatModel<T extends BigBoat> extends HierarchicalModel<T> {
 
 	/** The stand posts sit flush inside the hull; shaving them keeps the faces from z-fighting. */
 	protected static final CubeDeformation STAND_INSET = new CubeDeformation(-0.001F);
 
-	// 1.20.1's PartNames has no chest entries — these are the names the constructor looks up.
+	// Part names for the chest half, looked up by the constructor.
 	protected static final String CHEST_BOTTOM = "chest_bottom";
 	protected static final String CHEST_LID = "chest_lid";
 	protected static final String CHEST_LOCK = "chest_lock";

@@ -1,9 +1,15 @@
 {
   "type": "minecraft:smithing_transform",
-  "addition": "minecraft:spruce_planks",
-  "base": "nekomasfixed:big_spruce_boat",
+  "addition": {
+    "item": "minecraft:spruce_planks"
+  },
+  "base": {
+    "item": "nekomasfixed:big_spruce_boat"
+  },
   "result": {
     "item": "nekomasfixed:huge_spruce_boat"
   },
-  "template": "nekomasfixed:boat_upgrade_template"
+  "template": {
+    "item": "nekomasfixed:boat_upgrade_template"
+  }
 }

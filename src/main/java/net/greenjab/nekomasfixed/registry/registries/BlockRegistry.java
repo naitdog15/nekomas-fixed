@@ -206,12 +206,9 @@ public class BlockRegistry {
     public static final RegistryObject<Block> BAOBAB_SAPLING = register("baobab_sapling",(settings) -> new SaplingBlock(BAOBAB_TREE_GROWER,  settings), BlockBehaviour.Properties.copy(Blocks.DARK_OAK_SAPLING));
     public static final RegistryObject<Block> BAOBAB_FRUIT = register("baobab_fruit", BaobabFruitBlock::new, BlockBehaviour.Properties.of().randomTicks().strength(0.2f).isViewBlocking(BlockRegistry::never).ignitedByLava().instabreak());
     public static final RegistryObject<Block> ROPE = register("rope", RopeBlock::new, BlockBehaviour.Properties.of().strength(0.2f).isRedstoneConductor(BlockRegistry::never).ignitedByLava().noCollission());
-    // The shelf is a plain block here: 1.20.1 has no ShelfBlock and no BlockEntityType.SHELF to give
-    // it its item-display behaviour, and SoundType.SHELF does not exist either (wood is the closest
-    // match). The registration, item, model and loot table all stay live so nothing downstream of the
-    // block breaks; only the storage behaviour is absent.
     public static final RegistryObject<Block> BAOBAB_SHELF = register(
             "baobab_shelf",
+            BaobabShelfBlock::new,
             BlockBehaviour.Properties.of()
                     .mapColor(state -> BAOBAB_PLANKS.get().defaultMapColor())
                     .instrument(NoteBlockInstrument.BASS)

@@ -1,5 +1,3 @@
-
-
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
@@ -7,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:indigo_terracotta"
+            "items": [
+              "nekomasfixed:indigo_terracotta"
+            ]
           }
         ]
       },
@@ -32,4 +32,3 @@
     ]
   }
 }
-

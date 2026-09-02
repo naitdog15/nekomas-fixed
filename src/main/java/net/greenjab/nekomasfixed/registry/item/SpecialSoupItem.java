@@ -22,9 +22,9 @@ import java.util.List;
 public class SpecialSoupItem extends Item {
 
     /**
-     * The bowl-cauldron's brewed ingredients, stashed under this key via StackData instead of
-     * a 1.21 CONTAINER component. SoupCauldronBlock writes the copied input stacks here when it
-     * ladles the stew out; this class only ever reads them back.
+     * The brewed ingredients, kept on the stack under this key through {@code StackData}.
+     * SoupCauldronBlock writes the copied input stacks here when it ladles the stew out of the
+     * cauldron; this class only ever reads them back.
      */
     public static final String KEY_INGREDIENTS = "ingredients";
     public static final Codec<List<ItemStack>> INGREDIENTS_CODEC = ItemStack.CODEC.listOf();

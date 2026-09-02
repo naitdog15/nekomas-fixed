@@ -9,29 +9,39 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
- * The mod's own 5 {@code SpawnPlacements.register(...)} calls stay Java (run from
- * {@code FMLCommonSetupEvent#enqueueWork}) - this is a DIFFERENT mechanism from the 6
- * {@code BiomeModifications.addSpawn(...)} calls that used to live here, which become 6
- * {@code data/nekomasfixed/forge/biome_modifier/} JSON files instead. The 6 addSpawn specs those
- * files encode (selector / MobCategory / entity / weight / min / max):
+ * Where each of this mod's mobs is allowed to stand when the game tries to spawn it. These 5
+ * {@code SpawnPlacements.register(...)} calls have to be Java and run once, from
+ * {@code FMLCommonSetupEvent#enqueueWork}.
+ * <p>
+ * Which biomes those mobs actually appear in, and where the mod's features generate, is a separate
+ * mechanism and lives entirely in {@code data/nekomasfixed/forge/biome_modifier/}. Recorded here
+ * because the two halves only make sense together, and a spawn that never shows up is usually a
+ * missing JSON rather than a missing placement rule.
+ * <p>
+ * The 6 {@code forge:add_spawns} files, as biome selector / category / entity / weight / min / max:
  * <pre>
- * includeByKey(dripstone_caves, plains)         MONSTER   SUSPICIOUS_SPIDER  30 1 2
- * tag(nekomasfixed:spawns_rime)                 MONSTER   RIME              100 4 4
- * tag(minecraft:is_jungle)                      MONSTER   DERELICT          100 4 4
- * tag(minecraft:is_ocean)                       MONSTER   DRENCHED            5 1 2
- * tag(minecraft:more_frequent_drowned_spawns)   MONSTER   DRENCHED            5 1 2
- * includeByKey(flower_forest, sunflower_plains, meadow)  CREATURE  MOOBLOOM  30 1 2
+ * dripstone_caves, plains                       monster   suspicious_spider  30 1 2
+ * #nekomasfixed:spawns_rime                     monster   rime              100 4 4
+ * #minecraft:is_jungle                          monster   derelict          100 4 4
+ * #minecraft:is_ocean                           monster   drenched            5 1 2
+ * #minecraft:more_frequent_drowned_spawns       monster   drenched            5 1 2
+ * flower_forest, sunflower_plains, meadow       creature  moobloom           30 1 2
  * </pre>
- * The 4 {@code addFeature(...)} calls became {@code forge:add_features} JSON in the same directory.
- * Their specs (biome selector / placed feature / decoration step):
+ * The 4 {@code forge:add_features} files, as biome selector / placed feature / decoration step:
  * <pre>
- * savanna, savanna_plateau, windswept_savanna           nekomasfixed:baobab          VEGETAL_DECORATION
- * savanna, savanna_plateau, windswept_savanna, desert   nekomasfixed:mound           LOCAL_MODIFICATIONS
- * crimson_forest, nether_wastes                         nekomasfixed:geyser_feature  LOCAL_MODIFICATIONS
- * warm_ocean                                            nekomasfixed:clam            VEGETAL_DECORATION
+ * savanna, savanna_plateau, windswept_savanna           nekomasfixed:baobab          vegetal_decoration
+ * savanna, savanna_plateau, windswept_savanna, desert   nekomasfixed:mound           local_modifications
+ * crimson_forest, nether_wastes                         nekomasfixed:geyser_feature  local_modifications
+ * warm_ocean                                            nekomasfixed:clam            vegetal_decoration
  * </pre>
- * Explicit biome lists rather than tags, because that is what the selectors named one by one - no
- * vanilla biome tag matches any of these four sets exactly.
+ * Those four name their biomes one by one rather than using a tag, because no vanilla biome tag
+ * matches any of the four sets exactly.
+ * <p>
+ * The three features also answer to their own switches in the config, read inside
+ * {@code Feature#place} rather than here - a biome modifier is plain data and cannot be conditioned
+ * on a config value, and reading it at the feature keeps the switch honest even when a datapack
+ * places the feature somewhere else. {@code naturalMobSpawns} works the same way, from a spawn
+ * placement check on the event bus.
  */
 public class BiomeAdditions {
     public static void addSpawns(){

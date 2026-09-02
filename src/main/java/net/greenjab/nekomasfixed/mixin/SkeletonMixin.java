@@ -14,11 +14,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Skeleton has no .skeleton subpackage on 1.20.1 (VERIFIED: no such directory in
-// forge-1.20.1-mapped-src's entity tree — matches AT L27's own "drop the .skeleton segment" note).
-// Mob#convertTo has one overload here, convertTo(EntityType<T>, boolean): T (VERIFIED Mob.java:1205)
-// — no ConversionParams, no post-conversion Consumer callback; the returned entity is customised
-// directly afterward instead.
+// A skeleton left standing in water long enough turns into a drenched one. convertTo hands the new
+// entity straight back rather than taking a callback, so the variant roll happens on the return
+// value here instead of inside the conversion.
 @Mixin(Skeleton.class)
 public abstract class SkeletonMixin extends Monster {
 

@@ -10,8 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// 1.20.1 has one Boat class, not the 26.2 AbstractBoat/Boat/ChestBoat split (see boat.AbstractBoatMixin's
-// header). clientTick() itself is unchanged (VERIFIED BodyRotationControl.java:18).
+// A mob riding a boat is posed by the boat, so its own body-rotation control has to keep its hands off.
 @Mixin(BodyRotationControl.class)
 public class BodyRotationControlMixin {
     @Shadow @Final

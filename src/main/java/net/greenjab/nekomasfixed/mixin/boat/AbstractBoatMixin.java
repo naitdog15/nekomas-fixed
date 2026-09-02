@@ -18,21 +18,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * All 8 of this mixin's {@code @At} targets are VERIFIED against forge-1.20.1-mapped-src
- * Boat.java. The 26.2
- * {@code AbstractBoat}/{@code Boat}/{@code ChestBoat} split (a raft-support refactor) does not exist
- * on 1.20.1: there is one {@code Boat} class, and — the good news — every method this mixin targets
- * exists on it under the identical name and, with two exceptions below, the identical call shape, so
- * this turned out to be a near-verbatim retarget once the class rename was found.
+ * Everything that makes the big and huge hulls steer and accelerate differently from a one-seater,
+ * plus the two small courtesies every boat gets: illagers may take the helm, and an empty boat stops
+ * spinning on the spot.
  * <p>
- * Exception 1: {@code floatBoat()}'s friction value the mixin needs is {@code this.invFriction}, a
- * private FIELD read at the {@code setDeltaMovement(DDD)} call site (Boat.java:603), not a captured
- * local — {@code @Local} cannot bind it, so it is {@code @Shadow}ed instead.
- * <p>
- * Exception 2: {@code tick()}'s two {@code this.level().isClientSide} checks (Boat.java:269,289 —
- * the second is the one this mixin wants, unchanged {@code ordinal = 1}) are FIELD reads on 1.20.1,
- * not the {@code isClientSide()} METHOD call 26.2 has (VERIFIED: {@code Level.isClientSide} is
- * {@code public final boolean}) — retargeted from an INVOKE {@code @At} to a FIELD one.
+ * The friction the float step applies is a private field rather than a local at the call site, so it
+ * is {@code @Shadow}ed instead of captured; and the client-side check the illager hook rides is a
+ * field read, hence the {@code FIELD} injection point rather than an {@code INVOKE} one.
  */
 @Mixin(Boat.class)
 public abstract class AbstractBoatMixin {

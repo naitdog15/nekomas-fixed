@@ -11,19 +11,19 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 
 /**
- * 1.20.1's real {@code ClientTooltipComponent} (VERIFIED shape, long-stable vanilla interface) is
- * {@code getHeight()} (no {@code Font} param), {@code getWidth(Font)}, and
- * {@code renderImage(Font, int x, int y, GuiGraphics)} — not 26.2's {@code
- * extractImage(Font, x, y, w, h, GuiGraphicsExtractor)}. {@code TypedEntityData}/manual
- * {@code EntityType.loadEntityRecursive} reconstruction is replaced by the ready-made
- * {@code AnimalComponent.StoredEntityData#loadEntity(Level)}. The mouse-follow mob preview itself is
- * 1.20.1 vanilla's own {@code InventoryScreen.renderEntityInInventoryFollowsMouse} (a real,
- * long-standing method — 26.2 appears to have simply renamed it
- * {@code extractEntityInInventoryFollowsMouse} and switched it from an origin+scale to a rectangle).
- *
- * <p><b>This DOES restore</b> the animal-preview tooltip image (spinning live-entity render). It does
- * <b>not</b> restore anything about hover-text formatting — that is {@code AnimalComponent.tooltipLine()},
- * which belongs on an {@code appendHoverText} override rather than here.
+ * The spinning live-entity preview a nautilus shell shows for the creature inside it.
+ * <p>
+ * {@code ClientTooltipComponent} on this version is {@code getHeight()} (no {@code Font} param),
+ * {@code getWidth(Font)} and {@code renderImage(Font, int x, int y, GuiGraphics)}, not 26.2's
+ * {@code extractImage(Font, x, y, w, h, GuiGraphicsExtractor)}. {@code TypedEntityData} and its
+ * manual {@code EntityType.loadEntityRecursive} reconstruction are replaced by the ready-made
+ * {@code AnimalComponent.StoredEntityData#loadEntity(Level)}. The preview itself is vanilla's own
+ * {@code InventoryScreen.renderEntityInInventoryFollowsMouse}; 26.2 renamed that to
+ * {@code extractEntityInInventoryFollowsMouse} and switched it from an origin-plus-scale to a
+ * rectangle, which is the only reason the call reads differently.
+ * <p>
+ * Image only. The "Holding: …" summary is {@code AnimalComponent#tooltipLine()}, which belongs on
+ * {@code appendHoverText}.
  */
 public class AnimalTooltipComponent implements ClientTooltipComponent {
     private final AnimalComponent animalComponent;

@@ -29,7 +29,15 @@ public abstract class AbstractEndermanHeadBlock extends BaseEntityBlock implemen
 		this.registerDefaultState(this.stateDefinition.any().setValue(POWER, 0));
 	}
 
-	/** Wearable on the head, the same way every vanilla skull block is. */
+	/**
+	 * Wearable on the head, the same way every vanilla skull block is. The head is a block item, so
+	 * the game reaches this through the block rather than the item: it asks the item first, and when
+	 * that is a block item it asks the block it places. That is what makes the head slot accept it,
+	 * makes it play an equip sound, and lets a mob wear one.
+	 * <p>
+	 * Wearing it is a slot move, not a use: like every skull, right-clicking with one in hand does
+	 * not put it on.
+	 */
 	@Override
 	public EquipmentSlot getEquipmentSlot() {
 		return EquipmentSlot.HEAD;

@@ -1,5 +1,11 @@
 {
-  "type": "minecraft:crafting_transmute",
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "vanillabackport"
+    }
+  ],
+  "type": "nekomasfixed:crafting_transmute",
   "category": "equipment",
   "group": "harness_dye",
   "input": "#minecraft:harnesses",

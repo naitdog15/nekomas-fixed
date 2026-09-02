@@ -8,19 +8,10 @@ import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 
 /**
- * Render-state collapse: {@code ZombieModel<ZombieRenderState>} (package
- * {@code net.minecraft.client.model.monster.zombie}) → 1.20.1's real, flat-package
- * {@code net.minecraft.client.model.ZombieModel<T extends Zombie>}. No {@code setupAnim} override
- * existed, so vanilla {@code ZombieModel}'s own aggressive-pose animation is unchanged.
- *
- * <p>1.20.1 has <b>no</b> {@code BabyZombieModel} class (VERIFIED — absent from
- * {@code forge-1.20.1-mapped-src}, unlike 26.2). Vanilla baby zombies reuse the adult
- * {@code HumanoidModel} mesh and get their proportions from {@code HumanoidModel}'s own built-in
- * young/baby scale-down — a different, per-{@code HumanoidModel} mechanism from the
- * {@code AgeableListModel} one {@link MoobloomModel} needed to neutralise. So {@code BabyDerelictModel}
- * is deleted (not ported — nothing to port it onto) and {@code DerelictRenderer} uses this one mesh
- * for both ages, switching only the *texture* for the baby variant, exactly mirroring vanilla
- * Zombie/Husk/Drowned's own baby handling.
+ * Body/inner-armor/outer-armor mesh for the derelict, extending vanilla's {@code ZombieModel}
+ * unmodified so its aggressive-pose animation carries over. There's no separate baby mesh: like
+ * vanilla Zombie/Husk/Drowned, baby derelicts reuse this same model and get their proportions from
+ * {@code HumanoidModel}'s own built-in young scale-down, with only the texture switching per age.
  */
 public class DerelictModel extends ZombieModel<Derelict> {
 

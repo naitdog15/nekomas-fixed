@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
-public class MelonBlock extends Block {
+public class MelonBlock extends net.minecraft.world.level.block.MelonBlock {
 	boolean glistering;
 	public static final BooleanProperty CORNER_1 = BooleanProperty.create("corner_1");
 	public static final BooleanProperty CORNER_2 = BooleanProperty.create("corner_2");

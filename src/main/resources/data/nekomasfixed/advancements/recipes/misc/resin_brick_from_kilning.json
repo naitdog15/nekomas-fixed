@@ -1,11 +1,19 @@
 {
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "vanillabackport"
+    }
+  ],
   "parent": "minecraft:recipes/root",
   "criteria": {
     "has_item": {
       "conditions": {
         "items": [
           {
-            "items": "minecraft:resin_clump"
+            "items": [
+              "minecraft:resin_clump"
+            ]
           }
         ]
       },

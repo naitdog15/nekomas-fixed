@@ -19,8 +19,7 @@ import java.util.function.Supplier;
  * See {@link FlammableBlock}. Used for the baobab log/wood set.
  * {@code strippedSupplier} is null for the already-stripped variants (no further axe-stripping
  * target); non-null for {@code baobab_log}/{@code baobab_wood}, which strip into
- * {@code stripped_baobab_log}/{@code stripped_baobab_wood} - the Forge replacement for Fabric's
- * {@code StrippableBlockRegistry.register(log, stripped)}, both sites mod->mod so no AT is needed.
+ * {@code stripped_baobab_log}/{@code stripped_baobab_wood} through {@link #getToolModifiedState}.
  * The supplier is a lazy {@code RegistryObject::get} reference, never dereferenced before the
  * stripped block is actually registered.
  */

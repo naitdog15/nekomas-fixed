@@ -12,12 +12,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * 3 custom {@code Feature<?>} subclasses, all reusing vanilla config codecs, now a proper
- * {@code DeferredRegister<Feature<?>>} on {@code ForgeRegistries.FEATURES}. The 4
- * {@code BiomeModifications.addFeature(...)} biome-linking calls that used to live in
- * {@code generateModWorldGen()} are Fabric-only and are dropped from Java entirely - on Forge that
- * linkage is 4 {@code data/nekomasfixed/forge/biome_modifier/} JSON files instead; see
- * {@code BiomeAdditions}'s javadoc for the biome/decoration-step/placed-feature spec of each.
+ * The mod's 3 custom {@code Feature<?>} subclasses, each reusing a vanilla configuration codec.
+ * Registration only - which biomes they generate in is data, one
+ * {@code data/nekomasfixed/forge/biome_modifier/} file per feature; see {@code BiomeAdditions}'s
+ * javadoc for the biome, decoration step and placed feature of each.
  */
 public class ModWorldGeneration {
     public static final DeferredRegister<Feature<?>> FEATURES =

@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.mixin.client;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
 import net.minecraft.client.model.MinecartModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
@@ -18,13 +19,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Replaces the minecart's geometry with the rebuilt cart (chassis, railings, chain hitch and four
- * turning wheels) and spins those wheels as the cart travels.
+ * Replaces the minecart's geometry with the rebuilt cart - chassis, railings, chain hitch and four
+ * turning wheels - and spins those wheels as the cart travels. Every minecart layer bakes from the
+ * one method, so replacing it covers hoppers, chests, furnaces and the rest along with the plain
+ * cart.
  *
- * <p>The wheel spin used to live in a {@code MinecartModel} subclass swapped in from the renderer.
- * There is no render-state object to read here - {@code MinecartRenderer} hands the model the live
- * entity - so the animation is done on the vanilla model itself and the subclass is gone. All
- * minecart layers bake from this one method, so replacing it covers every cart variant.
+ * <p>The shape is chosen while the model is baked, so switching the rebuilt cart off takes effect on
+ * the next resource reload; the texture, which is the other half of the same switch, changes at once.
  */
 @Mixin(MinecartModel.class)
 public class MinecartModelMixin {
@@ -37,6 +38,7 @@ public class MinecartModelMixin {
 
     @Inject(method = "createBodyLayer", at = @At("HEAD"), cancellable = true)
     private static void useCustomMinecartModel(CallbackInfoReturnable<LayerDefinition> cir) {
+        if (!NekomasFixedClientConfig.CUSTOM_MINECART_MODEL.get()) return;
         cir.setReturnValue(nekomasfixed$customBodyLayer());
     }
 

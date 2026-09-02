@@ -18,21 +18,15 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import java.util.List;
 
 /**
- * The table's own drawing, on 1.20.1's plain {@code AbstractContainerScreen}: everything goes through
- * {@code renderBg} + {@code render}, there is no render-state extraction pass to hook.
+ * The pyrotechnics table's screen: the pattern buttons down the left, the animated preview of the
+ * shape they select, and the hint icons that sit in the empty ingredient slots.
  *
- * <p>Three things about the GUI have no 1.20.1 counterpart and are handled here rather than dropped:
- * <ul>
- * <li>There is no GUI sprite atlas, so every sprite is blitted from its own PNG under
- *     {@code textures/gui/sprites/} — see {@link LegacySpriteBlit}. The pattern previews are
- *     animation strips, which an atlas would have played for us; without one the frame is picked by
- *     hand from the strip length recorded per pattern.</li>
- * <li>The chest-slot background is a vanilla sprite that only exists from 1.20.2 on. Pre-split it is
- *     a region of {@code textures/gui/container/horse.png}, which is what gets blitted instead.</li>
- * <li>{@code CyclingSlotBackground} does exist on 1.20.1, but it only draws block-atlas sprites —
- *     these icons are loose GUI PNGs, so the cycle is done here (without the 4-tick cross-fade).</li>
- * </ul>
- * Mouse-cursor shape requests have no 1.20.1 API at all and are gone.
+ * <p>Everything the table draws of its own is a loose PNG under {@code textures/gui/sprites/}, put
+ * on screen through {@link LegacySpriteBlit}. The pattern previews are tall vertical strips of
+ * square frames; the frame to show is picked by hand from the tick counter and the strip's own
+ * length, recorded per pattern below. The empty-slot hints cycle through their alternatives on the
+ * same timer, and the chest-slot outline behind the ingredient row is lifted out of
+ * {@code textures/gui/container/horse.png}.
  */
 @OnlyIn(Dist.CLIENT)
 public class PyrotechnicsTableScreen extends AbstractContainerScreen<PyrotechnicsMenu> {

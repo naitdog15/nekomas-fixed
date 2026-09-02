@@ -1,6 +1,7 @@
 package net.greenjab.nekomasfixed.registry.worldgen.feature;
 
 import com.mojang.serialization.Codec;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -16,6 +17,7 @@ public class GeyserBlockFeature extends Feature<SimpleBlockConfiguration> {
 
     @Override
     public boolean place(FeaturePlaceContext<SimpleBlockConfiguration> context) {
+        if (!NekomasFixedConfig.GEYSER_GENERATION.get()) return false;
 
         WorldGenLevel world = context.level();
         BlockPos start = context.origin();

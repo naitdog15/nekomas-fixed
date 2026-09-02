@@ -19,12 +19,9 @@ import net.minecraft.world.item.ItemDisplayContext;
 import org.joml.Quaternionf;
 
 /**
- * Render-state collapse: {@code EntityRenderer<T, S extends BigBoatRenderState>} →
- * {@code EntityRenderer<T>}; {@code submit(state, ..., SubmitNodeCollector, CameraRenderState)} → the
- * classic {@code render(entity, entityYaw, partialTicks, PoseStack, MultiBufferSource, int)}. The
- * banner is no longer a precomputed {@code ItemStackRenderState} field — it's rendered directly each
- * frame via {@link ItemRenderer#renderStatic}, the same classic 1.20.1 API vanilla itself uses for a
- * held/standing banner render.
+ * Draws the hull with vanilla's usual boat treatment — hurt wobble, bubble-column tilt — and then any
+ * banner the boat is flying, rendered through {@link ItemRenderer#renderStatic} so it picks up its own
+ * patterns for free. The texture is named after the model layer, one per wood.
  */
 public class BigBoatRenderer<T extends BigBoat, M extends BigBoatModel<T>> extends EntityRenderer<T> {
 	private final ResourceLocation texture;

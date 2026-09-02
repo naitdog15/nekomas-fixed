@@ -19,13 +19,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.RotationSegment;
 
 /**
- * Render-state collapse. The three item insets (clock face / stand / bell) are no longer precomputed
- * {@code ItemStackRenderState}s built once per frame — each renders directly via
- * {@link ItemRenderer#renderStatic} at draw time, same as {@code ClamBlockEntityRenderer}'s held item.
- * The floating minute/second readout used {@code SubmitNodeCollector#submitNameTag(...)}, which has
- * no 1.20.1 equivalent for a block entity; replaced with the classic {@code Font#drawInBatch} used to
- * draw any other in-world floating text, billboarded by hand against the same rotation the text used
- * to inherit from the batched pipeline's camera state.
+ * Draws the clock face, its stand and (when present) a bell, plus the floating minute/second or
+ * time-of-day readout above it. The item insets render directly through {@link ItemRenderer#renderStatic}
+ * and the readout is billboarded by hand with {@code Font#drawInBatch} against the camera rotation.
  */
 public class ClockBlockEntityRenderer implements BlockEntityRenderer<ClockBlockEntity> {
 	private final ItemRenderer itemRenderer;

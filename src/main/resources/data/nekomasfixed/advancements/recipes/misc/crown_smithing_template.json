@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:crown_smithing_template"
+            "items": [
+              "nekomasfixed:crown_smithing_template"
+            ]
           }
         ]
       },
@@ -21,7 +23,7 @@
   "requirements": [
     [
       "has_the_recipe",
-     "has_crown_template"
+      "has_crown_template"
     ]
   ],
   "rewards": {

@@ -15,15 +15,10 @@ import net.minecraft.world.entity.vehicle.Boat;
 import org.joml.Quaternionf;
 
 /**
- * New construction, not a port. No {@code BaobabBoat}/{@code BaobabChestBoat} Java class exists
- * anywhere in the tree ({@code registry/entity/**} has {@code BigBoat}/{@code HugeBoat}/
- * {@code FakeBoat} but no plain-tier Baobab class), and 1.20.1's vanilla
- * {@code BoatRenderer(Context, boolean hasChest)} cannot render a non-vanilla {@code Boat.Type} —
- * that enum is closed on 1.20.1. This is a minimal, type-agnostic stand-in built directly on
- * vanilla's {@link BoatModel}: it renders any {@link Boat} (or {@code ChestBoat}, which extends it)
- * using one baked model and one texture derived from the layer id, exactly mirroring
- * {@link BigBoatRenderer}'s own texture-derivation trick. If the chest variant ever needs its own
- * mesh, this is the place to swap in a dedicated model class.
+ * Vanilla's boat renderer picks its texture off the boat's wood variant, which is a closed set this
+ * mod's woods are not in. This one is variant-agnostic instead: it renders any {@link Boat} (chest
+ * boats included, since they are boats) from one supplied model and one texture named after the
+ * model layer, the same way {@link BigBoatRenderer} finds its own.
  */
 public class SimpleBoatRenderer extends EntityRenderer<Boat> {
     private final ResourceLocation texture;

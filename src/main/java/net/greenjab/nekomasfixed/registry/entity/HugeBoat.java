@@ -22,10 +22,9 @@ public class HugeBoat extends BigBoat {
 	}
 
 	/**
-	 * 1.20.1's Boat has no per-passenger attachment-point hook - it lays its riders out inside
-	 * positionRider - so the long hull's seat spacing lives here: 1.6 forward for the helm, 1.25 back
-	 * for each seat behind it. Super still runs first so vanilla's turn-delta and rotation clamping
-	 * still reach the rider; only the horizontal seat position is replaced.
+	 * The long hull's seat spacing: 1.6 forward for the helm, then 1.25 back for each seat behind it.
+	 * Super runs first so the rider still picks up the boat's turn delta and rotation clamping; only
+	 * the seat position itself is replaced afterwards.
 	 */
 	@Override
 	protected void positionRider(Entity passenger, Entity.MoveFunction moveFunction) {

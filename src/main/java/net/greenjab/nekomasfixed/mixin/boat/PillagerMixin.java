@@ -1,5 +1,7 @@
 package net.greenjab.nekomasfixed.mixin.boat;
 
+import net.greenjab.nekomasfixed.compat.vanillabackport.BackportedContent;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -11,40 +13,23 @@ import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * 1.20.1 delta: {@code Pillager} lives directly under {@code net.minecraft.world.entity.monster},
- * not a {@code .illager} subpackage (VERIFIED: no {@code illager} directory exists in
- * forge-1.20.1-mapped-src's entity tree; same for {@code AbstractIllager}). {@code registerGoals()}
- * (no params) and {@code populateDefaultEquipmentSlots(RandomSource, DifficultyInstance)} are
- * unchanged, as is {@code Raider.HoldGroundAttackGoal(AbstractIllager, float)}.
- * <p>
- * Still missing: {@code net.minecraft.world.item.Items.IRON_SPEAR} and
- * {@code net.minecraft.world.entity.ai.goal.SpearUseGoal} — both VANILLA-namespace types the
- * original source imports — do not exist anywhere in forge-1.20.1-mapped-src. Whatever spear weapon
- * 26.2 ships is a real vanilla addition with no 1.20.1 counterpart at all, unlike this mod's own
- * {@code registry.entity.SpearEntity} (a thrown projectile with no vanilla melee-AI goal to launch
- * it from a Pillager's hand). Reproducing {@code SpearUseGoal} from scratch would be new AI-goal
- * construction rather than a mixin retarget — so {@code initSpearEquipment} keeps
- * only its Crossbow branch (pillagers always get a crossbow, as they would with no mod installed)
- * and {@code spearGoal} is dropped outright.
+ * A pillager firing from the deck of a boat needs more reach than one standing in a field, so both
+ * its hold-ground radius and its crossbow range go up. Equipment is pinned to the crossbow so a
+ * captain's crew is always armed the same way.
  */
 @Mixin(Pillager.class)
 public class PillagerMixin {
 
-    // HoldGroundAttackGoal is a non-static inner class of Raider, so its bytecode constructor
-    // carries a hidden leading Raider outer-instance parameter that the old ModifyArg target
-    // descriptor omitted (making it unresolvable). Retargeted as a ModifyConstant on the single
-    // 10.0F hold-ground radius literal in Pillager#registerGoals instead (VERIFIED
-    // forge-1.20.1-mapped-src Pillager.java:68: `new Raider.HoldGroundAttackGoal(this, 10.0F)` is
-    // the only 10.0F constant in the method).
+    // The hold-ground radius: the only 10.0F in registerGoals, and reached by constant rather than
+    // by argument because the goal is an inner class whose constructor carries a hidden outer-instance
+    // parameter.
     @ModifyConstant(method = "registerGoals", constant = @Constant(floatValue = 10.0f))
     private float shootFurther(float distance) {
         return 15;
     }
 
-    // 1.20.1 Pillager.java:69 has exactly one 8.0F, as the third constructor argument of
-    // `new RangedCrossbowAttackGoal<>(this, 1.0D, 8.0F)` — a ModifyConstant with ordinal = 1 can
-    // never resolve since ordinal 0 is the only match. Retargeted as a ModifyArg on that
-    // constructor call, index = 2 (the float parameter).
+    // The crossbow goal's own range, taken as the third constructor argument rather than as a
+    // constant so it cannot be confused with the radius above.
     @ModifyArg(method = "registerGoals", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/ai/goal/RangedCrossbowAttackGoal;<init>(Lnet/minecraft/world/entity/monster/Monster;DF)V"), index = 2)
     private float shootFurther2(float distance) {
         return 12;
@@ -53,7 +38,13 @@ public class PillagerMixin {
     @Inject(method = "populateDefaultEquipmentSlots", at = @At("HEAD"), cancellable = true)
     protected void initSpearEquipment(RandomSource random, DifficultyInstance difficulty, CallbackInfo ci) {
         Pillager pillager = (Pillager)(Object)this;
-        pillager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.CROSSBOW));
+        // One in twenty carries a spear instead, when there is a spear to carry.
+        if (NekomasFixedConfig.SPEAR_INTERACTIONS.get() && BackportedContent.IRON_SPEAR.isPresent()
+                && random.nextInt(20) == 0) {
+            pillager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(BackportedContent.IRON_SPEAR.get()));
+        } else {
+            pillager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.CROSSBOW));
+        }
         ci.cancel();
     }
 }

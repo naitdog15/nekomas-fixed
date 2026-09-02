@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.registries.ModModelLayerRegistry;
 import net.greenjab.nekomasfixed.registry.entity.Moobloom.Moobloom;
+import net.greenjab.nekomasfixed.registry.entity.Moobloom.MoobloomVariants;
 import net.greenjab.nekomasfixed.render.entity.model.BabyMoobloomModel;
 import net.greenjab.nekomasfixed.render.entity.model.MoobloomModel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -12,12 +13,11 @@ import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Render-state collapse. 1.20.1 has no {@code AgeableMobRenderer} (VERIFIED — no such class in
- * {@code forge-1.20.1-mapped-src}; vanilla mobs with babies just scale one model via the young flag).
- * Since this mod's baby model is a bespoke mesh, not an auto-scale of the adult one, the adult/baby
- * swap is done by hand: {@code this.model} (protected on {@code LivingEntityRenderer}) is reassigned
- * before {@code super.render(...)} runs, exactly mirroring what {@code extractRenderState} used to
- * decide once per frame.
+ * This version has no {@code AgeableMobRenderer}; vanilla mobs with babies just scale one model via
+ * the young flag. Since this mod's baby model is a bespoke mesh, not an auto-scale of the adult one,
+ * the adult/baby swap is done by hand: {@code this.model} (protected on
+ * {@code LivingEntityRenderer}) is reassigned before {@code super.render(...)} runs — the same
+ * choice the Fabric version made once per frame in {@code extractRenderState}.
  */
 public class MoobloomRenderer extends MobRenderer<Moobloom, MoobloomModel> {
     private final MoobloomModel adultModel;
@@ -37,7 +37,7 @@ public class MoobloomRenderer extends MobRenderer<Moobloom, MoobloomModel> {
 
     @Override
     public ResourceLocation getTextureLocation(Moobloom entity) {
-        String variantPath = entity.getEntityData().get(Moobloom.VARIANT);
+        String variantPath = MoobloomVariants.textureFor(entity.getEntityData().get(Moobloom.VARIANT));
         boolean sheared = entity.getEntityData().get(Moobloom.SHEARED);
         if (entity.isBaby()) return NekomasFixed.id("textures/entity/moobloom/" + variantPath + "_baby.png");
         if (sheared) return NekomasFixed.id("textures/entity/moobloom/" + variantPath + "_sheared.png");

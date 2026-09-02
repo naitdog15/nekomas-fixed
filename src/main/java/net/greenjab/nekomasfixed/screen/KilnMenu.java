@@ -7,15 +7,12 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractFurnaceMenu;
 import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.item.crafting.AbstractCookingRecipe;
-import net.minecraft.world.item.crafting.RecipeType;
 
 /**
- * {@code RecipeManagerMixin} is deleted, so both constructors take the plain {@code
- * RecipeType<KilnRecipe>} in place of the dropped {@code RecipePropertySet} key - 1.20.1's
- * {@code AbstractFurnaceMenu} matches recipes off the {@code RecipeType} itself. The 3rd constructor
- * argument is {@code ModRecipeBookType.KILN}, not vanilla's {@code RecipeBookType.FURNACE} - see that
- * class's javadoc for why. Everything else about {@code AbstractFurnaceMenu}'s constructor is unchanged.
+ * The kiln's container. It is a furnace in every mechanical respect - one input, one fuel slot, one
+ * output, matched off {@code RecipeRegistry.KILN} - so it just hands {@code AbstractFurnaceMenu} its
+ * own recipe type and its own recipe-book type. See {@link ModRecipeBookType} for why the book type
+ * cannot be the furnace's.
  */
 public class KilnMenu extends AbstractFurnaceMenu {
 

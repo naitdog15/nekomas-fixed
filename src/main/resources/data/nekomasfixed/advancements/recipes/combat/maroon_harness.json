@@ -1,11 +1,19 @@
 {
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "vanillabackport"
+    }
+  ],
   "parent": "minecraft:recipes/root",
   "criteria": {
     "has_dried_ghast": {
       "conditions": {
         "items": [
           {
-            "items": "minecraft:dried_ghast"
+            "items": [
+              "minecraft:dried_ghast"
+            ]
           }
         ]
       },
@@ -30,8 +38,3 @@
     ]
   }
 }
-
-
-
-
-

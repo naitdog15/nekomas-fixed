@@ -2,6 +2,7 @@ package net.greenjab.nekomasfixed.registry.worldgen.feature;
 
 import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.block.ClamBlock;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
@@ -32,6 +33,8 @@ public class ClamFeature extends Feature<CountConfiguration> {
 
 	@Override
 	public boolean place(FeaturePlaceContext<CountConfiguration> context) {
+		if (!NekomasFixedConfig.CLAM_GENERATION.get()) return false;
+
 		int i = 0;
 		RandomSource random = context.random();
 		WorldGenLevel level = context.level();
@@ -52,10 +55,7 @@ public class ClamFeature extends Feature<CountConfiguration> {
 				level.setBlock(blockPos2, blockState, Block.UPDATE_CLIENTS);
 				level.getBlockEntity(blockPos2, BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY.get())
 						.ifPresent(blockEntity -> {
-							// PORT: 1.20.1 has no ReloadableServerRegistries (that's the 1.21+ registry-
-							// backed loot-table system); the pre-refactor accessor is
-							// MinecraftServer#getLootData()#getLootTable(ResourceLocation), returning the
-							// LootTable directly (not Optional).
+							// Clams roll their pearl from the fishing loot table the moment they generate.
 							LootTable lootTable = level.getServer()
 									.getLootData()
 									.getLootTable(LootTableRegistry.CLAM_LOOT_TABLE);

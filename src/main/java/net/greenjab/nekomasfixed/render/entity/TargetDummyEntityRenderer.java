@@ -20,17 +20,15 @@ import net.minecraft.util.Mth;
 import javax.annotation.Nullable;
 
 /**
- * Render-state collapse: {@code LivingEntityRenderer<TargetDummy, TargetDummyRenderState,
- * TargetDummyArmorModel>} → {@code <TargetDummy, TargetDummyArmorModel>}. {@code WingsLayer} is
- * 26.2's rename of 1.20.1's real {@code ElytraLayer} (VERIFIED — {@code HumanoidMobRenderer}'s own
- * constructor adds {@code ElytraLayer}, not {@code WingsLayer}).
+ * A {@code LivingEntityRenderer<TargetDummy, TargetDummyArmorModel>} with no separate render-state
+ * type - the dummy pulls what it needs straight off the entity. Wings/elytra rendering rides the
+ * ordinary {@code ElytraLayer}.
  *
- * <p><b>Custom player-skin lookup is not restored here</b>: {@code PlayerSkinRenderCache}/
- * {@code ResolvableProfile} don't exist on 1.20.1 (both post-1.20.5). Resolving a real skin from a
- * profile pre-1.20.5 needs {@code SkinManager}/{@code GameProfile} plumbing that starts on the entity
- * side ({@code TargetDummy.getTargetDummyProfile()}'s return type), not the renderer, and still needs
- * to be wired up there. Until that lands, this renderer falls back to the mod's own two static
- * textures (default/zombie), matching what already happens today whenever no profile is set.
+ * <p><b>Custom player-skin lookup is not restored here</b>: resolving a real skin from a profile needs
+ * {@code SkinManager}/{@code GameProfile} plumbing that starts on the entity side
+ * ({@code TargetDummy.getTargetDummyProfile()}'s return type), not the renderer, and still needs to be
+ * wired up there. Until that lands, this renderer falls back to the mod's own two static textures
+ * (default/zombie), matching what already happens today whenever no profile is set.
  */
 public class TargetDummyEntityRenderer extends LivingEntityRenderer<TargetDummy, TargetDummyArmorModel> {
 	private static final ResourceLocation TEXTURE = NekomasFixed.id("textures/entity/target_dummy/default.png");

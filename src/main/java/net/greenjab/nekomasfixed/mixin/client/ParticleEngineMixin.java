@@ -9,13 +9,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Hooks the damage-number particle's provider in behind vanilla's own. Particle providers live
- * directly on {@link ParticleEngine} here (there is no separate resources holder), and the engine is
- * built well after mod registration, so pulling the registry object at this point is safe.
+ * Hooks the damage-number particle's provider in behind vanilla's own. The engine is built well
+ * after registration, so the particle type is safe to pull here.
  *
- * <p>The particle takes {@code NO_RENDER} and draws its digits from a later render stage instead of
- * through a particle sheet, so nothing needs adding to the engine's render order and it needs no
- * {@code particles/*.json} sprite list.
+ * <p>The particle draws its digits with the font from a later render stage rather than through a
+ * particle sheet, so it needs no place in the engine's render order and no sprite list.
  */
 @Mixin(ParticleEngine.class)
 public class ParticleEngineMixin {

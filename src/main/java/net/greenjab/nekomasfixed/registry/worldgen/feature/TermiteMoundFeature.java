@@ -1,6 +1,7 @@
 package net.greenjab.nekomasfixed.registry.worldgen.feature;
 
 import com.mojang.serialization.Codec;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.block.entity.TermitehiveBlockEntity;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
@@ -19,6 +20,8 @@ public class TermiteMoundFeature extends Feature<SimpleBlockConfiguration> {
 
     @Override
     public boolean place(FeaturePlaceContext<SimpleBlockConfiguration> context) {
+        if (!NekomasFixedConfig.TERMITE_MOUND_GENERATION.get()) return false;
+
         WorldGenLevel world = context.level();
         RandomSource random = context.random();
         int height = random.nextInt(2)+6;

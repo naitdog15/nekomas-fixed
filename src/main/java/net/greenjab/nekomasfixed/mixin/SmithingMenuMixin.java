@@ -1,37 +1,40 @@
 package net.greenjab.nekomasfixed.mixin;
 
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
-import net.minecraft.world.Container;
-import net.minecraft.world.inventory.ResultContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.ItemCombinerMenu;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.SmithingMenu;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * 1.20.1's {@code SmithingMenu#createResult()} has no {@code SmithingRecipeInput}/{@code
- * RecipeHolder}/{@code Optional.ifPresentOrElse} pattern at all — it queries
- * {@code List<SmithingRecipe>} directly and populates {@code resultSlots} imperatively (VERIFIED
- * forge-1.20.1-mapped-src SmithingMenu.java:88-102), so this retargets from a
- * {@code @WrapOperation} on that (absent) call to a cancellable {@code @Inject} at {@code HEAD}
- * instead, reproducing the "no result" branch's own {@code resultSlots.setItem(0, ItemStack.EMPTY)}
- * so no stale item is left showing.
+ * Turtle armour cannot be taken to the smithing table - no netherite upgrade, no trim.
+ *
+ * <p>The result slot is filled imperatively here rather than through an optional, so the check has
+ * to sit at the head of createResult and clear the slot itself the way the no-recipe branch does;
+ * leaving it alone would keep whatever the previous ingredients produced on screen.
+ *
+ * <p>The two containers are declared on {@link ItemCombinerMenu} rather than on SmithingMenu, which
+ * is why this extends it instead of shadowing them.
  */
 @Mixin(SmithingMenu.class)
-public class SmithingMenuMixin {
+public abstract class SmithingMenuMixin extends ItemCombinerMenu {
 
-    @Shadow protected Container inputSlots;
-    @Shadow protected ResultContainer resultSlots;
+    protected SmithingMenuMixin(MenuType<?> type, int syncId, Inventory inventory, ContainerLevelAccess access) {
+        super(type, syncId, inventory, access);
+    }
 
     @Inject(method = "createResult", at = @At("HEAD"), cancellable = true)
     private void nekomasfixed$noTurtleUpgrade(CallbackInfo ci) {
-        ItemStack gear = inputSlots.getItem(1);
+        ItemStack gear = this.inputSlots.getItem(1);
         if (gear.is(ItemRegistry.TURTLE_CHESTPLATE.get()) || gear.is(ItemRegistry.TURTLE_LEGGINGS.get())
                 || gear.is(ItemRegistry.TURTLE_BOOTS.get())) {
-            resultSlots.setItem(0, ItemStack.EMPTY);
+            this.resultSlots.setItem(0, ItemStack.EMPTY);
             ci.cancel();
         }
     }

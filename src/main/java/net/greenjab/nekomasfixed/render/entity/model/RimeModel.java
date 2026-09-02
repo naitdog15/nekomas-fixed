@@ -7,8 +7,7 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 
-/** See {@link DerelictModel}'s javadoc — identical collapse and identical "no BabyZombieModel on
- * 1.20.1" simplification apply here. */
+/** Body/inner-armor/outer-armor mesh for the rime; see {@link DerelictModel} — same one-mesh, texture-swap baby handling applies here. */
 public class RimeModel extends ZombieModel<Rime> {
 
     public RimeModel(ModelPart modelPart) {

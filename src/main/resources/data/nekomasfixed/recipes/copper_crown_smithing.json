@@ -1,9 +1,21 @@
 {
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "vanillabackport"
+    }
+  ],
   "type": "minecraft:smithing_transform",
-  "addition": "nekomasfixed:nether_heart",
-  "base": "minecraft:copper_helmet",
+  "addition": {
+    "item": "nekomasfixed:nether_heart"
+  },
+  "base": {
+    "item": "minecraft:copper_helmet"
+  },
   "result": {
     "item": "nekomasfixed:copper_crown"
   },
-  "template": "nekomasfixed:crown_smithing_template"
+  "template": {
+    "item": "nekomasfixed:crown_smithing_template"
+  }
 }

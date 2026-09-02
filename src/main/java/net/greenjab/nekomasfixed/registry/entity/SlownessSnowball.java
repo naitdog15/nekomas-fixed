@@ -17,8 +17,7 @@ public class SlownessSnowball extends Snowball {
         super(entityType, level);
     }
 
-    // PORT: 1.20.1's Snowball(Level, LivingEntity) is 2-arg (verified against vanilla Snowball.java) -
-    // no ItemStack parameter to carry (the snowball item is implicit for this entity type).
+    // Snowball's throw constructor takes no ItemStack - the snowball item is implicit for this type.
     public SlownessSnowball(Level level, LivingEntity owner) {
         super(level, owner);
     }

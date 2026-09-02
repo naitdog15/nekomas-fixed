@@ -1,7 +1,10 @@
 {
   "values": [
     "minecraft:dandelion",
-    "minecraft:open_eyeblossom",
+    {
+      "id": "minecraft:open_eyeblossom",
+      "required": false
+    },
     "minecraft:poppy",
     "minecraft:blue_orchid",
     "minecraft:allium",

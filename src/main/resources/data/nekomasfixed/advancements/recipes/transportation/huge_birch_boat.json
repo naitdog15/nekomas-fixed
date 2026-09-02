@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:big_birch_boat"
+            "items": [
+              "nekomasfixed:big_birch_boat"
+            ]
           }
         ]
       },

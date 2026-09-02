@@ -39,13 +39,8 @@ public class DrenchedRenderer extends HumanoidMobRenderer<Drenched, DrenchedMode
     @Override
     protected void setupRotations(Drenched entity, PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTick) {
         super.setupRotations(entity, poseStack, ageInTicks, rotationYaw, partialTick);
-        // NOTE: 26.2's setupRotations(state, poseStack, f, g) is 4-arg; 1.20.1's real
-        // LivingEntityRenderer#setupRotations is 5-arg (entity, poseStack, bob, rotationYaw,
-        // partialTick) with no separate "entity scale" float at this call site. The original divided
-        // the pivot height by its trailing param `g`; mapping that to `partialTick` here would
-        // occasionally divide by a near-zero value and produce a wildly wrong pivot on some frames,
-        // so the division is dropped (equivalent to assuming scale=1.0, true for every current variant
-        // of this mob) rather than guessed.
+        // Swim-lean pivot height assumes scale=1.0 (true for every current variant of this mob) rather
+        // than dividing by a value that could occasionally be near-zero and throw the pivot off.
         float swimAmount = entity.getSwimAmount(partialTick);
         if (swimAmount > 0.0F) {
             float i = -10.0F - entity.getXRot();

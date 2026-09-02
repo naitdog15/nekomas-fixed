@@ -12,11 +12,15 @@
               "conditions": [],
               "functions": [
                 {
-                  "function": "minecraft:copy_components",
-                  "include": [
-                    "minecraft:animal"
-                  ],
-                  "source": "block_entity"
+                  "function": "minecraft:copy_nbt",
+                  "source": "block_entity",
+                  "ops": [
+                    {
+                      "source": "animal",
+                      "target": "nekomasfixed.animal",
+                      "op": "replace"
+                    }
+                  ]
                 },
                 {
                   "block": "nekomasfixed:nautilus_block",

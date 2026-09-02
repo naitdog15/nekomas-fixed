@@ -96,7 +96,7 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
             if(!be.hasStirred){return InteractionResult.FAIL;}
             ItemStack soup = new ItemStack(ItemRegistry.SPECIAL_STEW.get());
             List<ItemStack> copiedInputs = be.getInputs().stream().map(ItemStack::copy).toList();
-            StackData.write(soup, SpecialSoupItem.KEY_INGREDIENTS, SpecialSoupItem.INGREDIENTS_CODEC, copiedInputs);
+            StackData.writeOrRemove(soup, SpecialSoupItem.KEY_INGREDIENTS, SpecialSoupItem.INGREDIENTS_CODEC, copiedInputs, List.of());
             // vanilla's dyed-item tag shape, so any tint layer can read the blend straight off the stack
             soup.getOrCreateTagElement("display").putInt("color", blendFoodColors(copiedInputs));
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemUtils.createFilledResult(stack, player, soup));

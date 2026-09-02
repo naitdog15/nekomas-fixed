@@ -1,25 +1,32 @@
 package net.greenjab.nekomasfixed.mixin.client;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
+import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.client.model.IllagerModel;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.world.entity.Mob;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Left empty rather than deleted (nekomasfixed.client.mixins.json still names
- * {@code IllagerModelMixin}).
- * <p>
- * 1.20.1's {@code IllagerModel<T extends AbstractIllager>.setupAnim(T, float, float, float, float,
- * float)} takes the entity directly (no render state — VERIFIED forge-1.20.1-mapped-src
- * IllagerModel.java:60,96), so the retarget itself (a {@code @WrapOperation} on
- * {@code AnimationUtils.swingWeaponDown(ModelPart, ModelPart, Mob, float, float)}, unchanged shape)
- * would have been straightforward. What is not portable is the condition it existed to test:
- * {@code ItemTags.SPEARS} does not exist on 1.20.1 (VERIFIED: zero matches in ItemTags.java) — the
- * same vanilla spear content gap boat.PillagerMixin already documents. Since a Pillager can now never
- * hold a spear-tagged item (that mixin's spear-equip branch is gone too), the pose this method chose
- * between "spear grip" and "default swing" can only ever be "default swing" — an @Inject/@WrapOperation
- * that can only ever call straight through is not a faithful port, just dead weight (see
- * PlayerMixin's matching note on the same category of gap). Restore this once the mod or the game
- * ships a spear-tagged weapon.
+ * An illager holding a spear levels it rather than winding up an overhead swing, so the weapon reads
+ * as a thrust from across the field.
  */
 @Mixin(IllagerModel.class)
 public abstract class IllagerModelMixin {
+
+    @WrapOperation(
+            method = "setupAnim(Lnet/minecraft/world/entity/monster/AbstractIllager;FFFFF)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/model/AnimationUtils;swingWeaponDown(Lnet/minecraft/client/model/geom/ModelPart;Lnet/minecraft/client/model/geom/ModelPart;Lnet/minecraft/world/entity/Mob;FF)V"))
+    private void spearArmPose(ModelPart rightArm, ModelPart leftArm, Mob illager, float attackTime,
+                              float ageInTicks, Operation<Void> original) {
+        if (NekomasFixedConfig.SPEAR_INTERACTIONS.get() && illager.getMainHandItem().is(ModTags.SPEARS)) {
+            rightArm.xRot = (float) (Math.PI / 180.0) * -25.0F;
+        } else {
+            original.call(rightArm, leftArm, illager, attackTime, ageInTicks);
+        }
+    }
 }

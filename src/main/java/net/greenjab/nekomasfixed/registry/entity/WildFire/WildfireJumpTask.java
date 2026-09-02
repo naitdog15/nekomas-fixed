@@ -76,7 +76,7 @@ public class WildfireJumpTask extends Behavior<WildfireEntity> {
 		}
 		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT.get(), Unit.INSTANCE,120);
 		wildFireEntity.setPose(Pose.DIGGING);
-		level.playSound(null, wildFireEntity, WildfireRegistrations.BREEZE_CHARGE.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
+		level.playSound(null, wildFireEntity, WildfireRegistrations.charge(), SoundSource.HOSTILE, 1.0F, 1.0F);
 		wildFireEntity.getBrain().getMemory(WildfireRegistrations.BREEZE_JUMP_TARGET.get())
 			.ifPresent( jumpTarget -> wildFireEntity.lookAt(EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(jumpTarget)));
 	}
@@ -88,14 +88,14 @@ public class WildfireJumpTask extends Behavior<WildfireEntity> {
 				.orElse(null);
 			if (vec3d == null) return;
 			wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_LEAVING_WATER.get(), Unit.INSTANCE, 60L);
-			wildFireEntity.playSound(WildfireRegistrations.BREEZE_JUMP_SOUND.get(), 1.0F, 1.0F);
+			wildFireEntity.playSound(WildfireRegistrations.jump(), 1.0F, 1.0F);
 			wildFireEntity.setYRot(wildFireEntity.yBodyRot);
 			wildFireEntity.setDiscardFriction(true);
 			wildFireEntity.setDeltaMovement(vec3d);
 		} else if (shouldStopLongJumpingPose(wildFireEntity)) {
 			wildFireEntity.setDeltaMovement(0, 0, 0);
 			wildFireEntity.eyeOffset = -3;
-			wildFireEntity.playSound(WildfireRegistrations.BREEZE_LAND.get(), 1.0F, 1.0F);
+			wildFireEntity.playSound(WildfireRegistrations.land(), 1.0F, 1.0F);
 			wildFireEntity.setDiscardFriction(false);
 			boolean bl2 = wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.HURT_BY);
 			wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_JUMP_COOLDOWN.get(), Unit.INSTANCE, bl2 ? 2L : 10L);

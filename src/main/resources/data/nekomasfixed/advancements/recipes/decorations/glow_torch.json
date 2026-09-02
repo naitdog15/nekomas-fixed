@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "minecraft:glow_ink_sac"
+            "items": [
+              "minecraft:glow_ink_sac"
+            ]
           }
         ]
       },

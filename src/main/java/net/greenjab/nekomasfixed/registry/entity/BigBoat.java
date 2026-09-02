@@ -1,6 +1,7 @@
 package net.greenjab.nekomasfixed.registry.entity;
 
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
+import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -34,28 +35,23 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.wrapper.InvWrapper;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
 /**
- * PORT: 1.20.1
- * has no {@code AbstractChestBoat}/{@code ChestVehicle} hierarchy at all - only two fixed, separate
- * top-level classes, {@code Boat} and {@code ChestBoat extends Boat} (verified: forge-1.20.1-mapped-
- * src/net/minecraft/world/entity/vehicle/ has exactly those two, no shared chest-capable base, and no
- * per-passenger attachment-point hook on {@code Boat} - riders are laid out inside its own
- * {@code positionRider}, which is what {@link HugeBoat} overrides for its longer hull). BigBoat's whole
- * design - one entity type that TOGGLES a chest on/off plus a banner, unlike vanilla's fixed
- * dual-entity-type split - has no clean 1.20.1 analogue to retarget onto, so this is a genuine
- * redesign, not a port: BigBoat extends {@code Boat} directly and picks up the chest half by
- * implementing {@code ContainerEntity} + {@code HasCustomInventoryScreen} itself, which is what
- * {@code ChestBoat} does on this version. That gives the 27 slots, the loot-table fields, the
- * save/load and the drop-on-break for free, and the screen is vanilla's own three-row
- * {@code ChestMenu}, so no {@code MenuType} or screen class is needed. The ways in - opening it,
- * the slot accessor, and the hopper's container scan in {@code boat/HopperBlockEntityMixin} - all
- * check {@link #hasChest()} first, since the chest here is a flag the player adds rather than a
- * property of the entity type.
+ * A wider hull with room for a crew, a chest the player can add after the fact, and a banner to fly
+ * from the mast. The chest half is built the way vanilla's {@code ChestBoat} builds its own -
+ * {@code ContainerEntity} plus {@code HasCustomInventoryScreen} - which hands over the 27 slots, the
+ * loot-table fields, the save/load and the drop on break, and lets the screen be vanilla's own
+ * three-row {@link ChestMenu} rather than a bespoke menu type. The difference is that the chest here
+ * is a flag rather than a property of the entity type, so every way in - opening the screen, the slot
+ * accessor, and the hopper's container scan - asks {@link #hasChest()} first.
  */
 public class BigBoat extends Boat implements HasCustomInventoryScreen, ContainerEntity {
 
@@ -359,5 +355,32 @@ public class BigBoat extends Boat implements HasCustomInventoryScreen, Container
 	@Override
 	public boolean hurt(DamageSource source, float amount) {
 		return super.hurt(source, amount*0.8f);
+	}
+
+	/**
+	 * Automation that goes through the item-handler capability rather than {@link net.minecraft.world.Container}
+	 * only sees the boat while the chest is actually on it - dropping the capability when there is no
+	 * chest keeps a plain boat from advertising 27 invisible slots.
+	 */
+	private LazyOptional<?> itemHandler = LazyOptional.of(() -> new InvWrapper(this));
+
+	@Override
+	public <T> LazyOptional<T> getCapability(Capability<T> capability, @Nullable Direction facing) {
+		if (capability == ForgeCapabilities.ITEM_HANDLER && this.isAlive() && this.hasChest()) {
+			return this.itemHandler.cast();
+		}
+		return super.getCapability(capability, facing);
+	}
+
+	@Override
+	public void invalidateCaps() {
+		super.invalidateCaps();
+		this.itemHandler.invalidate();
+	}
+
+	@Override
+	public void reviveCaps() {
+		super.reviveCaps();
+		this.itemHandler = LazyOptional.of(() -> new InvWrapper(this));
 	}
 }

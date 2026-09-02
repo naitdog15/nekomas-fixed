@@ -36,7 +36,7 @@ public final class Registries {
     }
 
     /**
-     * Forge's own javadoc at {@code ForgeRegistries.java:109} reads, literally, "Use
+     * Forge's own javadoc on this registry reads, literally, "Use
      * Keys#ENTITY_DATA_SERIALIZERS to create a DeferredRegister." {@code EntityDataSerializers
      * .registerSerializer(...)} (the raw static-list mutation) must never be touched instead — it
      * assigns ids by insertion order and risks a silent client/server desync.
@@ -47,7 +47,7 @@ public final class Registries {
     /**
      * The one real entry this registry exists for: {@code Termite.STATE}'s synched-data serializer.
      * Registered here rather than in {@code Termite.java}, like everything else in this file;
-     * consumed by {@code Termite.java:146}.
+     * consumed where {@code Termite} defines its synched data.
      */
     public static final RegistryObject<EntityDataSerializer<Termite.State>> TERMITE_STATE =
             ENTITY_DATA_SERIALIZERS.register("termite_state",

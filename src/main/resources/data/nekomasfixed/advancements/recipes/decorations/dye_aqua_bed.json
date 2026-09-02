@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "nekomasfixed:aqua_dye"
+            "items": [
+              "nekomasfixed:aqua_dye"
+            ]
           }
         ]
       },
@@ -30,8 +32,3 @@
     ]
   }
 }
-
-
-
-
-

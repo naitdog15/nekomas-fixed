@@ -2,6 +2,7 @@ package net.greenjab.nekomasfixed.registry.entity.WildFire;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Unit;
@@ -61,7 +62,7 @@ public class WildfireBombTask extends Behavior<WildfireEntity> {
 		wildFireEntity.setPose(Pose.STANDING);
 		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_CHARGING.get(), Unit.INSTANCE, SHOOT_CHARGING_EXPIRY);
 		wildFireEntity.getBrain().setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT.get(), Unit.INSTANCE,SHOOT_CHARGING_EXPIRY + RECOVER_EXPIRY);
-		wildFireEntity.playSound(WildfireRegistrations.BREEZE_INHALE.get(), 1.0F, 1.0F);
+		wildFireEntity.playSound(WildfireRegistrations.inhale(), 1.0F, 1.0F);
 		wildFireEntity.setFireActive(true);
 	}
 
@@ -82,10 +83,15 @@ public class WildfireBombTask extends Behavior<WildfireEntity> {
 				brain.getMemory(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get()).isEmpty()) {
 				brain.setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get(), Unit.INSTANCE, SHOOT_COOLDOWN_EXPIRY);
 
-				// The lob is solved against the BOMB's gravity, not the mob's - that difference is the
-				// whole reason this can't just borrow vanilla's long-jump solver.
+				// The lob is solved against the bomb's own falling speed, not the mob's - that
+				// difference is the whole reason the jump solver can't be borrowed as it stands.
+				// Solving it on plain mob gravity instead is what the switch does: the bomb falls
+				// slower than the arc assumed, so it sails long.
+				double lobGravity = NekomasFixedConfig.WILDFIRE_BOMB_ARC.get()
+						? FireBomb.GRAVITY
+						: WildfireMovementUtil.MOB_GRAVITY;
 				Optional<Vec3> optional = WildfireMovementUtil.calculateLaunchVector(
-						wildFireEntity.position(), livingEntity.position(), FireBomb.GRAVITY, 1.11f, level.getRandom().nextInt(10) + 45);
+						wildFireEntity.position(), livingEntity.position(), lobGravity, 1.11f, level.getRandom().nextInt(10) + 45);
 				if (optional.isPresent()) {
 					int i = brain.getMemory(MemoryModuleType.LIKED_NOTEBLOCK_COOLDOWN_TICKS).orElse(-1);
 					brain.setMemoryWithExpiry(MemoryModuleType.LIKED_NOTEBLOCK_COOLDOWN_TICKS, i+1, 60);
@@ -99,7 +105,7 @@ public class WildfireBombTask extends Behavior<WildfireEntity> {
 						fireBombEntity.setPos(fireBombEntity.getX(), wildFireEntity.getY(0.5) + 0.5, fireBombEntity.getZ());
 						fireBombEntity.shoot(v.x, v.y, v.z, (float) v.length() * (1-i/20f), 0.0F);
 						level.addFreshEntity(fireBombEntity);
-						wildFireEntity.playSound(WildfireRegistrations.BREEZE_SHOOT_SOUND.get(), 1.5F, 1.0F);
+						wildFireEntity.playSound(WildfireRegistrations.shoot(), 1.5F, 1.0F);
 					}
 				}
 			}

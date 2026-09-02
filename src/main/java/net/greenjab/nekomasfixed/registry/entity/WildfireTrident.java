@@ -26,15 +26,10 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 
 /**
- * PORT: 1.20.1's {@code AbstractArrow} has no {@code PACKET_CODEC}/{@code ValueInput}/{@code ValueOutput}
- * hooks and no {@code getDefaultPickupItem()} split - it has a single abstract
- * {@code protected ItemStack getPickupItem()}, exactly like vanilla's own {@code ThrownTrident}
- * (forge-1.20.1-mapped-src/net/minecraft/world/entity/projectile/ThrownTrident.java), which this class
- * now mirrors structurally: a stored {@code tridentItem} field (not a base-class pickup slot),
- * {@code EnchantmentHelper.doPostHurtEffects}/{@code doPostDamageEffects} as two separate calls
- * (1.20.1 has no unified {@code doPostAttackEffects}).
- * The 26.2 {@code findHitEntities} plural override and {@code hitBlockEnchantmentEffects} have no
- * 1.20.1 hook to attach to and are dropped, matching vanilla's own shape exactly.
+ * Mirrors vanilla's {@code ThrownTrident} structurally: a stored {@code tridentItem} field (rather
+ * than a base-class pickup slot) and a single abstract {@code protected ItemStack getPickupItem()}
+ * to fill in, with {@code EnchantmentHelper.doPostHurtEffects}/{@code doPostDamageEffects} called
+ * separately on hit.
  */
 public class WildfireTrident extends AbstractArrow {
 	private static final EntityDataAccessor<Byte> LOYALTY = SynchedEntityData.defineId(WildfireTrident.class, EntityDataSerializers.BYTE);

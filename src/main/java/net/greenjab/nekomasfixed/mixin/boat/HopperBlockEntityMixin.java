@@ -14,13 +14,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import java.util.function.Predicate;
 
 /**
- * 1.20.1 has no {@code getEntityContainer} method — the entity-based container lookup
- * {@code EntitySelector.CONTAINER_ENTITY_SELECTOR} feeds is inside the private
- * {@code getContainerAt(Level, double, double, double)} overload (VERIFIED
- * forge-1.20.1-mapped-src HopperBlockEntity.java:343,361; the field itself,
- * {@code EntitySelector.CONTAINER_ENTITY_SELECTOR}, is unchanged). {@code getContainerAt} is
- * overloaded ({@code (Level,BlockPos)} is also present), so the descriptor is given explicitly
- * rather than relying on name-only resolution.
+ * A hopper pointed at a big boat should only find an inventory once someone has actually put a chest
+ * in it. The entity scan runs off a shared selector, so the selector is swapped for a stricter one
+ * for the length of that lookup. {@code getContainerAt} is overloaded, hence the full descriptor.
  */
 @Mixin(HopperBlockEntity.class)
 public class HopperBlockEntityMixin {

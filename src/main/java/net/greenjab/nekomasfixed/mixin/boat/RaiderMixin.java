@@ -24,8 +24,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 import java.util.Optional;
 
-// AbstractBoat -> Boat (see boat.AbstractBoatMixin's header). Raider#aiStep() is declared directly
-// on Raider itself (VERIFIED forge-1.20.1-mapped-src Raider.java:83), unchanged.
+// Puts a raider at the helm: whoever sits in the front seat steers the boat towards its target, or
+// carries on patrolling when it has none.
 @Mixin(Raider.class)
 public class RaiderMixin {
 

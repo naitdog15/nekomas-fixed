@@ -12,6 +12,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
@@ -91,8 +92,7 @@ public class TermitehiveBlock extends BaseEntityBlock {
             boolean bl = !termitehiveBlockEntity.hasNoTermites();
             if (bl) {
                 ItemStack itemStack = new ItemStack(this);
-                StackData.write(itemStack, StackData.KEY_TERMITES, TermitesComponent.CODEC,
-                        new TermitesComponent(termitehiveBlockEntity.createTermitesData()));
+                StackData.writeTermites(itemStack, new TermitesComponent(termitehiveBlockEntity.createTermitesData()));
                 ItemEntity itemEntity = new ItemEntity(level, pos.getX(), pos.getY(), pos.getZ(), itemStack);
                 itemEntity.setDefaultPickUpDelay();
                 level.addFreshEntity(itemEntity);
@@ -142,6 +142,22 @@ public class TermitehiveBlock extends BaseEntityBlock {
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new TermitehiveBlockEntity(pos, state);
+    }
+
+    /**
+     * Puts a carried colony back when the hive is placed again. It has to go in one termite at a
+     * time: marking the hive dirty is what makes it swarm, so loading a saved tag into it would
+     * eject everything it had just been given. Only refills an empty hive, and only on the server -
+     * the client learns the count from the termites property once the hive ticks.
+     */
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+        super.setPlacedBy(level, pos, state, placer, itemStack);
+        if (level.isClientSide() || !StackData.contains(itemStack, StackData.KEY_TERMITES)) return;
+        if (level.getBlockEntity(pos) instanceof TermitehiveBlockEntity termitehiveBlockEntity
+                && termitehiveBlockEntity.hasNoTermites()) {
+            StackData.readTermites(itemStack).termites().forEach(termitehiveBlockEntity::addTermite);
+        }
     }
 
     @Override

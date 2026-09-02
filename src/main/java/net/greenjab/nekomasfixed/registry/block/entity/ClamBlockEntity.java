@@ -55,11 +55,18 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 		}
 	}
 
+	/**
+	 * The clam has no screen of its own - {@link #createMenu} returns null and nothing opens it -
+	 * but {@code getName()} is still reachable from anything that inspects the container, and a null
+	 * here would take it down. Borrowing the block's own name costs nothing and keeps that safe
+	 * whatever inspects the clam next.
+	 */
 	@Override
 	protected Component getDefaultName() {
-		return null;
+		return this.getBlockState().getBlock().getName();
 	}
 
+	@Override
 	public ClientboundBlockEntityDataPacket getUpdatePacket() {
 		return ClientboundBlockEntityDataPacket.create(this);
 	}

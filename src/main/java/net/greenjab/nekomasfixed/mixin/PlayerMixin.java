@@ -3,12 +3,16 @@ package net.greenjab.nekomasfixed.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
+import net.greenjab.nekomasfixed.compat.CompatMods;
+import net.greenjab.nekomasfixed.registry.item.SickleItem;
 import net.greenjab.nekomasfixed.registry.other.ComboComponent;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
-import net.greenjab.nekomasfixed.screen.config.ModConfigValues;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.util.ModData;
 import net.greenjab.nekomasfixed.util.ModTags;
 import net.greenjab.nekomasfixed.util.StackData;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.Container;
@@ -21,6 +25,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,33 +37,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.Random;
 
 /**
- * See LivingEntityMixin's header for the shared 26.2-vs-1.20.1 damage-pipeline background.
- * Player-specific findings (all VERIFIED against forge-1.20.1-mapped-src Player.java):
- * <ul>
- * <li>Unlike LivingEntity, {@code Player} DOES override {@code hurt(DamageSource,float):boolean}
- *     directly (Player.java:811) — difficulty scaling, then {@code super.hurt(...)} into
- *     LivingEntity's own (mixed-into) {@code hurt}. So player-specific injectors below retarget onto
- *     {@code Player#hurt}, while the entity-generic ones LivingEntityMixin already installs on
- *     {@code LivingEntity#hurt} still fire for players too, via that {@code super} call — no
- *     duplication needed or possible.</li>
- * <li>{@code getDestroySpeed(BlockState)} is a two-line delegator to {@code getDigSpeed(BlockState,
- *     BlockPos)} (Player.java:675-679); the {@code onGround()} check the mixin needs lives inside
- *     {@code getDigSpeed} (Player.java:717), not {@code getDestroySpeed} itself.</li>
- * <li>{@code Item#getAttackDamageBonus(Entity,float,DamageSource)} and
- *     {@code baseDamageScaleFactor} do not exist on 1.20.1 (VERIFIED: zero matches). The combo-damage
- *     hook is retargeted onto {@code this.getAttributeValue(Attributes.ATTACK_DAMAGE)} — the first
- *     {@code getAttributeValue} call inside {@code attack(Entity)} (Player.java:1092), representing
- *     the same pre-attack-strength-scaling base damage the original captured as a local — and the
- *     off-hand-sickle full-damage override is retargeted onto {@code getAttackStrengthScale(float)}
- *     (Player.java:1941), which is what {@code attack(Entity)} uses in its place (line 1100).</li>
- * <li>{@code Entity#hurtOrSimulate} does not exist; {@code attack(Entity)} deals damage via the plain
- *     {@code target.hurt(DamageSource,float):boolean} (Player.java:1142).</li>
- * <li>{@code DamageTypes.MACE_SMASH} does not exist on 1.20.1 (the Mace is a 1.21+ item — VERIFIED:
- *     zero matches in DamageTypes.java). The injection point itself survives
- *     (Player#hurt does call removeEntitiesOnShoulder(), matching the original anchor exactly), but
- *     the condition it guards can never be true until this mod ships its own mace-like weapon or the
- *     game does. See LivingEntityMixin's matching helmet-branch note.</li>
- * </ul>
+ * The player half of this mod's combat and gear behaviour: the sickle combo counter, dual-sickle
+ * off-hand swings, the feather's harmless shove, the turtle leggings' underwater mining, and the
+ * turtle helmet's mace soak.
+ *
+ * <p>{@code Player} has a {@code hurt} of its own that difficulty-scales and then calls
+ * {@code super.hurt}, so anything player-specific hooks the former while everything in
+ * LivingEntityMixin still reaches players through the latter - there is no reason to duplicate a
+ * hook here beyond the helmet, which has to catch the blow before the scaling touches it.
+ *
+ * <p>Two anchors are not the obvious ones. Combo damage rides the first
+ * {@code getAttributeValue(ATTACK_DAMAGE)} inside {@code attack} because that is where the base
+ * damage exists before attack-strength scaling touches it; the dual-sickle full-damage override
+ * rides {@code getAttackStrengthScale}, which is what {@code attack} reads at that point.
  */
 @Mixin(Player.class)
 public class PlayerMixin {
@@ -79,7 +70,9 @@ public class PlayerMixin {
         }
     }
 
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;isEyeInFluid(Lnet/minecraft/tags/TagKey;)Z"))
+    // 1.20.1 moved the turtle-helmet check out of tick() into its own turtleHelmetTick(),
+    // so that call is the anchor here rather than the isEyeInFluid probe inside it.
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;turtleHelmetTick()V"))
     private void customTickLogics(CallbackInfo ci) {
         Player PE = (Player)(Object)this;
 
@@ -89,7 +82,7 @@ public class PlayerMixin {
             }
         }
         if (PE.level().getBiome(PE.blockPosition()).is(BiomeTags.IS_NETHER)) {
-            if (!PE.isCreative()&&!PE.isSpectator() && ModConfigValues.netherFoodRotting){
+            if (!PE.isCreative()&&!PE.isSpectator() && NekomasFixedConfig.NETHER_FOOD_ROTTING.get()){
                 this.checkForEdibles(PE);
             }
         }
@@ -143,17 +136,32 @@ public class PlayerMixin {
         if (player.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && player.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) cir.setReturnValue(1f);
     }
 
+    // Player#hurt is reachable on the client, and the combo table is a single shared map - letting a
+    // client-side hurt clear it would wipe the count the server is still keeping in single-player
     @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/damagesource/DamageSource;scalesWithDifficulty()Z"))
     private void cancelCombo(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         Player PE = (Player)(Object)this;
+        if (PE.level().isClientSide()) return;
         ModData.combos.remove(PE.getUUID());
     }
 
-    @ModifyExpressionValue(method = "attack", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;getAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;)D", ordinal = 0))
+    // attack() calls getAttributeValue on itself, so 1.20.1 compiles the owner as Player even though
+    // the method is declared up on LivingEntity - LivingEntity as the owner matches nothing here.
+    // Ordinal 0 is still the ATTACK_DAMAGE read; 1 is ATTACK_KNOCKBACK and 2 is Forge's entity reach.
+    @ModifyExpressionValue(method = "attack", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;)D", ordinal = 0))
     private double comboDamage(double original){
+        if (!NekomasFixedConfig.SICKLE_COMBO.get()) return original;
         Player player = (Player)(Object)this;
         ItemStack attackingItemStack = player.getMainHandItem();
-        ComboComponent combo = StackData.readCombo(attackingItemStack);
+        // The multiplier is an item property, not stack state: 26.2 baked it on as a default data
+        // component, which 1.20.1 has no equivalent for. A stack that carries its own value still
+        // wins; a freshly crafted sickle falls back to what its tier is worth, which is also what
+        // its tooltip prints.
+        ComboComponent combo = StackData.read(attackingItemStack, StackData.KEY_COMBO_MULTIPLIER,
+                ComboComponent.CODEC,
+                attackingItemStack.getItem() instanceof SickleItem sickle
+                        ? new ComboComponent(sickle.comboMultiplier())
+                        : new ComboComponent(0));
         if (combo.multiplier() != 0) {
             int comboTimer = ModData.combos.getOrDefault(player.getUUID(), 0);
             int comboSec = ceilDiv(comboTimer, 30);
@@ -175,12 +183,38 @@ public class PlayerMixin {
         return q;
     }
 
-    // turtleHelmetMaceBlock (originally @ModifyVariable on hurtServer at the removeEntitiesOnShoulder
-    // INVOKE — which does still exist verbatim in Player's own hurt(), Player.java:823) is REMOVED,
-    // not ported: its sole purpose was gating on DamageTypes.MACE_SMASH, which does not exist on
-    // 1.20.1 (the Mace is a 1.21+ item — see class header). An @ModifyVariable that can
-    // never do anything but return its input unchanged is dead weight, not a faithful port — unlike
-    // LivingEntityMixin's matching helmet branch, which survives because it shares a method with
-    // other real chestplate-blocking logic. Restore this method (same anchor, same shape) once the
-    // mod or the game ships a mace-like weapon on this branch.
+    // The player's copy of the turtle helmet's mace soak. Player#hurt scales the blow by difficulty
+    // and only then hands on to LivingEntity#hurt, so the helmet has to catch it here as well to soak
+    // what was actually swung; the anchor is the first point inside hurt() where the hit is known to
+    // be real. The sentinel is LivingEntityMixin's - it means "wholly absorbed".
+    @ModifyVariable(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;removeEntitiesOnShoulder()V"), ordinal = 0, argsOnly = true)
+    private float turtleHelmetMaceBlock(float damage, @Local(argsOnly = true) DamageSource source) {
+        Player PE = (Player)(Object)this;
+        if (NekomasFixedConfig.MACE_INTERACTIONS.get()
+                && PE.getItemBySlot(EquipmentSlot.HEAD).is(Items.TURTLE_HELMET)
+                && isMaceSmash(source)) {
+            PE.getItemBySlot(EquipmentSlot.HEAD).hurtAndBreak((int) damage, PE,
+                    holder -> holder.broadcastBreakEvent(EquipmentSlot.HEAD));
+            return 0.00123f;
+        }
+        return damage;
+    }
+
+    /**
+     * Whether a hit is a falling mace blow. A mace deals ordinary attack damage and raises no damage
+     * source of its own, so there is nothing on the hit itself to recognise; what makes a smash a
+     * smash is read off the swing instead - a mace in the attacker's hand and a drop behind it. The
+     * weapon is matched by id, which is also the presence check: with the mace's mod absent no item
+     * carries that id and this is simply never true.
+     */
+    @Unique
+    private static boolean isMaceSmash(DamageSource source) {
+        if (!(source.getDirectEntity() instanceof LivingEntity attacker) || attacker.fallDistance <= 1.5F) {
+            return false;
+        }
+        ResourceLocation weapon = ForgeRegistries.ITEMS.getKey(attacker.getMainHandItem().getItem());
+        return weapon != null
+                && weapon.getNamespace().equals(CompatMods.NEW_TRIALS)
+                && weapon.getPath().equals("mace");
+    }
 }
