@@ -19,7 +19,7 @@ public enum HollowLogType {
     JUNGLE(Blocks.JUNGLE_LOG, BlockRegistry.HOLLOW_JUNGLE_LOG),
     ACACIA(Blocks.ACACIA_LOG, BlockRegistry.HOLLOW_ACACIA_LOG),
     DARK_OAK(Blocks.DARK_OAK_LOG, BlockRegistry.HOLLOW_DARK_OAK_LOG),
-    MANGROVE(Blocks.CHERRY_LOG, BlockRegistry.HOLLOW_MANGROVE_LOG),
+    MANGROVE(Blocks.MANGROVE_LOG, BlockRegistry.HOLLOW_MANGROVE_LOG),
     CHERRY(Blocks.CHERRY_LOG, BlockRegistry.HOLLOW_CHERRY_LOG),
     BAMBOO(Blocks.BAMBOO_BLOCK, BlockRegistry.HOLLOW_BAMBOO_BLOCK),
     CRIMSON(Blocks.CRIMSON_HYPHAE, BlockRegistry.HOLLOW_CRIMSON_STEM),
@@ -57,9 +57,15 @@ public enum HollowLogType {
 
     public static BlockState getHollowState(BlockState baseLog) {
         BlockState hollowState = getHollowBlock(baseLog.getBlock()).defaultBlockState();
-        if (!hollowState.is(Blocks.AIR) && hollowState.hasProperty(RotatedPillarBlock.AXIS)) {
+        // The axis value is read off the source state, so the source is the one that has to be asked -
+        // a future mapping from a block that is not a rotated pillar would otherwise throw here.
+        if (!hollowState.is(Blocks.AIR) && baseLog.hasProperty(RotatedPillarBlock.AXIS)) {
             return hollowState.setValue(HollowLogBlock.AXIS, baseLog.getValue(RotatedPillarBlock.AXIS));
         }
         return hollowState;
+    }
+
+    public static boolean hasHollowVariant(BlockState baseLog) {
+        return !getHollowState(baseLog).is(Blocks.AIR);
     }
 }

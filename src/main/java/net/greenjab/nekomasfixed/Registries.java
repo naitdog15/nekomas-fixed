@@ -13,6 +13,7 @@ import net.greenjab.nekomasfixed.registry.registries.OtherRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ParticleRegistry;
 import net.greenjab.nekomasfixed.registry.registries.RecipeRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ScreenHandlerRegistry;
+import net.greenjab.nekomasfixed.registry.registries.SoundRegistry;
 import net.greenjab.nekomasfixed.registry.worldgen.ModWorldGeneration;
 import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -52,7 +53,7 @@ public final class Registries {
                     () -> EntityDataSerializer.simpleEnum(Termite.State.class));
 
     /**
-     * One line per DeferredRegister in the mod — 18 total. Keeping the full list in one place is
+     * One line per DeferredRegister in the mod — 19 total. Keeping the full list in one place is
      * what stops a holder class from being silently left unregistered.
      */
     public static void registerAll(IEventBus modBus) {
@@ -73,6 +74,7 @@ public final class Registries {
         ScreenHandlerRegistry.MENU_TYPES.register(modBus);
         ItemGroupRegistry.TABS.register(modBus);
         OtherRegistry.SENSOR_TYPES.register(modBus);
+        SoundRegistry.SOUND_EVENTS.register(modBus);
 
         // entities/AI/worldgen
         WildfireRegistrations.MEMORY_MODULE_TYPES.register(modBus);

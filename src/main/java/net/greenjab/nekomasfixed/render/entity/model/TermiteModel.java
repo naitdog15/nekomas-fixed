@@ -12,10 +12,11 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 
-/** Body, legs and antler/pincher mesh for the termite; the swipe animation plays through {@link HierarchicalModel#animate}. */
+/** Body, legs and antler/pincher mesh for the termite; the swipe and chew animations play through {@link HierarchicalModel#animate}. */
 public class TermiteModel extends HierarchicalModel<Termite> {
     private final ModelPart root;
     private final ModelPart head;
+    private final ModelPart sack;
     private final ModelPart front_right_leg;
     private final ModelPart front_left_leg;
     private final ModelPart middle_right_leg;
@@ -23,11 +24,20 @@ public class TermiteModel extends HierarchicalModel<Termite> {
     private final ModelPart back_right_leg;
     private final ModelPart back_left_leg;
 
+    /** How far the abdomen swells while the termite is carrying wood back to its mound. */
+    private static final float LADEN_SACK_X_SCALE = 1.30F;
+    private static final float LADEN_SACK_Y_SCALE = 1.25F;
+    private static final float LADEN_SACK_Z_SCALE = 1.30F;
+    /** Shifts that keep the swollen sack's underside off the legs and grow it backwards instead of into the body. */
+    private static final float LADEN_SACK_Y_SHIFT = 0.35F;
+    private static final float LADEN_SACK_Z_SHIFT = 0.15F;
+
     public TermiteModel(ModelPart root) {
         this.root = root;
         ModelPart bone = root.getChild("bone");
         ModelPart body = bone.getChild("body");
         this.head = body.getChild("head");
+        this.sack = body.getChild("sack");
         ModelPart legs = body.getChild("legs");
         this.front_right_leg = legs.getChild("front_right_leg");
         this.front_left_leg = legs.getChild("front_left_leg");
@@ -89,6 +99,9 @@ public class TermiteModel extends HierarchicalModel<Termite> {
 
     @Override
     public void setupAnim(Termite entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
+        // Keyframe channels add to whatever a part already holds, so every frame starts from the baked pose.
+        this.root().getAllParts().forEach(ModelPart::resetPose);
+
         float speed = 4.0F;
         float degree = 1F;
         this.front_right_leg.xRot = Mth.cos(limbSwing * speed) * degree * limbSwingAmount;
@@ -103,6 +116,17 @@ public class TermiteModel extends HierarchicalModel<Termite> {
         this.head.yRot = headYaw * 0.017453292F;
         this.head.xRot = headPitchClamped * 0.017453292F;
 
+        // The swell is a base size the chew channel then pulses around, so it is applied before the animations run.
+        if (entity.isLaden()) {
+            this.sack.xScale = LADEN_SACK_X_SCALE;
+            this.sack.yScale = LADEN_SACK_Y_SCALE;
+            this.sack.zScale = LADEN_SACK_Z_SCALE;
+            this.sack.y -= LADEN_SACK_Y_SHIFT;
+            this.sack.z += LADEN_SACK_Z_SHIFT;
+        }
+
+        // animate() writes nothing while its state is stopped, so gating these on the entity's own state would be redundant.
         this.animate(entity.swipeAnimationState, TermiteAnimations.ANIM_TERMITE_SWIPE, ageInTicks);
+        this.animate(entity.chewAnimationState, TermiteAnimations.ANIM_TERMITE_CHEW, ageInTicks);
     }
 }

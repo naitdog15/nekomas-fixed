@@ -48,6 +48,8 @@ public final class NekomasFixedConfig {
     public static final ForgeConfigSpec.BooleanValue SNIFFER_FINDS_MOD_SEEDS;
     public static final ForgeConfigSpec.BooleanValue REDSTONE_STRIKER;
     public static final ForgeConfigSpec.BooleanValue LIGHTNING_IN_A_BOTTLE;
+    public static final ForgeConfigSpec.BooleanValue TERMITES_EAT_LOGS;
+    public static final ForgeConfigSpec.IntValue TERMITE_CHEW_TICKS;
 
     public static final ForgeConfigSpec.BooleanValue HARNESSES;
     public static final ForgeConfigSpec.BooleanValue COPPER_ARMOUR_SET;
@@ -213,6 +215,14 @@ public final class NekomasFixedConfig {
                 .comment("A brewing stand under a lightning rod catches a strike as Lightning In A Bottle,",
                          "which calls lightning down on whatever it is used on.")
                 .define("lightningInABottle", true);
+
+        TERMITES_EAT_LOGS = BUILDER
+                .comment("Let termites chew hollowable logs into their hollow form over time.")
+                .define("termitesEatLogs", true);
+
+        TERMITE_CHEW_TICKS = BUILDER
+                .comment("How many ticks a termite spends chewing before a log turns hollow.")
+                .defineInRange("termiteChewTicks", 120, 20, 1200);
 
         BUILDER.pop();
 

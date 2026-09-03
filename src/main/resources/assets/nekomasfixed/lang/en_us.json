@@ -418,6 +418,9 @@
   "subtitles.nekomasfixed.wildfire.charge": "Wildfire charges",
   "subtitles.nekomasfixed.wildfire.jump": "Wildfire jumps",
   "subtitles.nekomasfixed.wildfire.land": "Wildfire lands",
+  "subtitles.nekomasfixed.termite.chew": "Termite gnaws",
+  "subtitles.nekomasfixed.termite.chew_finish": "Termite hollows wood",
+  "subtitles.nekomasfixed.termite.deposit": "Termite unloads",
 
   "block.nekomasfixed.honey_cauldron": "Honey Cauldron",
   "block.nekomasfixed.ice_cauldron": "Ice Cauldron",

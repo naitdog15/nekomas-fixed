@@ -5,14 +5,17 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.greenjab.nekomasfixed.registry.entity.TermiteChewEffects;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
+import net.greenjab.nekomasfixed.registry.registries.SoundRegistry;
 import net.greenjab.nekomasfixed.util.EntityNbtHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.VisibleForDebug;
@@ -115,11 +118,35 @@ public class TermitehiveBlockEntity extends BlockEntity {
     }
 
 
+    /**
+     * A laden termite unloading its wood at the mound. Nothing inside the hive changes, so there is
+     * deliberately nothing to mark dirty - and marking this block entity dirty would empty it.
+     */
+    public void onTermiteDeposit(net.greenjab.nekomasfixed.registry.entity.Termite termite) {
+        if (this.level == null) {
+            return;
+        }
+        BlockPos blockPos = this.getBlockPos();
+        this.level.playSound(null, blockPos, SoundRegistry.TERMITE_DEPOSIT.get(), SoundSource.BLOCKS,
+                0.55F, 0.95F + this.level.getRandom().nextFloat() * 0.13F);
+        this.level.gameEvent(termite, GameEvent.BLOCK_CHANGE, blockPos);
+        if (this.level instanceof ServerLevel serverLevel) {
+            TermiteChewEffects.onDeposit(serverLevel, blockPos, this.getBlockState());
+        }
+    }
+
     public void tryEnterMound(net.greenjab.nekomasfixed.registry.entity.Termite entity) {
         if (this.termites.size() < 2) {
             entity.stopRiding();
             entity.ejectPassengers();
             entity.dropLeash(true, true);
+            // A termite carrying wood unloads it before it settles in, so the load is not still on
+            // its back when the hive lets it out again.
+            if (entity.isLaden()) {
+                this.onTermiteDeposit(entity);
+                entity.setLaden(false);
+                entity.resetHunger();
+            }
             this.addTermite(TermitehiveBlockEntity.TermiteData.of(entity));
             if (this.level != null) {
 
