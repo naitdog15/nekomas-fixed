@@ -22,7 +22,11 @@ public final class ServerFlags {
     private static volatile boolean sickleCombo = true;
     private static volatile boolean spearInteractions = true;
 
-    /** set once a server has spoken, so a local config reload cannot talk over it. */
+    /**
+     * set once a REMOTE server has spoken. it only ever guards the fallback path: a server that is
+     * running here is always the authority over its own file and says so through
+     * {@link #fromRunningServer()}, which ignores this.
+     */
     private static volatile boolean fromServer;
 
     private ServerFlags() {
@@ -52,9 +56,22 @@ public final class ServerFlags {
         return spearInteractions;
     }
 
-    /** the spec is the authority on a server, and the fallback on a client that is not connected. */
+    /** our own file, for a client that is not connected to anything. */
     public static void fromSpec() {
-        if (fromServer || !NekomasFixedConfig.SPEC.isLoaded()) {
+        if (fromServer) {
+            return;
+        }
+        readSpec();
+    }
+
+    /** a server running in this process outranks anything a previous one told us. */
+    public static void fromRunningServer() {
+        fromServer = false;
+        readSpec();
+    }
+
+    private static void readSpec() {
+        if (!NekomasFixedConfig.SPEC.isLoaded()) {
             return;
         }
         turtleArmourAbilities = NekomasFixedConfig.TURTLE_ARMOUR_ABILITIES.get();

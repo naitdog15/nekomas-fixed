@@ -47,11 +47,15 @@ public final class ModBusEvents {
         if (event.getConfig().getSpec() != NekomasFixedConfig.SPEC) {
             return;
         }
-        ServerFlags.fromSpec();
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null) {
-            SyncHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), ServerFlags.asPayload());
+        if (server == null) {
+            // no server here, so this is just our own file for when we are not connected
+            ServerFlags.fromSpec();
+            return;
         }
+        // a server running in this process is the authority, singleplayer included
+        ServerFlags.fromRunningServer();
+        SyncHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), ServerFlags.asPayload());
     }
 
     @SubscribeEvent
