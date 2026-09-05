@@ -184,7 +184,7 @@ public class ConfigTrial {
         toggle(category, entryBuilder, "Harnesses",
                 NekomasFixedConfig.SPEC, NekomasFixedConfig.HARNESSES,
                 "Let the four ancient-dye harnesses be worn by a happy ghast");
-        toggle(category, entryBuilder, "Harness Rendering",
+        restartToggle(category, entryBuilder, "Harness Rendering",
                 NekomasFixedClientConfig.SPEC, NekomasFixedClientConfig.HARNESS_RENDERING,
                 "Draw this mod's harnesses on a happy ghast that is wearing one",
                 "Turn it off to leave the harness bare if a resource pack would rather supply that",
@@ -240,6 +240,21 @@ public class ConfigTrial {
                 .setDefaultValue(option.getDefault())
                 .setTooltip(lines)
                 .setSaveConsumer(saved -> write(spec, option, saved))
+                .build());
+    }
+
+    // for the handful of settings that are only read while the game starts
+    private static void restartToggle(ConfigCategory category, ConfigEntryBuilder entryBuilder, String label,
+                                      ForgeConfigSpec spec, ForgeConfigSpec.BooleanValue option, String... tooltip) {
+        Component[] lines = new Component[tooltip.length];
+        for (int i = 0; i < tooltip.length; i++) {
+            lines[i] = Component.literal(tooltip[i]);
+        }
+        category.addEntry(entryBuilder.startBooleanToggle(Component.literal(label), read(spec, option))
+                .setDefaultValue(option.getDefault())
+                .setTooltip(lines)
+                .setSaveConsumer(saved -> write(spec, option, saved))
+                .requireRestart()
                 .build());
     }
 

@@ -1,5 +1,12 @@
 package net.greenjab.nekomasfixed;
 
+import net.greenjab.nekomasfixed.network.SyncHandler;
+import net.greenjab.nekomasfixed.network.ServerFlags;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
+import net.minecraftforge.server.ServerLifecycleHooks;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.minecraft.server.MinecraftServer;
 import net.greenjab.nekomasfixed.registry.block.cauldron.CauldronBehaviour;
 import net.greenjab.nekomasfixed.registry.other.DyedBrushBehaviour;
 import net.greenjab.nekomasfixed.util.AllDyes;
@@ -24,6 +31,27 @@ import java.util.Map;
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ModBusEvents {
     private ModBusEvents() {
+    }
+
+    @SubscribeEvent
+    public static void onConfigLoad(ModConfigEvent.Loading event) {
+        refreshFlags(event);
+    }
+
+    @SubscribeEvent
+    public static void onConfigReload(ModConfigEvent.Reloading event) {
+        refreshFlags(event);
+    }
+
+    private static void refreshFlags(ModConfigEvent event) {
+        if (event.getConfig().getSpec() != NekomasFixedConfig.SPEC) {
+            return;
+        }
+        ServerFlags.fromSpec();
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
+            SyncHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), ServerFlags.asPayload());
+        }
     }
 
     @SubscribeEvent

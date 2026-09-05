@@ -224,7 +224,9 @@ public final class NekomasFixedConfig {
 
         HARNESSES = BUILDER
                 .comment("Let the four ancient-dye harnesses be worn by a happy ghast.",
-                         "Requires Vanilla Backport, which supplies the ghast and the harness slot.")
+                         "Requires Vanilla Backport, which supplies the ghast and the harness slot,",
+                         "at 1.1.6 or newer - older builds only let their own harness item be worn.",
+                         "Takes effect at once; the creative tab listing follows on the next reload.")
                 .define("harnesses", true);
 
         COPPER_ARMOUR_SET = BUILDER

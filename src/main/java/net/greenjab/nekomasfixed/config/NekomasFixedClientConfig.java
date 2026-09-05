@@ -59,7 +59,9 @@ public final class NekomasFixedClientConfig {
         HARNESS_RENDERING = BUILDER
                 .comment("Draw this mod's harnesses on a happy ghast that is wearing one.",
                          "Requires Vanilla Backport, whose ghast does the drawing. Turn it off to leave the",
-                         "harness bare if a resource pack would rather supply that artwork itself.")
+                         "harness bare if a resource pack would rather supply that artwork itself.",
+                         "The textures are handed over once while the game starts, so changing this",
+                         "takes a restart.")
                 .define("harnessRendering", true);
 
         BUILDER.pop();

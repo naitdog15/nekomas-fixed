@@ -1,5 +1,10 @@
 package net.greenjab.nekomasfixed;
 
+import net.greenjab.nekomasfixed.network.SyncHandler;
+import net.greenjab.nekomasfixed.network.ServerFlags;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.greenjab.nekomasfixed.util.HarnessHelper;
 import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
@@ -25,6 +30,15 @@ public final class ForgeBusEvents {
 
     // vetoing here refuses the interaction rather than unregistering anything - the ghast's own mod
     // owns the harness equip. both interact events fire for a mob, hence two handlers.
+    // a joining client has its own copy of the common config, and forge sends it nothing, so the
+    // settings that both sides act on have to come down the wire.
+    @SubscribeEvent
+    public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            SyncHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), ServerFlags.asPayload());
+        }
+    }
+
     @SubscribeEvent
     public static void onHarnessInteract(PlayerInteractEvent.EntityInteract event) {
         vetoHarness(event, event.getItemStack());

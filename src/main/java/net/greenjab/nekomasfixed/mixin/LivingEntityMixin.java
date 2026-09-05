@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.greenjab.nekomasfixed.network.ServerFlags;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -40,7 +41,7 @@ public abstract class LivingEntityMixin {
     @ModifyVariable(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isSleeping()Z"), ordinal = 0, argsOnly = true)
     private float turtleChestplateBlock(float damage, @Local(argsOnly = true) DamageSource source) {
         LivingEntity LE = (LivingEntity)(Object)this;
-        if (NekomasFixedConfig.TURTLE_ARMOUR_ABILITIES.get() && LE.getItemBySlot(EquipmentSlot.CHEST).is(ItemRegistry.TURTLE_CHESTPLATE.get())) {
+        if (ServerFlags.turtleArmourAbilities() && LE.getItemBySlot(EquipmentSlot.CHEST).is(ItemRegistry.TURTLE_CHESTPLATE.get())) {
             Vec3 vec3d = source.getSourcePosition();
             double d;
             if (vec3d != null) {
@@ -93,7 +94,7 @@ public abstract class LivingEntityMixin {
     ))
     private Vec3 noFallInWaterWithTurtleBoots(LivingEntity instance, double baseGravity, boolean isFalling, Vec3 movement,
                                               Operation<Vec3> original) {
-        if (NekomasFixedConfig.TURTLE_ARMOUR_ABILITIES.get() && instance.isUnderWater()&&instance.getItemBySlot(EquipmentSlot.FEET).is(ItemRegistry.TURTLE_BOOTS.get())) baseGravity = 0.0;
+        if (ServerFlags.turtleArmourAbilities() && instance.isUnderWater()&&instance.getItemBySlot(EquipmentSlot.FEET).is(ItemRegistry.TURTLE_BOOTS.get())) baseGravity = 0.0;
         return original.call(instance, baseGravity, isFalling, movement);
     }
 

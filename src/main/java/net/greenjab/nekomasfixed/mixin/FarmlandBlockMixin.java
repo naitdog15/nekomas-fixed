@@ -1,6 +1,6 @@
 package net.greenjab.nekomasfixed.mixin;
 
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
+import net.greenjab.nekomasfixed.network.ServerFlags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -21,7 +21,7 @@ public class FarmlandBlockMixin {
 
     @Inject(method = "fallOn", at = @At("HEAD"), cancellable = true)
     private void preventTrample(Level level, BlockState state, BlockPos pos, Entity entity, float fallDistance, CallbackInfo ci) {
-        if (!NekomasFixedConfig.FEATHER_FALLING_SAVES_CROPS.get()) return;
+        if (!ServerFlags.featherFallingSavesCrops()) return;
         if (entity instanceof LivingEntity livingEntity) {
             ItemStack boots = livingEntity.getItemBySlot(EquipmentSlot.FEET);
             int eLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FALL_PROTECTION, boots);

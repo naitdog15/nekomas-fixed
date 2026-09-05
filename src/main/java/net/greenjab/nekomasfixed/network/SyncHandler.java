@@ -13,8 +13,8 @@ public final class SyncHandler {
     private SyncHandler() {
     }
 
-    /** Bump this — and only this — if the wire contract in {@link UpdateClockPayload} ever changes. */
-    private static final String PROTOCOL = "1";
+    /** Bump this - and only this - if either payload's wire contract or this message set changes. */
+    private static final String PROTOCOL = "2";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
             .named(NekomasFixed.id("main"))
@@ -26,6 +26,9 @@ public final class SyncHandler {
     public static void init() {
         CHANNEL.registerMessage(0, UpdateClockPayload.class,
                 UpdateClockPayload::encode, UpdateClockPayload::decode, UpdateClockPayload::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(1, ConfigFlagsPayload.class,
+                ConfigFlagsPayload::encode, ConfigFlagsPayload::decode, ConfigFlagsPayload::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
     }
 }

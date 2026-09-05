@@ -1,6 +1,6 @@
 package net.greenjab.nekomasfixed.registry.item;
 
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
+import net.greenjab.nekomasfixed.network.ServerFlags;
 import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
 import com.google.common.collect.Multimap;
 import net.greenjab.nekomasfixed.registry.other.ComboComponent;
@@ -66,7 +66,7 @@ public class SickleItem extends Item {
 
     public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {
         ItemStack stack = user.getItemInHand(hand);
-        if (!NekomasFixedConfig.OFFHAND_ATTACK.get()) return InteractionResultHolder.pass(stack);
+        if (!ServerFlags.offhandAttack()) return InteractionResultHolder.pass(stack);
         if (hand == InteractionHand.MAIN_HAND) return InteractionResultHolder.pass(stack);
         if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResultHolder.pass(stack);
         if (user.getAttackStrengthScale(0)<0.5) return InteractionResultHolder.pass(stack);
@@ -76,7 +76,7 @@ public class SickleItem extends Item {
     }
 
     public InteractionResult interactLivingEntity(ItemStack stack, Player user, LivingEntity entity, InteractionHand hand) {
-        if (!NekomasFixedConfig.OFFHAND_ATTACK.get()) return InteractionResult.PASS;
+        if (!ServerFlags.offhandAttack()) return InteractionResult.PASS;
         if (hand == InteractionHand.MAIN_HAND) return InteractionResult.PASS;
         if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResult.PASS;
         if (user.getAttackStrengthScale(0)<0.5) return InteractionResult.PASS;
