@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
 import net.greenjab.nekomasfixed.registry.other.AnimalTooltipData;
 import net.greenjab.nekomasfixed.registry.other.ContainerTooltipData;
 import net.greenjab.nekomasfixed.registry.other.StoredTimeComponent;
@@ -67,7 +68,7 @@ public class ItemStackMixin {
 	private void modTooltipImage(CallbackInfoReturnable<Optional<TooltipComponent>> cir) {
 		ItemStack stack = (ItemStack)(Object)this;
 		List<ItemStack> contents = containerContents(stack);
-		if (!contents.isEmpty()) {
+		if (NekomasFixedClientConfig.CONTAINER_GRID_TOOLTIPS.get() && !contents.isEmpty()) {
 			cir.setReturnValue(Optional.of(new ContainerTooltipData(contents)));
 		} else if (StackData.contains(stack, StackData.KEY_ANIMAL)) {
 			cir.setReturnValue(Optional.of(new AnimalTooltipData(StackData.readAnimal(stack))));

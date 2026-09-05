@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.registry.entity.goal;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import com.mojang.datafixers.util.Pair;
 import net.greenjab.nekomasfixed.registry.registries.OtherRegistry;
 import net.minecraft.core.BlockPos;
@@ -32,7 +33,8 @@ public class MoveToCoralReefGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return dolphin.getEntityData().get(OtherRegistry.IS_TROPICAL_FISH_FED)
+        return NekomasFixedConfig.DOLPHINS_SEEK_CORAL_REEFS.get()
+                && dolphin.getEntityData().get(OtherRegistry.IS_TROPICAL_FISH_FED)
                 && !dolphin.onGround() && !dolphin.level().getBiome(dolphin.blockPosition()).is(Biomes.WARM_OCEAN);
     }
 

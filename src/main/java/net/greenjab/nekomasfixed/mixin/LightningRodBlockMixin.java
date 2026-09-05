@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -19,6 +20,7 @@ public class LightningRodBlockMixin {
 
     @Inject(method = "onLightningStrike", at = @At("HEAD"))
     private void tryMakeLightningBottle(BlockState state, Level level, BlockPos pos, CallbackInfo ci) {
+        if (!NekomasFixedConfig.LIGHTNING_IN_A_BOTTLE.get()) return;
         if (state.getValue(LightningRodBlock.FACING) == Direction.UP) {
             if (level.getBlockEntity(pos.below()) instanceof BrewingStandBlockEntity brewingStand) {
                 for (int i = 0; i <3;i++) {

@@ -1,12 +1,12 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
-import java.util.Random;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
@@ -29,11 +29,15 @@ import net.minecraft.world.phys.Vec3;
 public class FoxMixin {
     @Inject(method = "tick", at = @At("HEAD"))
     private void customTick(CallbackInfo ci){
+        if (!NekomasFixedConfig.FOXES_USE_POTIONS.get()) return;
         Fox foxEntity = (Fox)(Object)this;
-        int chance = 10;
-        boolean randInt = new Random().nextInt(0, chance) == 5;
-        ItemStack stack = foxEntity.getMainHandItem();
         Level world = foxEntity.level();
+        // Everything below writes to the world, so it belongs to the server alone; the client
+        // used to run it too and place its own soul fire off its own roll.
+        if (world.isClientSide()) return;
+        int chance = 10;
+        boolean randInt = foxEntity.getRandom().nextInt(chance) == 5;
+        ItemStack stack = foxEntity.getMainHandItem();
         if(stack.is(ItemTags.HOES) && randInt){
             if(world.getBlockState(foxEntity.blockPosition().below()).is(BlockTags.DIRT)){
                 world.setBlockAndUpdate(foxEntity.blockPosition().below(), Blocks.FARMLAND.defaultBlockState());

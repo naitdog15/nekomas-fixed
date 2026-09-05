@@ -1,5 +1,7 @@
 package net.greenjab.nekomasfixed;
 
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.greenjab.nekomasfixed.util.HarnessHelper;
 import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.registries.LootTableAdditions;
 import net.minecraft.resources.ResourceLocation;
@@ -24,6 +26,23 @@ import net.minecraftforge.registries.ForgeRegistries;
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ForgeBusEvents {
     private ForgeBusEvents() {
+    }
+
+    // The ghast's own mod handles wearing a harness, so switching them off here means refusing the
+    // interaction rather than unregistering anything. Both interact events fire for a mob, hence two.
+    @SubscribeEvent
+    public static void onHarnessInteract(PlayerInteractEvent.EntityInteract event) {
+        vetoHarness(event, event.getItemStack());
+    }
+
+    @SubscribeEvent
+    public static void onHarnessInteractSpecific(PlayerInteractEvent.EntityInteractSpecific event) {
+        vetoHarness(event, event.getItemStack());
+    }
+
+    private static void vetoHarness(PlayerInteractEvent event, net.minecraft.world.item.ItemStack stack) {
+        if (NekomasFixedConfig.HARNESSES.get()) return;
+        if (HarnessHelper.isModHarness(stack)) event.setCanceled(true);
     }
 
     @SubscribeEvent

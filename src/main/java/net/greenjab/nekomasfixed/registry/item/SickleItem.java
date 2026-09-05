@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.registry.item;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
 import com.google.common.collect.Multimap;
 import net.greenjab.nekomasfixed.registry.other.ComboComponent;
 import net.greenjab.nekomasfixed.util.ModItemSettings;
@@ -51,8 +52,10 @@ public class SickleItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
-        tooltip.addAll(StackData.read(stack, StackData.KEY_COMBO_MULTIPLIER, ComboComponent.CODEC,
-                new ComboComponent(this.comboMultiplier)).tooltipLines());
+        if (NekomasFixedClientConfig.COMBO_DAMAGE_TOOLTIP.get()) {
+            tooltip.addAll(StackData.read(stack, StackData.KEY_COMBO_MULTIPLIER, ComboComponent.CODEC,
+                    new ComboComponent(this.comboMultiplier)).tooltipLines());
+        }
     }
 
     @Override

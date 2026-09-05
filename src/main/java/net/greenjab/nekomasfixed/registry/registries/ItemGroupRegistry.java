@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.registry.registries;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.NekomasFixed;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -191,10 +192,12 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.INDIGO_BUNDLE.get());
                         entries.accept(ItemRegistry.MAROON_BUNDLE.get());
 
-                        ItemRegistry.AMBER_HARNESS.ifPresent(entries::accept);
-                        ItemRegistry.AQUA_HARNESS.ifPresent(entries::accept);
-                        ItemRegistry.INDIGO_HARNESS.ifPresent(entries::accept);
-                        ItemRegistry.MAROON_HARNESS.ifPresent(entries::accept);
+                        if (NekomasFixedConfig.HARNESSES.get()) {
+                            ItemRegistry.AMBER_HARNESS.ifPresent(entries::accept);
+                            ItemRegistry.AQUA_HARNESS.ifPresent(entries::accept);
+                            ItemRegistry.INDIGO_HARNESS.ifPresent(entries::accept);
+                            ItemRegistry.MAROON_HARNESS.ifPresent(entries::accept);
+                        }
 
                         entries.accept(ItemRegistry.AMBER_DYE.get());
                         entries.accept(ItemRegistry.AQUA_DYE.get());

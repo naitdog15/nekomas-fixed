@@ -76,7 +76,7 @@ public class PlayerMixin {
     private void customTickLogics(CallbackInfo ci) {
         Player PE = (Player)(Object)this;
 
-        if (PE.onGround() && !PE.isInWater()) {
+        if (NekomasFixedConfig.TURTLE_ARMOUR_ABILITIES.get() && PE.onGround() && !PE.isInWater()) {
             if (PE.getItemBySlot(EquipmentSlot.FEET).is(ItemRegistry.TURTLE_BOOTS.get())) {
                 PE.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.DOLPHINS_GRACE, 200, 0, false, false, true));
             }
@@ -96,7 +96,7 @@ public class PlayerMixin {
     @ModifyExpressionValue(method = "getDigSpeed", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;onGround()Z"))
     private boolean turtleLeggingsMining(boolean original) {
         Player PE = (Player)(Object)this;
-        if (PE.isEyeInFluid(FluidTags.WATER)) {
+        if (NekomasFixedConfig.TURTLE_ARMOUR_ABILITIES.get() && PE.isEyeInFluid(FluidTags.WATER)) {
             if (PE.getItemBySlot(EquipmentSlot.LEGS).is(ItemRegistry.TURTLE_LEGGINGS.get())) {
                return true;
             }
@@ -108,7 +108,7 @@ public class PlayerMixin {
     private boolean preventFeatherDamage(Entity target, DamageSource source, float damage, Operation<Boolean> original) {
         Player PE = (Player)(Object)this;
 
-        if (PE.getMainHandItem().is(Items.FEATHER)) {
+        if (NekomasFixedConfig.FEATHER_KNOCKBACK.get() && PE.getMainHandItem().is(Items.FEATHER)) {
             if (target instanceof LivingEntity livingTarget) {
                 livingTarget.knockback(
                         0.4,
@@ -119,21 +119,21 @@ public class PlayerMixin {
             return true;
         }
 
-        if (PE.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && PE.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) target.invulnerableTime = 10;
+        if (NekomasFixedConfig.OFFHAND_ATTACK.get() && PE.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && PE.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) target.invulnerableTime = 10;
 
         return original.call(target, source, damage);
     }
 
     @WrapOperation(method = "interactOn", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;interact(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"))
     private InteractionResult allowOffhandAttack(Entity instance, Player player, InteractionHand hand, Operation<InteractionResult> original) {
-        if (player.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && player.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) return InteractionResult.PASS;
+        if (NekomasFixedConfig.OFFHAND_ATTACK.get() && player.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && player.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) return InteractionResult.PASS;
         return original.call(instance, player, hand);
     }
 
     @Inject(method = "getAttackStrengthScale", at = @At("HEAD"), cancellable = true)
     private void offHandDamage(float adjustTicks, CallbackInfoReturnable<Float> cir){
         Player player = (Player)(Object)this;
-        if (player.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && player.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) cir.setReturnValue(1f);
+        if (NekomasFixedConfig.OFFHAND_ATTACK.get() && player.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && player.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) cir.setReturnValue(1f);
     }
 
     // Player#hurt is reachable on the client, and the combo table is a single shared map - letting a

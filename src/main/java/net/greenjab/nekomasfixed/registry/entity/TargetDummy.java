@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.registry.entity;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import com.mojang.authlib.GameProfile;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ParticleRegistry;
@@ -267,7 +268,7 @@ public class TargetDummy extends ArmorStand implements Shearable {
 			return false;
 		}
 		// 1.20.1's Explosion pushes us on the statement right after this call.
-		if (source.is(DamageTypeTags.IS_EXPLOSION)) {
+		if (NekomasFixedConfig.TARGET_DUMMY_RESISTS_EXPLOSIONS.get() && source.is(DamageTypeTags.IS_EXPLOSION)) {
 			this.ignoreNextExplosionPush = true;
 		}
 		if (this.isRemoved()) {

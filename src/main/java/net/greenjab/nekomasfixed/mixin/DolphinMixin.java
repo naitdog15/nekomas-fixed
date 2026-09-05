@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.entity.goal.MoveToCoralReefGoal;
 import net.greenjab.nekomasfixed.registry.registries.OtherRegistry;
 import net.minecraft.world.InteractionHand;
@@ -27,6 +28,7 @@ public class DolphinMixin {
 
     @Inject(method = "mobInteract", at = @At("HEAD"))
     private void interactMob(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
+        if (!NekomasFixedConfig.DOLPHINS_SEEK_CORAL_REEFS.get()) return;
         ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
         if(stack.is(Items.TROPICAL_FISH)){
             Dolphin dolphin = (Dolphin)(Object)this;

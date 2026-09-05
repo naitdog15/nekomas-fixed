@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.mixin.accessor.SnifferAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -31,6 +32,7 @@ public class SnifferEntityMixin {
 
     @Inject(method = "dropSeed", at = @At("HEAD"), cancellable = true)
     private void dropCustomLoot(CallbackInfo ci) {
+        if (!NekomasFixedConfig.SNIFFER_FINDS_MOD_SEEDS.get()) return;
         Sniffer sniffer = (Sniffer) (Object) this;
         SnifferAccessor accessor = (SnifferAccessor) sniffer;
 
