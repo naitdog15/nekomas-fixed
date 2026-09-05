@@ -66,6 +66,7 @@ public class SickleItem extends Item {
 
     public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {
         ItemStack stack = user.getItemInHand(hand);
+        if (!NekomasFixedConfig.OFFHAND_ATTACK.get()) return InteractionResultHolder.pass(stack);
         if (hand == InteractionHand.MAIN_HAND) return InteractionResultHolder.pass(stack);
         if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResultHolder.pass(stack);
         if (user.getAttackStrengthScale(0)<0.5) return InteractionResultHolder.pass(stack);
