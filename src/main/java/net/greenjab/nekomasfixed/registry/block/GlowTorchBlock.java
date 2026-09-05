@@ -25,8 +25,7 @@ public class GlowTorchBlock extends TorchBlock implements SimpleWaterloggedBlock
 	public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
 	public GlowTorchBlock(BlockBehaviour.Properties settings) {
-		// the glow particle only shows underwater, and animateTick below owns that entirely,
-		// but TorchBlock still wants a flame to hand out
+		// TorchBlock still wants a flame to hand out, though animateTick below owns the actual (underwater-only) particle
 		super(settings, ParticleTypes.GLOW);
 		this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false));
 	}

@@ -35,12 +35,7 @@ import java.util.Set;
 
 public class TermitehiveBlockEntity extends BlockEntity {
     static final Logger LOGGER = LogUtils.getLogger();
-    /**
-     * Entity NBT that means nothing once the termite is inside the hive, and would only bloat the
-     * stored tag. Mirrors
-     * {@link net.greenjab.nekomasfixed.registry.other.AnimalComponent#IRRELEVANT_ANIMAL_NBT_KEYS}
-     * plus the two pollination counters.
-     */
+    // mirrors AnimalComponent.IRRELEVANT_ANIMAL_NBT_KEYS plus the two pollination counters
     static final List<String> IRRELEVANT_TERMITE_NBT_KEYS = Arrays.asList(
             "Air",
             "ArmorDropChances",
@@ -79,13 +74,8 @@ public class TermitehiveBlockEntity extends BlockEntity {
         super(BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY.get(), pos, state);
     }
 
-    /**
-     * Disturbing the hive empties it: anything that marks this block entity dirty is something
-     * happening to the mound, and the swarm comes straight out. That makes marking it dirty a
-     * destructive act, so anything restoring a populated hive has to go through
-     * {@link #addTermite} - which deliberately does not mark it - rather than loading a saved tag
-     * and calling this.
-     */
+    // setChanged empties the hive (swarm comes out), so restoring a populated hive must go through
+    // addTermite - which deliberately does not mark it - never load a tag then call this.
     @Override
     public void setChanged() {
         this.angerTermites(TermitehiveBlockEntity.TermiteState.EMERGENCY);
@@ -118,10 +108,7 @@ public class TermitehiveBlockEntity extends BlockEntity {
     }
 
 
-    /**
-     * A laden termite unloading its wood at the mound. Nothing inside the hive changes, so there is
-     * deliberately nothing to mark dirty - and marking this block entity dirty would empty it.
-     */
+    // nothing inside the hive changes here, so deliberately nothing to mark dirty - that would empty it
     public void onTermiteDeposit(net.greenjab.nekomasfixed.registry.entity.Termite termite) {
         if (this.level == null) {
             return;
@@ -140,8 +127,7 @@ public class TermitehiveBlockEntity extends BlockEntity {
             entity.stopRiding();
             entity.ejectPassengers();
             entity.dropLeash(true, true);
-            // A termite carrying wood unloads it before it settles in, so the load is not still on
-            // its back when the hive lets it out again.
+            // unload before it settles in, so the load isn't still on its back when the hive releases it
             if (entity.isLaden()) {
                 this.onTermiteDeposit(entity);
                 entity.setLaden(false);
@@ -247,10 +233,8 @@ public class TermitehiveBlockEntity extends BlockEntity {
         }
     }
 
-    // No key at all when the hive is empty, so nothing copying this block entity onto a stack
-    // stamps it with a leftover empty list. What gets written is the live tick counts, not the
-    // ones that were loaded, so a termite keeps its place in the queue across a save. An encode
-    // that fails writes nothing rather than half a swarm; the hive then loads back empty.
+    // no key at all when empty, so copying this block entity onto a stack never stamps a leftover
+    // empty list; writes the live tick counts so a termite keeps its queue position across a save.
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
@@ -262,7 +246,6 @@ public class TermitehiveBlockEntity extends BlockEntity {
         }
     }
 
-    /** What a dropped or picked hive carries its occupants in. */
     public List<TermitehiveBlockEntity.TermiteData> createTermitesData() {
         return this.termites.stream().map(TermitehiveBlockEntity.Termite::createData).toList();
     }
@@ -286,11 +269,7 @@ public class TermitehiveBlockEntity extends BlockEntity {
 
     }
 
-    /**
-     * One termite parked in the hive. The entity is kept as a plain {@link CompoundTag} that
-     * carries its own {@code "id"} key, written and read back through {@link EntityNbtHelper} -
-     * the same shape {@code AnimalComponent.StoredEntityData} uses.
-     */
+    // kept as a plain CompoundTag with its own "id" key, via EntityNbtHelper - same shape AnimalComponent.StoredEntityData uses
     public record TermiteData(CompoundTag entityData, int ticksInHive, int minTicksInHive) {
         public static final Codec<TermitehiveBlockEntity.TermiteData> CODEC = RecordCodecBuilder.create(
                  instance -> instance.group(

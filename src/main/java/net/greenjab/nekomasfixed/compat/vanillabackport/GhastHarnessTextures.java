@@ -17,15 +17,11 @@ import net.minecraftforge.registries.RegistryObject;
 import java.lang.reflect.Method;
 
 /**
- * Tells Vanilla Backport which texture to draw for each of this mod's harnesses. Its ghast renderer
- * keeps a static map of harness item to texture and a register call to add to it, which is what
- * these four go to. Reached by name; if that call is missing they simply render untextured — never a
- * crash, and never a hard reference to a class that may not be installed.
- *
- * <p>The map is read fresh on every frame the ghast is drawn, so it does not matter that these
- * entries arrive after the renderer was built; it only matters that they arrive on the main thread,
- * which is what the enqueued work below is for. Client side only — a dedicated server never draws a
- * ghast and never loads this class.
+ * reached by name via reflection, never a hard reference to a class that may not be installed - if
+ * the register call is missing these four simply render untextured, never a crash.
+ * the map is read fresh every frame the ghast is drawn, so entries can arrive after the renderer
+ * was built; they just need to land on the main thread, which is what enqueueWork is for.
+ * client side only - a dedicated server never draws a ghast or loads this class.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class GhastHarnessTextures {
@@ -54,8 +50,8 @@ public final class GhastHarnessTextures {
             put(handoff, ItemRegistry.INDIGO_HARNESS, "indigo_harness");
             put(handoff, ItemRegistry.MAROON_HARNESS, "maroon_harness");
         } catch (Throwable failure) {
-            // Older builds of the supplying mod have no handler to hand these to. The harnesses stay
-            // wearable, they just turn up bare, and this is the only hint anyone gets as to why.
+            // older builds of the supplying mod have no handler for this - harnesses stay wearable
+            // but render bare, and this warning is the only hint why.
             NekomasFixed.LOGGER.warn("No {} in the installed Vanilla Backport, so the four harnesses "
                     + "will render untextured. A newer build of it supplies one.", HANDLER);
         }

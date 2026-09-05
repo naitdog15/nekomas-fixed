@@ -31,26 +31,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * The retarget here is not a straight rename.
- * <p>
- * 1.20.1 delta 1: the 26.2 split {@code useItemOn(ItemStack, BlockState, Level, BlockPos, Player,
- * InteractionHand, BlockHitResult)} does not exist here — 1.20.1 has one combined
- * {@code use(BlockState, Level, BlockPos, Player, InteractionHand, BlockHitResult)}; the item comes
- * from {@code player.getItemInHand(hand)} instead of a dedicated parameter.
- * <p>
- * 1.20.1 delta 2: {@code DataComponents.INSTRUMENT}/{@code InstrumentComponent} do not exist (data
- * components are 1.20.5+). Vanilla's own {@code InstrumentItem#getInstrument} is private, so the
- * instrument id is read directly off the stack's {@code "instrument"} NBT string tag — the same tag
- * vanilla's {@code InstrumentItem} reads/writes — and resolved to a {@code ResourceKey<Instrument>}, matching
- * {@code Instruments.CALL_GOAT_HORN} et al., which are themselves still {@code ResourceKey<Instrument>}
- * on 1.20.1 (unchanged shape).
- * <p>
- * Cross-package dependency: {@code GoatHornType.fromInstrument(InstrumentComponent)} (registry/block/enums)
- * needs a 1.20.1 overload {@code fromInstrument(ResourceKey<Instrument>)} — the component
- * type it currently unwraps to a key no longer exists, but the key itself is what this mixin can now
- * produce directly.
- */
+// 1.20.1: no split useItemOn(...) — retargeted onto combined use(state, level, pos, player, hand,
+// hitResult); item comes from player.getItemInHand(hand).
+// 1.20.1: no DataComponents.INSTRUMENT/InstrumentComponent (1.20.5+) — instrument id read off the
+// stack's "instrument" NBT string tag instead, resolved to a ResourceKey<Instrument>.
+// GoatHornType.fromInstrument needed a ResourceKey<Instrument> overload since it no longer gets an
+// InstrumentComponent to unwrap.
 @Mixin(BlockBehaviour.class)
 public class BlockBehaviourMixin {
 
@@ -89,8 +75,7 @@ public class BlockBehaviourMixin {
         }
     }
 
-    /** Mirrors vanilla InstrumentItem's private getInstrument, minus its tag-fallback branch — the
-     * mod only ever cares about an instrument the stack was explicitly given a sound variant for. */
+    // mirrors vanilla InstrumentItem's private getInstrument, minus its tag-fallback branch.
     @Unique
     private static ResourceKey<Instrument> nekomasfixed$readInstrument(ItemStack stack) {
         CompoundTag tag = stack.getTag();

@@ -16,18 +16,12 @@ import net.minecraftforge.fml.common.Mod;
 import javax.annotation.Nullable;
 
 /**
- * The BlockTintSource collapse, concretely: Fabric's onInitializeClient() fanned
- * out to {@code BlockEntityRendererRegistry}/{@code ModEntityRendererRegistry}/{@code ModModelLayerRegistry}
- * (now self-subscribing to {@link net.minecraftforge.client.event.EntityRenderersEvent} inside their own
- * classes under {@code registries/**}), {@code TextureRegistry} (now four {@code Material} constants, no
- * event), {@code ClientSyncHandler.init()} (folded into the SimpleChannel construction),
- * and {@code MenuScreens.register(...)} ({@code FMLClientSetupEvent}, intentionally NOT duplicated
- * here). This file's only remaining job is the block-color registration.
- *
- * <p>The two-method {@code BlockTintSource} ({@code color(state)} returning -1, {@code colorInWorld}
- * doing the real blend) collapses onto 1.20.1's single-method {@link BlockColor#getColor}: the
- * null-level branch IS the old {@code color(state)} branch, and the rest is {@code colorInWorld}
- * verbatim.
+ * this file's only remaining job is block-color registration - everything else that used to live
+ * here now self-registers elsewhere (renderer/model registries under {@code registries/**}, four
+ * {@code Material} constants, {@code ClientSyncHandler.init()} folded into the SimpleChannel
+ * construction, {@code MenuScreens.register(...)} in {@code ScreenRegistration}).
+ * the null-level branch below is the old separate "color(state)" case; {@link BlockColor#getColor}
+ * collapses both onto one method.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class NekomasFixedClient {

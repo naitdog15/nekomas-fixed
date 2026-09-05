@@ -3,13 +3,10 @@ package net.greenjab.nekomasfixed.compat;
 import net.minecraftforge.fml.ModList;
 
 /**
- * The companion mods Nekoma's Fixed can borrow content from, and the presence checks that decide
- * whether that content is there. Nothing in this mod imports a companion mod's classes; every
- * borrowed block, item, sound and tag is reached by id (see the compat sub-packages), so a missing
- * companion mod is an empty lookup rather than a crash.
- *
- * <p>These checks are only valid from the mod constructor onwards. Anything that runs earlier —
- * a mixin config plugin, for instance — needs a check that does not depend on ModList being built.
+ * borrowed content is reached by id (see the compat sub-packages), never by importing a companion
+ * mod's classes, so a missing companion is an empty lookup rather than a crash.
+ * these checks are only valid from the mod constructor onwards - anything earlier (a mixin config
+ * plugin, say) needs a check that doesn't depend on ModList being built.
  */
 public final class CompatMods {
     public static final String VANILLA_BACKPORT = "vanillabackport";

@@ -14,9 +14,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// A skeleton left standing in water long enough turns into a drenched one. convertTo hands the new
-// entity straight back rather than taking a callback, so the variant roll happens on the return
-// value here instead of inside the conversion.
+// convertTo hands the new entity straight back rather than taking a callback, so the variant roll
+// happens on the return value here instead of inside the conversion.
 @Mixin(Skeleton.class)
 public abstract class SkeletonMixin extends Monster {
 

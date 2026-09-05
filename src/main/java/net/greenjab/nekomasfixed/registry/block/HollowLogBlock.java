@@ -170,10 +170,8 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
             if (be instanceof HollowLogBlockEntity logBE) {
                 if (stack.getItem() instanceof BlockItem blockItem) {
                     if (blockItem.getBlock().defaultBlockState().is(BlockTags.FLOWERS) && logBE.getStoredBlock().is(BlockTags.FLOWER_POTS)) {
-                        // FlowerPotBlockAccessor -> Forge's own FlowerPotBlock#getFullPotsView() (:127-137).
-                        // The null/absence branch below is intentional and must be preserved: membership in
-                        // BlockTags.FLOWERS does NOT guarantee a FlowerPotBlock mapping (tall flowers are
-                        // unpottable), so this must never collapse to a bare `.get(key).get()`.
+                        // FLOWERS tag membership doesn't guarantee a FlowerPotBlock mapping (tall flowers are
+                        // unpottable) - the null branch below is intentional, never collapse to .get(key).get().
                         Block plant = blockItem.getBlock();
                         java.util.function.Supplier<? extends Block> pottedSupplier =
                                 ((FlowerPotBlock) Blocks.FLOWER_POT).getFullPotsView().get(ForgeRegistries.BLOCKS.getKey(plant));
@@ -209,12 +207,6 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
                         level.sendBlockUpdated(pos, state, state, 3);
                         return InteractionResult.SUCCESS;
                     }
-                    /*if (stack.isIn(ItemTags.HOES) && logBE.getStoredBlock().isIn(BlockTags.DIRT)) {
-                        stack.damage(1, player, hand);
-                        logBE.setStoredBlock(Items.DIRT.getDefaultStack(), Blocks.FARMLAND.getDefaultState());
-                        level.updateListeners(pos, state, state, 2);
-                        return ActionResult.SUCCESS;
-                    }*/
                 }
                 logBE.setChanged();
             }

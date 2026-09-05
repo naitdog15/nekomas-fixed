@@ -13,16 +13,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
-/**
- * Points the turtle armour set and the five crowns at their own worn-armour textures.
- *
- * <p>Armour texture paths are built in Forge's {@code HumanoidArmorLayer#getArmorResource}, which is
- * a Forge addition rather than a vanilla method - hence {@code remap = false} - and it is called once
- * per slot with no hint of which layer image it is after beyond the slot itself. The layer suffix
- * therefore follows the same rule the layer's own inner/outer model choice uses: the leggings slot
- * draws layer 2, everything else layer 1. The crowns never hit that branch, a helmet never being the
- * leggings slot.
- */
+// getArmorResource is a Forge addition, not vanilla, hence remap = false. layer suffix follows the
+// same rule the model's own inner/outer choice uses: leggings slot is layer 2, else layer 1.
 @Mixin(HumanoidArmorLayer.class)
 public class EquipmentLayerRendererMixin {
 

@@ -10,12 +10,8 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 
-/**
- * {@code yaw} needs {@code partialTick}-interpolated body rotation, unavailable inside
- * {@code setupAnim}'s 5-float signature; {@link net.greenjab.nekomasfixed.render.entity.feature.BasePlateFeatureRenderer}
- * (a {@code RenderLayer}, whose classic {@code render(...)} override does receive {@code partialTick})
- * sets this field before calling {@code setupAnim} — same pattern as {@code WildfireModel.bodyRot}.
- */
+// yaw needs partialTick, unavailable in setupAnim's 5-float signature, so BasePlateFeatureRenderer
+// sets this field before calling setupAnim - same pattern as WildfireModel.bodyRot
 public class BasePlateModel extends TargetDummyArmorModel {
 
 	private final ModelPart basePlate;
@@ -32,9 +28,8 @@ public class BasePlateModel extends TargetDummyArmorModel {
 	};
 
 	public static LayerDefinition getTexturedModelData() {
-		// Only the plate is ever drawn, but the humanoid parts still have to exist or the inherited
-		// constructor cannot find them. 1.20.1 has no way to strip cubes off a built mesh, so they go
-		// in empty from the start.
+		// humanoid parts still have to exist or the inherited constructor can't find them - 1.20.1 has
+		// no way to strip cubes off a built mesh, so they go in empty
 		MeshDefinition modelData = new MeshDefinition();
 		PartDefinition modelPartData = modelData.getRoot();
 		for (String part : HUMANOID_PARTS) {
@@ -47,8 +42,7 @@ public class BasePlateModel extends TargetDummyArmorModel {
 
 	@Override
 	protected Iterable<ModelPart> bodyParts() {
-		// The humanoid model only draws its head and body parts; the plate is a sibling of them, so it
-		// has to be listed here or it never reaches the buffer.
+		// plate is a sibling part, not drawn by the humanoid model, so it must be listed here or it never reaches the buffer
 		return Iterables.concat(super.bodyParts(), ImmutableList.of(this.basePlate));
 	}
 

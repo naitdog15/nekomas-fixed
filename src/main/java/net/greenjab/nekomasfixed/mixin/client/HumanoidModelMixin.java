@@ -17,16 +17,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static net.minecraft.client.model.HumanoidModel.ArmPose.BOW_AND_ARROW;
 
-/**
- * Gives a drawn bow or slingshot a proper two-handed pose: the holding arm follows the head, the
- * pulling arm swings back as the draw builds, and a slingshot pulls further and reaches full draw in
- * half the time a crossbow takes.
- *
- * <p>Both arm poses are replaced outright when the arm is in the bow pose. Everything the pose needs
- * - which hand holds the weapon, how long it has been held, how long a full draw takes - comes off
- * the entity being drawn, resolved against its main arm the way vanilla's own dominant-hand logic
- * does.
- */
+// both arm poses are replaced outright, resolved against the entity's main arm the same way
+// vanilla's own dominant-hand logic does.
 @Mixin(HumanoidModel.class)
 public class HumanoidModelMixin<T extends LivingEntity> {
 
@@ -52,7 +44,6 @@ public class HumanoidModelMixin<T extends LivingEntity> {
         }
     }
 
-    /** A slingshot reaches full draw in half the time a crossbow of the same enchantment would. */
     @Unique
     private static float chargeDuration(ItemStack stack) {
         float duration = CrossbowItem.getChargeDuration(stack);

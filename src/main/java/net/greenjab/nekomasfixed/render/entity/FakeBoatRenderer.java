@@ -7,11 +7,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * The hull extensions are invisible - they exist only to be hit, pushed and stood on - so this draws
- * nothing at all. The texture below is never sampled; it is only there because every renderer has to
- * name one.
- */
+// invisible on purpose - only exists to be hit/pushed/stood on; texture below is never sampled, just required
 public class FakeBoatRenderer extends EntityRenderer<FakeBoat> {
 
 	public FakeBoatRenderer(EntityRendererProvider.Context context) {

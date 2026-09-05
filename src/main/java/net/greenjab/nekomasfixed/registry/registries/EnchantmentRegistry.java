@@ -9,21 +9,9 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
-/**
- * The three enchantments this mod adds. None of them carries any behaviour of its own: what each one
- * does is applied where the effect belongs — Dismount and Leeching in the damage pipeline, Shatter on
- * the slingshot — and these classes exist to give the enchanting table, the anvil and the tooltip
- * something to name.
- *
- * <p>All three are uncommon, sit in the main hand, and take the costs and exclusivity rules written
- * on each class below. Leeching is the odd one out twice over: it is the only one that goes past
- * level I, and the only one the enchanting table will not offer, so it has to be found or traded for.
- *
- * <p>Which items each one is offered for is the enchantment's category, a coarse per-item-class test
- * rather than a list. Dismount rides the trident category, Leeching the weapon category and Shatter
- * the bow category; the mod's own sickle and slingshot are widened onto that in EnchantmentMixin, which
- * is the one place that decides what those two accept.
- */
+// none of these three carry behaviour of their own - Dismount and Leeching apply in the damage
+// pipeline, Shatter on the slingshot. category is a coarse per-item-class test, not a list; the
+// mod's own sickle and slingshot are widened onto Weapon/Bow in EnchantmentMixin.
 public class EnchantmentRegistry {
 
     public static final DeferredRegister<Enchantment> ENCHANTMENTS =

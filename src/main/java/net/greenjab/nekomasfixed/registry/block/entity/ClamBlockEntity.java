@@ -55,12 +55,7 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 		}
 	}
 
-	/**
-	 * The clam has no screen of its own - {@link #createMenu} returns null and nothing opens it -
-	 * but {@code getName()} is still reachable from anything that inspects the container, and a null
-	 * here would take it down. Borrowing the block's own name costs nothing and keeps that safe
-	 * whatever inspects the clam next.
-	 */
+	// createMenu returns null (no screen), but getName() is still reachable and a null here would crash it
 	@Override
 	protected Component getDefaultName() {
 		return this.getBlockState().getBlock().getName();
@@ -73,8 +68,7 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 
 	@Override
 	public CompoundTag getUpdateTag() {
-		// Force the Items list even when empty, otherwise taking the pearl out leaves the client
-		// rendering the old one until the chunk reloads.
+		// force the Items list even when empty, or removing the pearl leaves the client rendering the old one
 		CompoundTag tag = new CompoundTag();
 		ContainerHelper.saveAllItems(tag, this.inventory, true);
 		return tag;
@@ -139,11 +133,7 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 		return 1;
 	}
 
-	/**
-	 * Which of the three item models the clam drops as: closed, open, or open-with-a-pearl. Derived
-	 * from the block state and contents by the block itself just before the drop is built, so it is
-	 * deliberately not part of the saved tag.
-	 */
+	// derived by the block from state+contents right before the drop is built; deliberately not saved
 	public void setState(int cstate) {
 		state = cstate;
 	}

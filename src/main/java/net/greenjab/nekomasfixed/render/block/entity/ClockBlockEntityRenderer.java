@@ -18,11 +18,6 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.RotationSegment;
 
-/**
- * Draws the clock face, its stand and (when present) a bell, plus the floating minute/second or
- * time-of-day readout above it. The item insets render directly through {@link ItemRenderer#renderStatic}
- * and the readout is billboarded by hand with {@code Font#drawInBatch} against the camera rotation.
- */
 public class ClockBlockEntityRenderer implements BlockEntityRenderer<ClockBlockEntity> {
 	private final ItemRenderer itemRenderer;
 	private final Font font;

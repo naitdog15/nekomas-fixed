@@ -10,21 +10,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-/**
- * Redstone-striker power delivery.
- *
- * <p>{@code getSignal} and {@code hasNeighborSignal} live on {@link SignalGetter} as defaults, and
- * nothing in the level hierarchy overrides them, so there is no method body anywhere to hook. What
- * this does instead is give {@code Level} the overrides it never had - every block that asks about
- * redstone power asks a {@code Level}, so putting them here catches the lot in one place, and the
- * defaults stay untouched for anything else that implements the interface.
- *
- * <p>A struck block that conducts redstone feeds its neighbours at full strength; a struck position
- * also reports as powered from outside, which is what switches on whatever component is sitting
- * there. Wire and pistons ask through their own methods - see {@code RedstoneWireEvaluatorMixin}
- * and {@code PistonBaseBlockMixin}. Charges are put down in {@code RedstoneStrikerItem} and run out
- * in {@code ServerLevelMixin}.
- */
+// getSignal/hasNeighborSignal live on SignalGetter as defaults with no override anywhere in the
+// level hierarchy, so there's no method body to hook - this gives Level the overrides it never had,
+// catching every block that asks a Level about redstone power in one place. wire and pistons ask
+// through their own methods, see RedstoneWireEvaluatorMixin and PistonBaseBlockMixin; charges are
+// put down in RedstoneStrikerItem and run out in ServerLevelMixin.
 @Mixin(Level.class)
 public abstract class LevelMixin implements SignalGetter {
     @Unique

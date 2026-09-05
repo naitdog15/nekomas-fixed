@@ -13,15 +13,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
-/**
- * Burns a wildfire with soul fire instead of ordinary fire.
- *
- * <p>The on-fire overlay every entity gets is one shared method,
- * {@code EntityRenderDispatcher#renderFlame}, drawn from the two {@code ModelBakery.FIRE_0}/
- * {@code FIRE_1} materials. It is handed the burning entity itself, so the check is simply whether
- * that entity is a wildfire with its soul flame lit; if it is, the two materials are swapped for
- * ones built the same way off vanilla's soul-fire block textures.
- */
+// renderFlame is shared by every entity and pulls ModelBakery.FIRE_0/FIRE_1 statically, so the swap
+// is keyed on whether the burning entity is a wildfire with its soul flame lit.
 @Mixin(EntityRenderDispatcher.class)
 public class FlameFeatureRendererMixin {
 

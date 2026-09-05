@@ -10,7 +10,6 @@ import net.minecraft.client.renderer.entity.AbstractZombieRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 
-/** Renders the rime as a zombie variant; see {@link DerelictRenderer}. */
 public class RimeRenderer extends AbstractZombieRenderer<Rime, RimeModel> {
     private static final ResourceLocation RIME_LOCATION = NekomasFixed.id("textures/entity/zombie/rime.png");
     private static final ResourceLocation BABY_RIME_LOCATION = NekomasFixed.id("textures/entity/zombie/rime_baby.png");

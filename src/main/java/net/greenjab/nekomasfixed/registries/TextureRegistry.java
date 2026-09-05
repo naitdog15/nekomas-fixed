@@ -4,14 +4,8 @@ import net.greenjab.nekomasfixed.NekomasFixed;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.resources.model.Material;
 
-/**
- * Where the clam's shell textures live on the chest atlas.
- *
- * <p>Nothing has to be stitched by hand: vanilla's own {@code chests.json} atlas definition lists
- * the whole {@code textures/entity/chest} directory of every namespace, so the clam PNGs under
- * {@code assets/nekomasfixed/textures/entity/chest/} join the chest sheet simply by being there.
- * All that is needed here is the {@link Material} for each shell.
- */
+/** vanilla's chests.json atlas definition lists the whole textures/entity/chest directory of every
+ * namespace, so these PNGs join the chest sheet just by being there - nothing to stitch by hand. */
 public class TextureRegistry {
 
     public static final Material CLAM_MATERIAL = chestMaterial("clam");
@@ -23,7 +17,6 @@ public class TextureRegistry {
         return new Material(Sheets.CHEST_SHEET, NekomasFixed.id("entity/chest/" + name));
     }
 
-    /** Which shell a clam wears. Kept here, beside the materials it picks between. */
     public enum Variant {
         BLUE,
         PINK,

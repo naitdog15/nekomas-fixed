@@ -10,21 +10,10 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 
-/**
- * The spinning live-entity preview a nautilus shell shows for the creature inside it.
- * <p>
- * {@code ClientTooltipComponent} on this version is {@code getHeight()} (no {@code Font} param),
- * {@code getWidth(Font)} and {@code renderImage(Font, int x, int y, GuiGraphics)}, not 26.2's
- * {@code extractImage(Font, x, y, w, h, GuiGraphicsExtractor)}. {@code TypedEntityData} and its
- * manual {@code EntityType.loadEntityRecursive} reconstruction are replaced by the ready-made
- * {@code AnimalComponent.StoredEntityData#loadEntity(Level)}. The preview itself is vanilla's own
- * {@code InventoryScreen.renderEntityInInventoryFollowsMouse}; 26.2 renamed that to
- * {@code extractEntityInInventoryFollowsMouse} and switched it from an origin-plus-scale to a
- * rectangle, which is the only reason the call reads differently.
- * <p>
- * Image only. The "Holding: …" summary is {@code AnimalComponent#tooltipLine()}, which belongs on
- * {@code appendHoverText}.
- */
+// this version's ClientTooltipComponent is getHeight()/getWidth(Font)/renderImage(Font,x,y,GuiGraphics),
+// not 26.2's extractImage(...); renderEntityInInventoryFollowsMouse here still takes an origin+scale,
+// not 26.2's renamed extractEntityInInventoryFollowsMouse rectangle - only reason the call below differs
+// image only - the "Holding: ..." text is AnimalComponent#tooltipLine() on appendHoverText
 public class AnimalTooltipComponent implements ClientTooltipComponent {
     private final AnimalComponent animalComponent;
 

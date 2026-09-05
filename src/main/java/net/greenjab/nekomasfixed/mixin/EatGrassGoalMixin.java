@@ -14,15 +14,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 
-/**
- * Lets a sheep graze mycelium as well as grass, and marks it spotted while it does. Both hooks ride
- * the goal's own grass-block check - {@code canUse} and {@code tick} each make exactly one - so the
- * mycelium case slots in without touching the tall-grass branch, which takes a different route
- * entirely.
- *
- * <p>The spotted flag goes through {@link SpottedSheepAccess}, which saves under the {@code
- * "Spotted"} NBT key; see SheepMixin before renaming anything there.
- */
+// canUse and tick each make exactly one grass-block check, so the mycelium case slots into that
+// same check without touching the tall-grass branch.
+// spotted flag goes through SpottedSheepAccess, saved under the "Spotted" NBT key - see SheepMixin
+// before renaming anything there.
 @Mixin(EatBlockGoal.class)
 public abstract class EatGrassGoalMixin {
     @Shadow

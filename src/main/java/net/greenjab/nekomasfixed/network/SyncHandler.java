@@ -7,14 +7,8 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 import java.util.Optional;
 
-/**
- * The frozen wire contract. One packet, server -> client, syncing a ClockBlockEntity.
- * {@code SimpleChannel} is the current Forge networking API here, not a legacy fallback.
- * <p>
- * {@link #init()} is called from {@link NekomasFixed}'s constructor, not from
- * {@code FMLCommonSetupEvent} — channel construction must complete before
- * {@code NetworkRegistry.lock()}.
- */
+/** init() is called from the mod constructor, not FMLCommonSetupEvent - channel construction must
+ * complete before NetworkRegistry.lock(). */
 public final class SyncHandler {
     private SyncHandler() {
     }

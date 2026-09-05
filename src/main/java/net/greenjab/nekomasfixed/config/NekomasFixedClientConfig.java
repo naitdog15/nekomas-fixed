@@ -2,14 +2,6 @@ package net.greenjab.nekomasfixed.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 
-/**
- * Everything that ends up in {@code nekomasfixed-client.toml}: the switches whose whole effect is
- * what your own game draws. They live apart from the common file because turning one off changes
- * nothing another player could see, and a dedicated server has no use for any of them.
- *
- * <p>Read the same way as the common switches — at the moment the feature draws, never cached — so
- * a change to the file shows up as soon as it is reloaded.
- */
 public final class NekomasFixedClientConfig {
 
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();

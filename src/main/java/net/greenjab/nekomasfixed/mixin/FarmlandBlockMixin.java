@@ -16,7 +16,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Feather Falling boots stop you trampling crops, the same way they spare you the fall damage.
 @Mixin(FarmBlock.class)
 public class FarmlandBlockMixin {
 

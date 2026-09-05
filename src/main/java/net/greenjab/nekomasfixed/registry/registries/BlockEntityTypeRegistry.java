@@ -7,13 +7,8 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
-/**
- * FabricBlockEntityTypeBuilder -&gt; vanilla BlockEntityType.Builder.of(factory, Block...), wrapped
- * in a DeferredRegister supplier. Block RegistryObjects are dereferenced with .get() only inside
- * each entry's own supplier lambda (Forge resolves RegisterEvent&lt;Block&gt; before
- * RegisterEvent&lt;BlockEntityType&gt;, the same dependency ordering Item relies on for its own
- * Block cross-references - see ItemRegistry.java's javadoc).
- */
+// Block RegistryObjects are dereferenced with .get() only inside each entry's own supplier lambda -
+// Forge resolves RegisterEvent<Block> before RegisterEvent<BlockEntityType>, same ordering ItemRegistry relies on.
 public class BlockEntityTypeRegistry {
 
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =

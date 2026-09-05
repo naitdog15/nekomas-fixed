@@ -11,13 +11,9 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 /**
- * The in-game options screen, drawn with Cloth Config when it is installed. The two toml files are
- * the real settings: every toggle here reads its current value out of them and writes it straight
- * back, so the screen and a hand-edited file can never disagree. Closing the screen saves both
- * files.
- *
- * <p>Its categories follow the same grouping as the files themselves, with the options that need
- * another mod installed collected at the end under Connected Mods.
+ * every toggle reads its current value out of the toml files and writes it straight back, so the
+ * screen and a hand-edited file can never disagree; closing the screen saves both.
+ * categories mirror the files' own grouping, with mod-gated options collected under Connected Mods.
  */
 public class ConfigTrial {
 
@@ -229,8 +225,7 @@ public class ConfigTrial {
                 Component.literal(text).withStyle(style -> style.withColor(colour))).build());
     }
 
-    // A plain paragraph under a heading. The list entry wraps it to the panel width, so the lines
-    // handed in here are only about keeping this file readable.
+    // joined into one string - the widget wraps it; these args are only for readability here.
     private static void note(ConfigCategory category, ConfigEntryBuilder entryBuilder, String... text) {
         category.addEntry(entryBuilder.startTextDescription(Component.literal(String.join(" ", text))).build());
     }
@@ -248,8 +243,7 @@ public class ConfigTrial {
                 .build());
     }
 
-    // The screen can only be opened long after both files have been read, but asking the spec first
-    // means a value is never demanded before it exists.
+    // isLoaded check first means a value is never demanded before the spec exists.
     private static boolean read(ForgeConfigSpec spec, ForgeConfigSpec.BooleanValue option) {
         return spec.isLoaded() ? option.get() : option.getDefault();
     }

@@ -7,12 +7,8 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 
-/**
- * Body/inner-armor/outer-armor mesh for the derelict, extending vanilla's {@code ZombieModel}
- * unmodified so its aggressive-pose animation carries over. There's no separate baby mesh: like
- * vanilla Zombie/Husk/Drowned, baby derelicts reuse this same model and get their proportions from
- * {@code HumanoidModel}'s own built-in young scale-down, with only the texture switching per age.
- */
+// no separate baby mesh - like vanilla zombie/husk/drowned, babies reuse this model and get their
+// proportions from HumanoidModel's own young scale-down, only the texture switches per age
 public class DerelictModel extends ZombieModel<Derelict> {
 
     public DerelictModel(ModelPart modelPart) {

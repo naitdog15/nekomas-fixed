@@ -30,37 +30,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * The tooltip-image dispatch is rewritten rather than retargeted. The 26.2 version keyed off
- * {@code DataComponents.CONTAINER} and the mod's own {@code ANIMAL} component, consulting
- * {@code TooltipDisplay} for whether each was hidden; none of {@code TooltipDisplay},
- * {@code DataComponents.TOOLTIP_DISPLAY}, {@code Item.TooltipContext} or
- * {@code ItemStack#addToTooltip(DataComponentType, ...)} exists on 1.20.1. The equivalents used
- * below are {@code BlockItem.getBlockEntityData(stack)}'s {@code "Items"} list — the NBT vanilla
- * containers actually keep their contents in — and {@code StackData}'s {@code "animal"} key. There
- * is no per-component hide flag to honour either: tooltip hiding here is {@code HideFlags}, which
- * has no bit for either payload, so a pack that hid these two on 26.2 has no lever left.
- * <p>
- * The tooltip <i>text</i> half of the same 26.2 injector does not live here. The text hook on this
- * version is {@code Item#appendHoverText}: the animal summary and the clock's recorded time come
- * from the base-class injection in {@code ItemMixin} (a block item reaches it because
- * {@code BlockItem}'s override calls super first), and the sickle's combo lines from its own
- * override.
- * <p>
- * The remaining two injectors port cleanly:
- * <p>
- * {@code use}: {@code ItemStack#use(Level, Player, InteractionHand)} itself is unchanged, but on
- * 1.20.1 it still returns {@code InteractionResultHolder<ItemStack>}, not the bare
- * {@code InteractionResult} 26.2 uses, so the handler's {@code CallbackInfoReturnable} type
- * parameter and the {@code @At} INVOKE descriptor's return type both change accordingly.
- * {@code ComponentRegistry.CLAM_STATE}/{@code STORED_TIME} become {@code StackData} calls.
- * <p>
- * {@code hasFoil}: unchanged target. {@code DataComponents.POTION_CONTENTS}/{@code PotionContents}
- * (1.20.5+) become {@code PotionUtils.getPotion(ItemStack)}, which returns a plain {@code Potion}
- * rather than {@code Optional<Holder<Potion>>}. {@code ItemRegistry.LIGHTNING} is a
- * {@code RegistryObject<Potion>} on its new registry row (1.20.1 registers a plain {@code Potion}
- * instance, not {@code registerForHolder}), so the comparison gains {@code .get()}.
- */
+// tooltip-image dispatch: none of TooltipDisplay/DataComponents.TOOLTIP_DISPLAY/addToTooltip exist
+// on 1.20.1, so this reads BlockItem.getBlockEntityData(stack)'s "Items" list and StackData's
+// "animal" key directly instead - and there's no per-component HideFlags bit for either, so a pack
+// that hid these on other versions has no lever left here.
+// the tooltip *text* half lives in ItemMixin's appendHoverText hook instead, not here.
+// use(): still returns InteractionResultHolder<ItemStack>, not a bare InteractionResult.
+// hasFoil: PotionUtils.getPotion(ItemStack) returns a plain Potion, not Optional<Holder<Potion>>.
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
 
@@ -75,17 +51,10 @@ public class ItemStackMixin {
 		}
 	}
 
-	/**
-	 * The stacks a container item is carrying, empty when it is not a container or is carrying
-	 * nothing. An empty result deliberately falls through to vanilla: that leaves a bundle on its own
-	 * {@code BundleTooltip} (a bundle keeps its contents in the stack's own {@code "Items"}, not under
-	 * {@code BlockEntityTag}, so it never matches here) and leaves an empty shulker box with no image
-	 * at all, both exactly as vanilla had them.
-	 * <p>
-	 * Empty slots are dropped rather than kept in place, so the grid packs from the top-left — the
-	 * same shape the replaced component held, which stored only the non-empty stacks. The 27 is the
-	 * grid's own limit of three rows of nine; a bigger container is truncated, not wrapped.
-	 */
+	// empty result falls through to vanilla deliberately: a bundle keeps its contents outside
+	// BlockEntityTag so it never matches here and keeps its own BundleTooltip, and an empty shulker
+	// box keeps no image. empty slots are dropped so the grid packs from the top-left; 27 is three
+	// rows of nine, a bigger container is truncated not wrapped.
 	@Unique
 	private static List<ItemStack> containerContents(ItemStack stack) {
 		CompoundTag blockEntityTag = BlockItem.getBlockEntityData(stack);
@@ -108,9 +77,8 @@ public class ItemStackMixin {
 		ItemStack stack = (ItemStack)(Object)this;
 		if (stack.is(ModTags.CLAMTAG)) {
 			int c = StackData.readClamState(stack) > 0 ? 0 : 1;
-			// 1.20.1 has no DataComponents.CONTAINER/ItemContainerContents: a placed-and-picked-up
-			// clam's salvaged contents live in the same NBT vanilla shulker boxes use for theirs —
-			// BlockItem.getBlockEntityData(stack) -> the "BlockEntityTag" sub-compound's "Items" list.
+			// 1.20.1 has no DataComponents.CONTAINER/ItemContainerContents: a clam's salvaged contents
+			// live in the same "BlockEntityTag" -> "Items" NBT vanilla shulker boxes use for theirs.
 			CompoundTag blockEntityTag = BlockItem.getBlockEntityData(stack);
 			if (c > 0 && blockEntityTag != null && blockEntityTag.contains("Items")
 					&& !blockEntityTag.getList("Items", Tag.TAG_COMPOUND).isEmpty()) {
@@ -119,18 +87,14 @@ public class ItemStackMixin {
 			StackData.writeClamState(stack, c);
 		}
 		if (stack.is(Items.CLOCK)) {
-			// "Has a time recorded" is a presence question, not a value comparison. Midnight lands on
-			// exactly 0 here, and the never-write-defaults rule would drop a 0 straight back off the
-			// stack — so the value is written with the generic core rather than through
-			// StackData.writeStoredTime, whose default-elision would make a clock stopped at midnight
-			// silently refuse to record. Every reader of this key (the glint in ItemMixin, the
-			// tooltip line) asks the same presence question.
+			// "has a time recorded" is a presence question, not a value comparison - midnight lands on
+			// exactly 0, and StackData.writeStoredTime's default-elision would drop that write, so this
+			// writes through the generic core instead.
 			if (StackData.contains(stack, StackData.KEY_STORED_TIME)) {
 				StackData.remove(stack, StackData.KEY_STORED_TIME);
 			} else {
-				// 1.20.1 has no Level#getOverworldClockTime() (26.2-only cross-dimension normalisation);
-				// substituted with this dimension's own raw day-time mod 24000. Note: a clock
-				// stopped outside the overworld may show a different face than 26.2's would have.
+				// no Level#getOverworldClockTime() on 1.20.1; substituted with this dimension's own
+				// raw day-time mod 24000 - a clock outside the overworld may show a different face.
 				int recorded = (int) ((level.getDayTime() + 6000) % 24000);
 				StackData.write(stack, StackData.KEY_STORED_TIME, StoredTimeComponent.CODEC,
 						new StoredTimeComponent(recorded));

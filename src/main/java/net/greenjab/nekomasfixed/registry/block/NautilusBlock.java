@@ -145,12 +145,8 @@ public class NautilusBlock extends BaseEntityBlock {
 		return new NautilusBlockEntity(pos, state);
 	}
 
-	/**
-	 * Puts a captured passenger back when the shell is placed again. The occupied property rides
-	 * over in the placement tag, so without this the shell would show as occupied and be empty.
-	 * The stored blob goes straight back into the block entity - same bytes it was taken as - and
-	 * only on the server, since the client is told about the guest through the occupied property.
-	 */
+	// occupied rides over in the placement tag already, so without this the shell shows occupied but empty;
+	// only runs server-side, since the client only knows about the guest through the occupied property.
 	@Override
 	public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
 		super.setPlacedBy(level, pos, state, placer, itemStack);

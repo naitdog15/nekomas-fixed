@@ -20,8 +20,7 @@ import java.util.function.Predicate;
 public class LayeredCauldronBlockMixin {
 
     // 1.20.1 has no precipitationType field - a cauldron carries the predicate it fills from instead,
-    // so the water cauldron is the one whose predicate accepts rain. That is how the block's own
-    // handlePrecipitation decides whether it fills, too.
+    // same as handlePrecipitation itself uses to decide whether it fills.
     @Shadow @Final private Predicate<Biome.Precipitation> fillPredicate;
 
     @Inject(method = "handlePrecipitation", at = @At(value = "HEAD"), cancellable = true)

@@ -23,11 +23,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-/**
- * Renders the clam's lid, hinge and (once it's cracked open) whatever item is sitting inside.
- * The chest-style sheet materials come straight from {@link TextureRegistry}'s four {@link Material}
- * constants, one per clam colour variant.
- */
 public class ClamBlockEntityRenderer implements BlockEntityRenderer<ClamBlockEntity> {
 	private final ClamBlockModel clamModel;
 	private final ItemRenderer itemRenderer;
@@ -52,8 +47,7 @@ public class ClamBlockEntityRenderer implements BlockEntityRenderer<ClamBlockEnt
 		float f = lidAnimationProgress;
 		f = 1.0F - f;
 		f = 1.0F - f * f * f;
-		// Atlas-backed sheet: build the RenderType/VertexConsumer against the shared atlas and let
-		// the sprite wrapper remap the mesh's local UVs into this sprite's region of it.
+		// atlas sheet: wrap the buffer so the sprite remaps local UVs into its region
 		Material material = TextureRegistry.getClamMaterial(variant);
 		RenderType renderType = this.clamModel.renderType(material.atlasLocation());
 		VertexConsumer vertexConsumer = material.sprite().wrap(buffer.getBuffer(renderType));

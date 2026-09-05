@@ -23,7 +23,6 @@ public class KilnBlockEntity extends AbstractFurnaceBlockEntity {
         return CONTAINER_NAME_TEXT;
     }
 
-    /** A fuel item lasts the kiln half as long as it would a furnace. */
     @Override
     protected int getBurnDuration(ItemStack stack) {
         return super.getBurnDuration(stack) / 2;

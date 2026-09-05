@@ -25,13 +25,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * DataComponents.INSTRUMENT/InstrumentComponent do not exist on 1.20.1 (see
- * BlockBehaviourMixin's header — same instrument-reading pattern). {@code
- * InstrumentItem#use(Level, Player, InteractionHand)} still returns
- * {@code InteractionResultHolder<ItemStack>} here (see ItemStackMixin's matching note), not the
- * bare {@code InteractionResult} 26.2 apparently simplified it to.
- */
+// DataComponents.INSTRUMENT/InstrumentComponent don't exist on 1.20.1 (see BlockBehaviourMixin).
+// InstrumentItem#use still returns InteractionResultHolder<ItemStack> here, not bare InteractionResult.
 @Mixin(InstrumentItem.class)
 public class InstrumentItemMixin {
     @Inject(method = "use", at = @At("HEAD"))

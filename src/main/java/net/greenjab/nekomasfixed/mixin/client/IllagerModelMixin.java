@@ -10,10 +10,7 @@ import net.minecraft.world.entity.Mob;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/**
- * An illager holding a spear levels it rather than winding up an overhead swing, so the weapon reads
- * as a thrust from across the field.
- */
+// spear holds level instead of winding up an overhead swing, reads as a thrust across the field.
 @Mixin(IllagerModel.class)
 public abstract class IllagerModelMixin {
 

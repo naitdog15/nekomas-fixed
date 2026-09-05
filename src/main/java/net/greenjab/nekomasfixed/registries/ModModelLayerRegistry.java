@@ -14,24 +14,12 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * {@code ModModelLayerRegistry…()} maps to {@code RegisterLayerDefinitions} on Forge. This
- * class keeps its role as the {@link ModelLayerLocation} constant holder (~40 consumer sites across
- * {@code render/**}) and additionally self-subscribes to register them, instead of being called from
- * a shared {@code NekomasFixedClient.onInitializeClient()} that no longer exists on Forge.
- *
- * <p><b>{@code ArmorModelSet} does not exist on 1.20.1.</b> 1.20.1's
- * {@code HumanoidArmorLayer} takes an "inner" (0.5 dilation) and "outer" (1.0 dilation) model shared
- * across every armor slot, plus a {@code ModelManager} (for the armor-trim atlas) — not four
- * separately-baked per-slot models. Vanilla already bakes and shares one such pair per mob family
- * ({@code ModelLayers.ZOMBIE_INNER_ARMOR}/{@code OUTER_ARMOR}, {@code SKELETON_…}, {@code PLAYER_…}),
- * so Derelict/Rime/Drenched/TargetDummy's armor layers reuse those directly instead of baking
- * mod-owned duplicates — simpler and correct, since armor shape is generic per mob family regardless
- * of the wearer's own body model.
- *
- * <p><b>No dedicated baby models</b>: 1.20.1 has no {@code BabyZombieModel}/{@code createBabyArmorMeshSet}
- * (both 26.2-only). Vanilla itself gives baby zombies the same body/armor model as adults and relies
- * on {@code HumanoidModel}'s own built-in young-scale-down — so Rime/Derelict do too (only their
- * *texture* switches for the baby variant). See {@code render/entity/model/DerelictModel}'s javadoc.
+ * ArmorModelSet doesn't exist on 1.20.1: HumanoidArmorLayer shares one inner/outer model pair per
+ * mob family (ModelLayers.ZOMBIE_INNER_ARMOR etc), so Derelict/Rime/Drenched/TargetDummy reuse those
+ * instead of baking mod-owned duplicates.
+ * <p>
+ * No BabyZombieModel/createBabyArmorMeshSet either - vanilla gives baby zombies the adult model and
+ * relies on HumanoidModel's built-in scale-down, so Rime/Derelict do too (only the texture switches).
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ModModelLayerRegistry {

@@ -55,7 +55,7 @@ public class WildfireShootTask extends Behavior<WildfireEntity> {
 	}
 
 	protected boolean canStillUse(ServerLevel level, WildfireEntity wildFireEntity, long l) {
-		return wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.ATTACK_TARGET); //&& wildFireEntity.getBrain().hasMemoryModule(WildfireRegistrations.BREEZE_SHOOT.get());
+		return wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.ATTACK_TARGET);
 	}
 
 	protected void start(ServerLevel level, WildfireEntity wildFireEntity, long l) {

@@ -18,14 +18,11 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.List;
 
 /**
- * {@code GatherDataEvent} on the mod bus replaces the Fabric
- * {@code DataGeneratorEntrypoint}. Deliberately NOT {@code @OnlyIn(Dist.CLIENT)} — {@code runData}
- * runs on the client dist, but this class is a common event handler wired from the mod bus like any
- * other. {@code ModModelProvider}/{@code ModRegistryDataGenerator}
- * are deleted outright (a different/richer API whose output is thrown away, and an empty
- * {@code configure()}, respectively); {@code ExistingFileHelper} is what makes
- * {@code --existing src/main/resources} in the {@code data} run config matter — Forge's providers
- * validate texture/model references against it and fail the build on a dangling reference.
+ * deliberately not {@code @OnlyIn(Dist.CLIENT)} - {@code runData} runs on the client dist, but this
+ * is a common event handler wired from the mod bus like any other.
+ * {@code ExistingFileHelper} is what makes {@code --existing src/main/resources} in the data run
+ * config matter - Forge's providers validate texture/model references against it and fail the
+ * build on a dangling reference.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class NekomasFixedDataGenerator {

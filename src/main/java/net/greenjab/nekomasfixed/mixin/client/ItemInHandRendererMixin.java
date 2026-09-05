@@ -8,13 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
-/**
- * Halves the first-person draw time of a slingshot, matching the shorter pull the third-person arm
- * pose uses.
- *
- * <p>The literal being modified is the tick count the bow's draw progress is measured against; it is
- * the only one of its kind inside the arm-drawing method, so the constant match needs no ordinal.
- */
+// only one 20.0f literal in renderArmWithItem (bow draw tick count), so no ordinal is needed here.
 @Mixin(ItemInHandRenderer.class)
 public class ItemInHandRendererMixin {
 

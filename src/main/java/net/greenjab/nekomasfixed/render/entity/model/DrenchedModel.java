@@ -12,10 +12,6 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 
-/**
- * Thin-limbed skeleton-style mesh for the drenched, with a Drowned-style raised-arm swim pose driven
- * off {@code HumanoidModel}'s own {@code swimAmount} field.
- */
 public class DrenchedModel extends SkeletonModel<Drenched> {
 
     public DrenchedModel(ModelPart modelPart) {
@@ -26,7 +22,6 @@ public class DrenchedModel extends SkeletonModel<Drenched> {
         MeshDefinition modelData = HumanoidModel.createMesh(CubeDeformation.NONE, 0.0F);
         PartDefinition modelPartData = modelData.getRoot();
 
-        // Replace HumanoidModel's full-width arms/legs with the thin skeleton ones.
         modelPartData.addOrReplaceChild("right_arm", CubeListBuilder.create().texOffs(40, 16).addBox(-1.0F, -2.0F, -1.0F, 2.0F, 12.0F, 2.0F), PartPose.offset(-5.0F, 2.0F, 0.0F));
         modelPartData.addOrReplaceChild("left_arm", CubeListBuilder.create().texOffs(40, 16).mirror().addBox(-1.0F, -2.0F, -1.0F, 2.0F, 12.0F, 2.0F), PartPose.offset(5.0F, 2.0F, 0.0F));
         modelPartData.addOrReplaceChild("right_leg", CubeListBuilder.create().texOffs(0, 16).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 12.0F, 2.0F), PartPose.offset(-2.0F, 12.0F, 0.0F));

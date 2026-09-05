@@ -33,18 +33,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Turns the vanilla pillager patrol roll into a pirate patrol when it lands on an ocean biome: a
- * captain's big boat (a huge one on hard) with a banner and a chest, escorted by a few crewed boats.
- *
- * <p>The injector rides the {@code Math.ceil} the vanilla spawner uses to size a patrol, since both
- * the chosen player and the candidate position are already settled there. Cancelling has to hand
- * back a count, and 0 is right: these boats are added directly rather than through vanilla's counted
- * budget.
- *
- * <p>The captain's chest is seeded from {@code nekomasfixed:chests/patrol_boat} and only rolled when
- * a player actually opens it, which is how every other loot-table container works.
- */
+// injects at the Math.ceil call since the player and spawn pos are already resolved there;
+// cancels with 0 because these boats are spawned directly, outside vanilla's counted budget.
 @Mixin(PatrolSpawner.class)
 public class PatrolSpawnerMixin {
 
@@ -130,9 +120,7 @@ public class PatrolSpawnerMixin {
         return true;
     }
 
-    // The wood index the captain rolled also picks the escorts' wood. Every vanilla wood shares one
-    // boat entity type and differs only by its variant, so the index maps onto a variant here;
-    // pale oak rides along on dark oak the way the rest of its content does.
+    // index also picks the escorts' wood variant; pale oak has no case and falls through to dark oak.
     @Unique private Boat createSmallBoat(ServerLevel level, int boatType) {
         Boat boat = EntityType.BOAT.create(level);
         if (boat != null) {

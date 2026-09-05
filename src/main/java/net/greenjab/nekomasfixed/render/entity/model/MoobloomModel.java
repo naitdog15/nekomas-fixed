@@ -9,15 +9,9 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 
-/**
- * Render-state collapse: {@code QuadrupedModel<MoobloomRenderState>} →
- * {@code QuadrupedModel<Moobloom>}. No {@code setupAnim} override existed, so QuadrupedModel's own
- * leg-swing animation is unchanged. 1.20.1's {@code QuadrupedModel} constructor has no 1-arg overload
- * (unlike 26.2's); the extra six params are the vanilla young/baby auto-scale knobs — passed as
- * identity values (scaleHead=false, offsets=0, scales=1) because this mod renders babies with its own
- * dedicated {@link BabyMoobloomModel} mesh swapped in by {@code MoobloomRenderer}, not vanilla's
- * generic scale-down, so the built-in young-branch must be a no-op rather than double-applying.
- */
+// 1.20.1's QuadrupedModel ctor has no 1-arg overload; the extra six params are vanilla's young/baby
+// auto-scale knobs, passed as identity values since babies use a separate BabyMoobloomModel swapped
+// in by MoobloomRenderer - the built-in young branch must stay a no-op or it double-applies
 public class MoobloomModel extends QuadrupedModel<Moobloom> {
 
     public MoobloomModel(ModelPart root) {

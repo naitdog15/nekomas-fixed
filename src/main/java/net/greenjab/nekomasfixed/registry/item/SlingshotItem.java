@@ -58,12 +58,8 @@ public class SlingshotItem extends ProjectileWeaponItem {
         playerEntity.awardStat(Stats.ITEM_USED.get(this));
     }
 
-    /**
-     * A resin clump is the heaviest thing the slingshot will throw, so it leaves the sling at the
-     * same reduced speed an amethyst shard does. The clump is not part of this version on its own -
-     * it only exists while a mod is supplying it - so the round is asked for by name and quietly
-     * ignored when nothing answers.
-     */
+    // resin clump isn't in this version on its own - only exists if another mod supplies it,
+    // so it's looked up by name and ignored quietly when absent
     private static boolean isResinClump(ItemStack stack) {
         return NekomasFixedConfig.BACKPORTED_SLINGSHOT_AMMO.get()
                 && BackportedContent.RESIN_CLUMP.isPresent()

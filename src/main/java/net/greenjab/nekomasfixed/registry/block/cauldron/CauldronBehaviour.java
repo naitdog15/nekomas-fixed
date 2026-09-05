@@ -10,13 +10,8 @@ import net.minecraft.world.item.Items;
 
 import static net.minecraft.core.cauldron.CauldronInteraction.EMPTY;
 
-/**
- * {@code EMPTY} here is vanilla's own shared {@code CauldronInteraction.EMPTY}
- * map (an empty cauldron becoming a honey/magma/slime cauldron when the right item is used on it) -
- * a genuinely shared mutable vanilla structure, so this whole method (plus the 4 cauldron classes'
- * own {@code registerInteractions()}, called here too) must run inside
- * {@code FMLCommonSetupEvent#enqueueWork} — which is where {@code ModBusEvents} calls it from.
- */
+// EMPTY is vanilla's own shared mutable CauldronInteraction.EMPTY map, so this must run inside
+// FMLCommonSetupEvent#enqueueWork - ModBusEvents calls it from there.
 public class CauldronBehaviour {
 
     public static void register() {
@@ -57,9 +52,7 @@ public class CauldronBehaviour {
             return InteractionResult.SUCCESS;
         });
 
-        // The 4 custom liquids' OWN dedicated interaction maps - also deferred to this same
-        // enqueueWork call for consistency, even though (unlike EMPTY above) each is a private,
-        // mod-owned map with no cross-mod sharing concern.
+        // deferred to the same enqueueWork call for consistency, though these maps are private and not shared
         HoneyCauldronBlock.registerInteractions();
         MagmaCauldronBlock.registerInteractions();
         SlimeCauldronBlock.registerInteractions();

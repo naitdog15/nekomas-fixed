@@ -22,40 +22,28 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * The DeferredRegister aggregator. Each package supplies its own
- * DeferredRegister statics inside its own holder classes; this file adds exactly one
+ * each package supplies its own DeferredRegister statics; this file adds exactly one
  * {@code X.register(modBus)} line per registry, called once from {@link NekomasFixed}'s
- * constructor. A missing line here is the classic silent registration failure, which
- * is why the aggregator is deliberately one file rather than every package registering itself.
- * A new holder class gets its one-line {@code X.register(modBus)} call here, never in any other
- * file.
+ * constructor. a missing line here is a silent registration failure - a new holder class gets its
+ * line here, never in any other file.
  */
 public final class Registries {
     private Registries() {
     }
 
     /**
-     * Forge's own javadoc on this registry reads, literally, "Use
-     * Keys#ENTITY_DATA_SERIALIZERS to create a DeferredRegister." {@code EntityDataSerializers
-     * .registerSerializer(...)} (the raw static-list mutation) must never be touched instead — it
-     * assigns ids by insertion order and risks a silent client/server desync.
+     * Forge's own javadoc says to use Keys#ENTITY_DATA_SERIALIZERS for a DeferredRegister here -
+     * never touch {@code EntityDataSerializers.registerSerializer(...)} instead, it assigns ids by
+     * insertion order and risks a silent client/server desync.
      */
     public static final DeferredRegister<EntityDataSerializer<?>> ENTITY_DATA_SERIALIZERS =
             DeferredRegister.create(ForgeRegistries.Keys.ENTITY_DATA_SERIALIZERS, NekomasFixed.NAMESPACE);
 
-    /**
-     * The one real entry this registry exists for: {@code Termite.STATE}'s synched-data serializer.
-     * Registered here rather than in {@code Termite.java}, like everything else in this file;
-     * consumed where {@code Termite} defines its synched data.
-     */
+    /** {@code Termite.State}'s synched-data serializer; consumed where {@code Termite} defines its synched data. */
     public static final RegistryObject<EntityDataSerializer<Termite.State>> TERMITE_STATE =
             ENTITY_DATA_SERIALIZERS.register("termite_state",
                     () -> EntityDataSerializer.simpleEnum(Termite.State.class));
 
-    /**
-     * One line per DeferredRegister in the mod — 19 total. Keeping the full list in one place is
-     * what stops a holder class from being silently left unregistered.
-     */
     public static void registerAll(IEventBus modBus) {
         ENTITY_DATA_SERIALIZERS.register(modBus);
 

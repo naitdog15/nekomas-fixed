@@ -55,7 +55,7 @@ public class WildfireBombTask extends Behavior<WildfireEntity> {
 	}
 
 	protected boolean canStillUse(ServerLevel level, WildfireEntity wildFireEntity, long l) {
-		return wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.ATTACK_TARGET)/* && wildFireEntity.getBrain().hasMemoryModule(WildfireRegistrations.BREEZE_SHOOT.get())*/;
+		return wildFireEntity.getBrain().hasMemoryValue(MemoryModuleType.ATTACK_TARGET);
 	}
 
 	protected void start(ServerLevel level, WildfireEntity wildFireEntity, long l) {
@@ -83,10 +83,9 @@ public class WildfireBombTask extends Behavior<WildfireEntity> {
 				brain.getMemory(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get()).isEmpty()) {
 				brain.setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get(), Unit.INSTANCE, SHOOT_COOLDOWN_EXPIRY);
 
-				// The lob is solved against the bomb's own falling speed, not the mob's - that
-				// difference is the whole reason the jump solver can't be borrowed as it stands.
-				// Solving it on plain mob gravity instead is what the switch does: the bomb falls
-				// slower than the arc assumed, so it sails long.
+				// The lob solves against the bomb's own fall speed, not the mob's - that's why the jump
+				// solver can't be reused as-is. The config switch instead solves on mob gravity, so the
+				// bomb falls slower than the arc assumed and sails long.
 				double lobGravity = NekomasFixedConfig.WILDFIRE_BOMB_ARC.get()
 						? FireBomb.GRAVITY
 						: WildfireMovementUtil.MOB_GRAVITY;

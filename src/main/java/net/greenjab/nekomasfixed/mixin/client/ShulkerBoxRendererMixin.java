@@ -11,13 +11,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-/**
- * Gives the four extra shulker-box colours their own shells.
- *
- * <p>The renderer picks a material off the box's dye colour and feeds it straight to the buffer, and
- * the four added colours all share a slot with a vanilla one, so the box's block is what identifies
- * them. The material is swapped just before it is used.
- */
+// the four added colours share a dye slot with a vanilla one, so the block identifies them, not
+// the colour.
 @Mixin(ShulkerBoxRenderer.class)
 public class ShulkerBoxRendererMixin {
 

@@ -11,10 +11,7 @@ import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * Outer armor/clothing layer for the derelict. There's no separate baby model — only the texture
- * switches for the baby variant, matching vanilla Zombie/Husk/Drowned's own outer-layer handling.
- */
+// no separate baby model here - only the texture switches, matching vanilla zombie/husk/drowned
 public class DerelictOuterLayer extends RenderLayer<Derelict, DerelictModel> {
     private static final ResourceLocation DERELICT_OUTER_LAYER_LOCATION = NekomasFixed.id("textures/entity/zombie/derelict_outer_layer.png");
     private static final ResourceLocation BABY_DERELICT_OUTER_LAYER_LOCATION = NekomasFixed.id("textures/entity/zombie/derelict_outer_layer_baby.png");

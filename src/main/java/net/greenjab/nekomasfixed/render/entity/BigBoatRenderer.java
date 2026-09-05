@@ -18,11 +18,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.joml.Quaternionf;
 
-/**
- * Draws the hull with vanilla's usual boat treatment — hurt wobble, bubble-column tilt — and then any
- * banner the boat is flying, rendered through {@link ItemRenderer#renderStatic} so it picks up its own
- * patterns for free. The texture is named after the model layer, one per wood.
- */
 public class BigBoatRenderer<T extends BigBoat, M extends BigBoatModel<T>> extends EntityRenderer<T> {
 	private final ResourceLocation texture;
 	protected final BigBoatModel<T> model;

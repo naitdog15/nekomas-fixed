@@ -17,25 +17,14 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * DeferredRegister&lt;EntityType&lt;?&gt;&gt; conversion. On the previous source, field initialisers
- * in ItemRegistry.java force-initialised entity types early under JLS 12.4.1 - RegistryObject.get()'s
- * laziness makes that ordering irrelevant now.
+ * Item factories needing an actual EntityType<T> must never call .get() outside a deferred supplier
+ * - see BlockRegistry's javadoc on the same trap. Every boat/spawn-egg factory below is itself a
+ * lambda, so EntityTypeRegistry.X.get() inside it only runs during RegisterEvent&lt;Item&gt;, well
+ * after RegisterEvent&lt;EntityType&gt;.
  * <p>
- * Item factories that need an actual {@code EntityType<T>} instance must never call {@code .get()}
- * outside a deferred supplier - see BlockRegistry.java's javadoc on the same trap. Every boat/
- * spawn-egg item factory below is itself a lambda, so {@code EntityTypeRegistry.X.get()} inside it
- * is safe (only evaluated when Forge invokes the stored Item supplier during
- * RegisterEvent&lt;Item&gt;, well after RegisterEvent&lt;EntityType&gt;).
- * <p>
- * 1.20.1's {@code EntityType.Builder} carries no {@code noLootTable()}, {@code eyeHeight(float)} or
- * {@code notInPeaceful()}: an entity with no loot-table JSON simply resolves to the empty table,
- * eye height comes from {@code Entity#getEyeHeight(Pose, EntityDimensions)} on the entity class, and
- * peaceful-difficulty despawning is {@code Mob#shouldDespawnInPeaceful()}. Those three builder calls
- * are therefore dropped rather than translated.
- * <p>
- * Attribute registration lives on
- * {@link net.greenjab.nekomasfixed.registry.entity.EntityAttributesAndSpawns}, which carries the
- * mod's single {@code EntityAttributeCreationEvent} handler for all eight living types.
+ * 1.20.1's EntityType.Builder has no noLootTable()/eyeHeight(float)/notInPeaceful() - those three
+ * calls are dropped rather than translated (no loot JSON already resolves to the empty table, eye
+ * height comes from the entity class, peaceful despawn is Mob#shouldDespawnInPeaceful()).
  */
 public class EntityTypeRegistry {
 
@@ -67,10 +56,8 @@ public class EntityTypeRegistry {
     public static final RegistryObject<EntityType<HugeBoat>> HUGE_PALE_OAK_BOAT = hugeBoatFactory("huge_pale_oak_boat", () -> ItemRegistry.HUGE_PALE_OAK_BOAT.get());
     public static final RegistryObject<EntityType<HugeBoat>> HUGE_SPRUCE_BOAT = hugeBoatFactory("huge_spruce_boat", () -> ItemRegistry.HUGE_SPRUCE_BOAT.get());
 
-    // These two hand out the RegistryObjects themselves as Suppliers rather than resolved
-    // EntityTypes, so building the list never calls .get() before RegisterEvent<EntityType> has
-    // run; callers unwrap per element at use time, matching how the rest of the registry package
-    // defers resolution.
+    // hand out the RegistryObjects as Suppliers, not resolved EntityTypes, so building the list
+    // never calls .get() before RegisterEvent<EntityType> has run
     public static List<Supplier<EntityType<BigBoat>>> bigBoats() {
         return List.of(BIG_ACACIA_BOAT, BIG_BAMBOO_BOAT, BIG_BIRCH_BOAT, BIG_CHERRY_BOAT, BIG_DARK_OAK_BOAT, BIG_JUNGLE_BOAT, BIG_MANGROVE_BOAT, BIG_OAK_BOAT, BIG_PALE_OAK_BOAT, BIG_SPRUCE_BOAT);
     }

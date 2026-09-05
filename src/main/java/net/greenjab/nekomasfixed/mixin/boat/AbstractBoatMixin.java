@@ -17,15 +17,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Everything that makes the big and huge hulls steer and accelerate differently from a one-seater,
- * plus the two small courtesies every boat gets: illagers may take the helm, and an empty boat stops
- * spinning on the spot.
- * <p>
- * The friction the float step applies is a private field rather than a local at the call site, so it
- * is {@code @Shadow}ed instead of captured; and the client-side check the illager hook rides is a
- * field read, hence the {@code FIELD} injection point rather than an {@code INVOKE} one.
- */
+// invFriction is a private field, so it's @Shadow-ed instead of captured as a local; the illager
+// hook rides a FIELD read (isClientSide), not an INVOKE, since that's what the check actually is.
 @Mixin(Boat.class)
 public abstract class AbstractBoatMixin {
 

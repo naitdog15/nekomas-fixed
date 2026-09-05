@@ -9,7 +9,6 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-/** Draws whatever block is currently stored inside, scaled down, via {@link BlockRenderDispatcher#renderSingleBlock}. */
 public class HollowLogBlockEntityRenderer implements BlockEntityRenderer<HollowLogBlockEntity> {
     private final BlockRenderDispatcher blockRenderer;
 

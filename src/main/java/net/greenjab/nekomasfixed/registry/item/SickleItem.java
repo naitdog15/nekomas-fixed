@@ -31,11 +31,7 @@ public class SickleItem extends Item {
 
     private final Multimap<Attribute, AttributeModifier> defaultModifiers;
 
-    /**
-     * The combo step this sickle's tier is worth. There is no way to bake a starting value onto a
-     * stack at craft time, so the item holds it and hands it out as the fallback for any stack
-     * that carries none of its own.
-     */
+    // fallback combo step for this tier - can't bake a starting value onto the stack at craft time
     private final int comboMultiplier;
 
     public SickleItem(Tier material, Item.Properties settings) {
@@ -44,7 +40,6 @@ public class SickleItem extends Item {
         this.comboMultiplier = ModItemSettings.sickleDefaultCombo(material);
     }
 
-    /** What a fresh sickle of this tier starts its combo ramp at, in percent per step. */
     public int comboMultiplier() {
         return this.comboMultiplier;
     }

@@ -24,29 +24,16 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * The number that floats off whatever you just hit, showing how much damage it took.
- *
- * <p>The particle engine draws textured quads off a single sprite sheet and hands
- * {@link Particle#render} nothing but a raw {@code VertexConsumer} - no font, no
- * {@link MultiBufferSource} - so digits cannot be drawn from inside it. The particle therefore
- * carries only the motion, the lifetime and the age/damage curve, takes
- * {@link ParticleRenderType#NO_RENDER}, and the text is drawn a stage later, from a
- * {@link RenderLevelStageEvent.Stage#AFTER_PARTICLES} handler that has a real buffer source to
- * batch glyphs into.
- *
- * <p>The billboard transform is vanilla's own name-tag one (camera rotation, then the -0.025 flip),
- * scaled by the age/damage curve, and the digits get a drop shadow and no background plate.
- */
+// Particle#render only gets a raw VertexConsumer, no font/buffer source, so digits can't be drawn
+// from inside it - this carries motion/lifetime/curve only (NO_RENDER), text drawn a stage later
+// from an AFTER_PARTICLES handler that has a real buffer source
+// billboard transform matches vanilla's own name-tag one (camera rotation, then the -0.025 flip)
 public class NumberParticle extends Particle {
 
-    /** Live numbers, in spawn order, drained as they die. Only ever touched on the client thread. */
+    // client thread only; no synchronization needed
     private static final List<NumberParticle> ACTIVE = new ArrayList<>();
-    /**
-     * The particle engine evicts its oldest entries once a render type holds too many, and an evicted
-     * particle is never ticked to death, so the oldest here goes at the same point rather than
-     * waiting for a death that will not arrive.
-     */
+    // an evicted particle (once a render type holds too many) is never ticked to death, so the oldest
+    // is dropped here instead of waiting for a death that won't arrive
     private static final int MAX_ACTIVE = 512;
 
     private final double damage;
@@ -85,7 +72,6 @@ public class NumberParticle extends Particle {
     public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
     }
 
-    /** Rounded to one decimal, with a bare ".0" trimmed off so whole numbers read as whole numbers. */
     private String text() {
         String formatted = String.format("%.1f", Math.round(this.damage * 10) / 10.0);
         return formatted.endsWith(".0") ? formatted.substring(0, formatted.length() - 2) : formatted;
@@ -114,10 +100,7 @@ public class NumberParticle extends Particle {
         public Factory() {
         }
 
-        /**
-         * Returning null simply spawns nothing, so the switch is read here rather than in the draw:
-         * with the numbers turned off none of them is created, ticked or drawn.
-         */
+        // returning null simply spawns nothing, so with the config off none of these are created, ticked or drawn
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level,
                                         double x, double y, double z, double damage, double h, double i) {

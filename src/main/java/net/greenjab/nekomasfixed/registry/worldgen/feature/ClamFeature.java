@@ -55,7 +55,6 @@ public class ClamFeature extends Feature<CountConfiguration> {
 				level.setBlock(blockPos2, blockState, Block.UPDATE_CLIENTS);
 				level.getBlockEntity(blockPos2, BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY.get())
 						.ifPresent(blockEntity -> {
-							// Clams roll their pearl from the fishing loot table the moment they generate.
 							LootTable lootTable = level.getServer()
 									.getLootData()
 									.getLootTable(LootTableRegistry.CLAM_LOOT_TABLE);

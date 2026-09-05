@@ -11,7 +11,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// An enderman head sitting on a note block makes it moan instead of playing its note.
 @Mixin(NoteBlock.class)
 public abstract class NoteBlockMixin {
 

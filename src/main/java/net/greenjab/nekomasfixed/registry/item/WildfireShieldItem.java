@@ -15,24 +15,8 @@ import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 
 import java.util.function.Consumer;
 
-/**
- * The shield the wildfire leaves behind. Its blocking curve is an ordinary shield's, deliberately:
- * a raised shield stops a hit that arrives from within ninety degrees of where the wearer is
- * looking, it costs one durability plus one per point of damage once a hit is worth three or more,
- * it does nothing against a source that goes through shields, and it needs a quarter second of
- * being held up before it counts. All of that is {@link ShieldItem}'s already, which is why this
- * class does not re-implement any of it.
- * <p>
- * What makes it the wildfire's shield is the burn-back it hands whoever it blocks, and that lives
- * with the rest of the damage pipeline rather than here. Worth knowing when reading that code: the
- * game only offers the block-back hook for melee. A blocked hit whose source counts as a projectile
- * still takes the reduction and still costs durability, but never reaches the hook, so an arrow
- * stopped on this shield leaves its archer unburnt.
- * <p>
- * Nothing is needed for the offhand slot either: {@code ShieldItem} is already {@code Equipable}
- * and reports {@code OFFHAND}, and using it raises the shield instead of swapping it into that
- * slot, so the use-it-to-wear-it rule has nothing to do here.
- */
+// blocking is plain ShieldItem; only the burn-back is custom and lives in the damage pipeline.
+// that hook only fires for melee - a blocked projectile still costs durability but never burns its shooter
 public class WildfireShieldItem extends ShieldItem {
 
     public WildfireShieldItem(Item.Properties settings) {
@@ -45,12 +29,7 @@ public class WildfireShieldItem extends ShieldItem {
         return ingredient.is(Items.NETHERITE_INGOT);
     }
 
-    /**
-     * Raising the shield is the whole of its blocking, so the switch sits here: with shield
-     * blocking turned off the shield simply never goes up, and therefore soaks nothing, loses no
-     * durability and burns nobody. Read at the moment it is used, so flipping the switch takes
-     * effect straight away.
-     */
+    // checked live at use-time, so toggling this config takes effect immediately
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {
         if (!NekomasFixedConfig.WILDFIRE_SHIELD_BLOCKING.get()) {

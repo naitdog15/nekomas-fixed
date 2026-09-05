@@ -45,13 +45,8 @@ import java.util.Iterator;
 import java.util.function.Supplier;
 
 /**
- * A wider hull with room for a crew, a chest the player can add after the fact, and a banner to fly
- * from the mast. The chest half is built the way vanilla's {@code ChestBoat} builds its own -
- * {@code ContainerEntity} plus {@code HasCustomInventoryScreen} - which hands over the 27 slots, the
- * loot-table fields, the save/load and the drop on break, and lets the screen be vanilla's own
- * three-row {@link ChestMenu} rather than a bespoke menu type. The difference is that the chest here
- * is a flag rather than a property of the entity type, so every way in - opening the screen, the slot
- * accessor, and the hopper's container scan - asks {@link #hasChest()} first.
+ * Chest support mirrors vanilla's {@code ChestBoat} ({@code ContainerEntity} + {@code HasCustomInventoryScreen})
+ * but as a flag on this entity rather than a separate entity type - every entry point must check {@link #hasChest()}.
  */
 public class BigBoat extends Boat implements HasCustomInventoryScreen, ContainerEntity {
 

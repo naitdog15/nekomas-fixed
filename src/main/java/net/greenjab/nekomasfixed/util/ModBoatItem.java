@@ -21,11 +21,9 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Vanilla's {@code BoatItem} can only place {@code EntityType.BOAT}/{@code EntityType.CHEST_BOAT}
- * and then stamps a {@code Boat.Type} variant onto them, so it cannot place any of the boat entity
- * types this mod registers. This is the same placement behaviour driven by a supplied entity type
- * instead: the supplier is a {@code RegistryObject}, so it is only dereferenced when a player
- * actually right-clicks - never during registration.
+ * vanilla's BoatItem only places EntityType.BOAT/CHEST_BOAT and stamps a Boat.Type onto them, so it
+ * can't place this mod's boat types. same placement logic driven by a supplied entity type instead;
+ * the supplier is a RegistryObject, dereferenced only on right-click, never during registration.
  */
 public class ModBoatItem extends Item {
 

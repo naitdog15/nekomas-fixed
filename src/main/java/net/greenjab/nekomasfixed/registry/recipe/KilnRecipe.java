@@ -16,23 +16,12 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 
-/**
- * The kiln's cooking recipe - an ordinary {@code AbstractCookingRecipe} with its own type and its own
- * serializer, shaped exactly like vanilla's {@code SmeltingRecipe}. {@link #SERIALIZER} is what
- * {@code RecipeRegistry} registers under the id {@code kilning}, and that id has to stay as it is or
- * every kiln recipe file stops parsing.
- * <p>
- * The recipe book's three kiln tabs are not set up here: sorting recipes into
- * {@code RecipeBookCategories} is a client-side concern and lives in
- * {@code screen/KilnRecipeBookClient.java}.
- */
+/** {@link #SERIALIZER} is registered under the id "kilning" - must not change or every kiln recipe
+ * file stops parsing. Recipe book tab sorting lives in screen/KilnRecipeBookClient.java, not here. */
 public class KilnRecipe extends AbstractCookingRecipe {
 
-    /**
-     * Mirrors vanilla's {@code SimpleCookingSerializer}, which cannot be reused directly: its
-     * {@code CookieBaker} factory interface is package-private, so a {@code new
-     * SimpleCookingSerializer<>(KilnRecipe::new, 100)} from this package will not resolve.
-     */
+    /** can't reuse vanilla's SimpleCookingSerializer directly - its CookieBaker factory interface
+     * is package-private, so {@code new SimpleCookingSerializer<>(KilnRecipe::new, 100)} won't resolve here. */
     public static final RecipeSerializer<KilnRecipe> SERIALIZER = new Serializer();
 
     public KilnRecipe(ResourceLocation id, String group, CookingBookCategory category, Ingredient ingredient, ItemStack result, float experience, int cookingTime) {

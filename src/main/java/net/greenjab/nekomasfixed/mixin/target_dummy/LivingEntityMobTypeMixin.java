@@ -8,14 +8,8 @@ import net.minecraft.world.entity.MobType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/**
- * A target dummy dressed up as a zombie counts as undead, so Smite bites into it exactly as hard as
- * it would into the mob the dummy is standing in for.
- *
- * <p>An enchantment's damage bonus is worked out from the target's mob type alone - the enchantment
- * never sees the entity it is hitting - so the flag has to be answered here, at the one point that
- * does.
- */
+// enchantment damage bonus is worked out from mob type alone (it never sees the entity itself), so
+// the undead flag for a zombie-dressed dummy has to be answered here.
 @Mixin(LivingEntity.class)
 public class LivingEntityMobTypeMixin {
 

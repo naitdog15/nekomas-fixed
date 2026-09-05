@@ -4,14 +4,8 @@ import net.greenjab.nekomasfixed.registry.entity.TargetDummy;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 
-/**
- * Render-state collapse: {@code HumanoidModel<TargetDummyRenderState>} → {@code HumanoidModel<TargetDummy>}.
- * The custom {@code getEquipmentModelData(...)}/{@code ArmorModelSet} helper is dropped —
- * {@code TargetDummyEntityRenderer} now wires the armor layer onto vanilla's shared
- * {@code ModelLayers.PLAYER_INNER_ARMOR}/{@code PLAYER_OUTER_ARMOR} mesh instead of a mod-owned one
- * (see {@code ModModelLayerRegistry}'s javadoc — armor shape is generic per mob family). This class's
- * remaining job is reading the six named-part rotations directly off the entity.
- */
+// armor rides vanilla's shared PLAYER_INNER/OUTER_ARMOR mesh instead of a mod-owned one; this class's
+// remaining job is reading the six named-part rotations directly off the entity
 public class TargetDummyArmorModel extends HumanoidModel<TargetDummy> {
 	public TargetDummyArmorModel(ModelPart modelPart) {
 		super(modelPart);

@@ -12,16 +12,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Turtle armour cannot be taken to the smithing table - no netherite upgrade, no trim.
- *
- * <p>The result slot is filled imperatively here rather than through an optional, so the check has
- * to sit at the head of createResult and clear the slot itself the way the no-recipe branch does;
- * leaving it alone would keep whatever the previous ingredients produced on screen.
- *
- * <p>The two containers are declared on {@link ItemCombinerMenu} rather than on SmithingMenu, which
- * is why this extends it instead of shadowing them.
- */
+// result slot is filled imperatively here, so the check must sit at the head of createResult and
+// clear the slot itself the way the no-recipe branch does - leaving it alone would keep whatever the
+// previous ingredients produced on screen. containers are declared on ItemCombinerMenu, not
+// SmithingMenu, hence extending it instead of shadowing them.
 @Mixin(SmithingMenu.class)
 public abstract class SmithingMenuMixin extends ItemCombinerMenu {
 

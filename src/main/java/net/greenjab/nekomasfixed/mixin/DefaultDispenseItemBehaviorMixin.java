@@ -18,9 +18,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// A dispenser loaded with a spear plants it as a standing trap rather than tossing it as an item.
-// Membership is the mod's own nekomasfixed:spears tag, which pulls in whatever spears the game has
-// to offer and stays empty - and harmless - when it has none.
 @Mixin(DefaultDispenseItemBehavior.class)
 public abstract class DefaultDispenseItemBehaviorMixin {
 

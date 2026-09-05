@@ -10,10 +10,6 @@ import net.minecraft.client.renderer.entity.AbstractZombieRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * Renders the derelict as a zombie variant: body, inner armor and outer armor share the same
- * {@link DerelictModel} mesh, with only the texture swapping for the baby variant.
- */
 public class DerelictRenderer extends AbstractZombieRenderer<Derelict, DerelictModel> {
     private static final ResourceLocation DERELICT_LOCATION = NekomasFixed.id("textures/entity/zombie/derelict.png");
     private static final ResourceLocation BABY_DERELICT_LOCATION = NekomasFixed.id("textures/entity/zombie/derelict_baby.png");

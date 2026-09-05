@@ -39,22 +39,14 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * DeferredRegister&lt;Item&gt; conversion — by far the biggest file in the registry package (roughly
- * 580 fields / 370 call sites). Every {@code register(...)} overload below defers both the
- * block/entity-type cross-reference AND the id lookup into the supplier Forge invokes during
- * {@code RegisterEvent<Item>} - see BlockRegistry.java's javadoc for the exact trap
- * ("never .get() in a field initializer") this is built to avoid; {@code RegistryObject.getId()} is
- * used instead wherever an id is needed eagerly, since unlike {@code .get()} it never throws before
- * the registry freezes.
+ * Every register(...) overload below defers cross-references and id lookups into the supplier
+ * Forge invokes at RegisterEvent&lt;Item&gt; time - see BlockRegistry's "never .get() in a field
+ * initializer" trap. RegistryObject.getId() is used instead wherever an id is needed eagerly,
+ * since it never throws pre-registration.
  * <p>
- * <b>Where the 26.2 branch's {@code .component(...)} calls went.</b> 1.20.1 predates the whole
- * data-component system (1.20.5+), so no {@code .component(...)}/{@code .delayedComponent(...)}
- * call appears below. Where the 26.2 branch declared a default for one of this mod's OWN
- * components, StackData's read-time default already reproduces the "declared default" behaviour
- * (see StackData.java) and nothing further is needed. Where it named a VANILLA post-1.20.1
- * component with no Properties-level substitute here (Equippable, BlocksAttacks, Tool, Weapon,
- * humanoidArmor), the behaviour lives on the item class instead, or the gap is noted at the
- * registration it affects.
+ * No .component(...) calls below: 1.20.1 predates the 1.20.5+ data-component system entirely. This
+ * mod's own components already default via StackData; vanilla components with no Properties
+ * substitute here live on the item class instead, or the gap is noted at the registration it affects.
  */
 public class ItemRegistry {
 
@@ -68,10 +60,8 @@ public class ItemRegistry {
     public static final RegistryObject<Item> PEARL = register("pearl");
     public static final RegistryObject<Item> PEARL_BLOCK = register(BlockRegistry.PEARL_BLOCK);
 
-    // The shells declare no baked-on animal default: StackData.readAnimal(stack) already returns
-    // AnimalComponent.DEFAULT when nothing is stored on the stack's NBT (no root compound / no
-    // "animal" key), which is exactly what a Properties-level default would have declared. The
-    // mixin that actually WRITES a captured animal calls StackData.writeAnimal(...) directly.
+    // no baked-on animal default needed - StackData.readAnimal already returns
+    // AnimalComponent.DEFAULT when nothing is stored on the stack's NBT
     public static final RegistryObject<Item> NAUTILUS_BLOCK = register(BlockRegistry.NAUTILUS_BLOCK, new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> ZOMBIE_NAUTILUS_BLOCK = register(BlockRegistry.ZOMBIE_NAUTILUS_BLOCK, new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> CORAL_NAUTILUS_BLOCK = register(BlockRegistry.CORAL_NAUTILUS_BLOCK, new Item.Properties().stacksTo(1));
@@ -79,11 +69,9 @@ public class ItemRegistry {
     public static final RegistryObject<Item> GEYSER = register(BlockRegistry.GEYSER);
     public static final RegistryObject<Item> KILN = register(BlockRegistry.KILN);
     public static final RegistryObject<Item> PYROTECHNICS_TABLE = register(BlockRegistry.PYROTECHNICS_TABLE);
-    // ENDERMAN_HEAD's factory reads WALL_ENDERMAN_HEAD.get() - single-lambda form (BlockRegistry.java
-    // javadoc). The 26.x waypoint system (Waypoint.addHideAttribute) has no 1.20.1 analogue, so the
-    // head hides nobody from anything here. Wearing the head is not a Properties setting on this
-    // version either: AbstractEndermanHeadBlock implements Equipable and reports the HEAD slot,
-    // exactly as vanilla's own skull blocks do.
+    // factory reads WALL_ENDERMAN_HEAD.get(), so single-lambda form is required (BlockRegistry javadoc).
+    // no waypoint hide-attribute on 1.20.1; wearing it works via AbstractEndermanHeadBlock
+    // implementing Equipable, same as vanilla skulls
     public static final RegistryObject<Item> ENDERMAN_HEAD = register(BlockRegistry.ENDERMAN_HEAD,
             (block, settings) -> new StandingAndWallBlockItem(block, BlockRegistry.WALL_ENDERMAN_HEAD.get(), settings, Direction.DOWN),
             new Item.Properties().rarity(Rarity.UNCOMMON));
@@ -91,20 +79,16 @@ public class ItemRegistry {
     public static final RegistryObject<Item> GLOW_TORCH = register(BlockRegistry.GLOW_TORCH,
             (block, settings) -> new StandingAndWallBlockItem(block, BlockRegistry.GLOW_WALL_TORCH.get(), settings, Direction.DOWN));
     public static final RegistryObject<Item> TARGET_DUMMY = register("target_dummy", TargetDummyItem::new, new Item.Properties().stacksTo(1));
-    // TURTLE_CHESTPLATE/LEGGINGS/BOOTS: ArmorMaterials.TURTLE already carries real defense values
-    // for all four slots on 1.20.1, not just the vanilla Turtle Helmet's slot, so plain
-    // ArmorItem construction is all three need - .humanoidArmor(...) is a 1.20.5+ Properties
-    // convenience with no counterpart here.
+    // ArmorMaterials.TURTLE already carries real defense for all four slots on 1.20.1 (not just
+    // the helmet), so plain ArmorItem construction is enough - no .humanoidArmor() (1.20.5+) needed
     public static final RegistryObject<Item> TURTLE_CHESTPLATE = register("turtle_chestplate", settings -> new ArmorItem(ArmorMaterials.TURTLE, ArmorItem.Type.CHESTPLATE, settings), new Item.Properties());
     public static final RegistryObject<Item> TURTLE_LEGGINGS = register("turtle_leggings", settings -> new ArmorItem(ArmorMaterials.TURTLE, ArmorItem.Type.LEGGINGS, settings), new Item.Properties());
     public static final RegistryObject<Item> TURTLE_BOOTS = register("turtle_boots", settings -> new ArmorItem(ArmorMaterials.TURTLE, ArmorItem.Type.BOOTS, settings), new Item.Properties());
 
-    // Sampled from each mob's own texture (background = most frequent opaque colour;
-    // highlight = most frequent colour >=60 Euclidean RGB distance from background), so the hex
-    // values below fall straight out of the textures. ForgeSpawnEggItem (not vanilla SpawnEggItem, which
-    // indexes a static BY_ID map at construction time before modded EntityTypes exist) takes the
-    // EntityType RegistryObject directly as its Supplier - no .get() needed at this call site, the
-    // one place RegistryObject's supplier-ness pays for itself.
+    // colors sampled from each mob's own texture (background = most frequent opaque color,
+    // highlight = most frequent color >=60 RGB distance from it). ForgeSpawnEggItem, not vanilla
+    // SpawnEggItem (which indexes a static BY_ID map before modded EntityTypes exist) - takes the
+    // RegistryObject directly, no .get() needed here
     public static final RegistryObject<Item> MOOBLOOM_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.MOOBLOOM, "moobloom", 0xBF2529, 0x70922D);
     public static final RegistryObject<Item> DRENCHED_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.DRENCHED, "drenched", 0x817F65, 0xBAAC9A);
     public static final RegistryObject<Item> RIME_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.RIME, "rime", 0x527D7E, 0x108C9B);
@@ -112,17 +96,10 @@ public class ItemRegistry {
     public static final RegistryObject<Item> ANCHOR = register("anchor", AnchorItem::new, ModItemSettings.anchor(AnchorItem.DAMAGE, AnchorItem.SPEED));
     public static final RegistryObject<Item> SUSPICIOUS_SPIDER_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.SUSPICIOUS_SPIDER, "suspicious_spider", 0x322B26, 0x605448);
     public static final RegistryObject<Item> WILDFIRE_SPAWN_EGG = registerSpawnEgg(EntityTypeRegistry.WILDFIRE, "wildfire", 0x5F0201, 0xFFF847);
-    // All three smithing templates below (NETHER_HEART, JEWEL_ARMOR_TRIM_SMITHING_TEMPLATE,
-    // CROWN_SMITHING_TEMPLATE) lose their rarity and fire/explosion resistance: 1.20.1's
-    // SmithingTemplateItem bakes its own `new Item.Properties()` and has no Properties-taking
-    // constructor at all, so there is nowhere to hand those settings. They behave exactly like
-    // vanilla 1.20.1's own templates. That constructor also takes one Component more than the newer
-    // one - an "upgrade description" tooltip line that later versions replaced with the item's own
-    // name - and nothing in the source supplies that text, so it stays empty here.
-    // The empty-slot icons every template below passes are block-atlas sprite ids: Slot#getNoItemIcon
-    // pairs them with InventoryMenu.BLOCK_ATLAS, so the mod's container/slot/* sprites reach that
-    // atlas through assets/minecraft/atlases/blocks.json, and vanilla's ingot icon is
-    // item/empty_slot_ingot on the same atlas.
+    // SmithingTemplateItem on 1.20.1 has no Properties-taking constructor (bakes its own new
+    // Properties()), so rarity/fire-resistance are lost below; the extra Component arg is an unused
+    // "upgrade description" line. Icon ids are block-atlas sprites (Slot#getNoItemIcon +
+    // InventoryMenu.BLOCK_ATLAS), matching vanilla's ingot icon.
     public static final RegistryObject<Item> NETHER_HEART = register(
             "nether_heart", () -> new SmithingTemplateItem(
                     Component.translatable(
@@ -137,16 +114,13 @@ public class ItemRegistry {
                     List.of(NekomasFixed.id("container/slot/trident"), NekomasFixed.id("container/slot/shield")),
                     List.of(ResourceLocation.withDefaultNamespace("item/empty_slot_ingot")))
     );
-    // Attribute modifiers and mining/attack tool behaviour on 1.20.1 are expressed as overrides on
-    // the item class, not Properties builder calls (.attributes(...) and the TOOL/WEAPON components
-    // are 1.20.5+). The trident's modifiers live in
-    // WildfireTridentItem#getDefaultAttributeModifiers(EquipmentSlot).
+    // attribute modifiers are item-class overrides here, not Properties.attributes() (1.20.5+) -
+    // see WildfireTridentItem#getDefaultAttributeModifiers
     public static final RegistryObject<Item> WILDFIRE_TRIDENT = register("wildfire_trident", WildfireTridentItem::new, new Item.Properties()
             .rarity(Rarity.RARE).durability(1000).fireResistant());
-    // .equippableUnswappable(EquipmentSlot.OFFHAND) needs nothing here: 1.20.1's ShieldItem already
-    // implements Equipable and reports the OFFHAND slot, and its use() blocks rather than swapping.
-    // The configurable shield-blocking-curve system (BLOCKS_ATTACKS/BREAK_SOUND) is 1.21.2+ with no
-    // 1.20.1 analogue at all; WildfireShieldItem keeps ShieldItem's own blocking instead.
+    // no .equippableUnswappable(OFFHAND) needed - ShieldItem already implements Equipable and
+    // reports OFFHAND. BLOCKS_ATTACKS/BREAK_SOUND config is 1.21.2+ with no 1.20.1 equivalent;
+    // WildfireShieldItem keeps plain ShieldItem blocking instead.
     public static final RegistryObject<Item> WILDFIRE_SHIELD = register("wildfire_shield", WildfireShieldItem::new,
             new Item.Properties().rarity(Rarity.RARE).durability(336).fireResistant());
     // The trim pattern this template applies is data/nekomasfixed/trim_pattern/jewel.json.
@@ -159,11 +133,8 @@ public class ItemRegistry {
                     .withStyle(ChatFormatting.BLUE), Component.nullToEmpty(""), Component.nullToEmpty(""), Component.nullToEmpty(""),
                     List.of(NekomasFixed.id("container/slot/helmet")),
                     List.of(NekomasFixed.id("container/slot/nether_heart"))));
-    // Crowns are plain ArmorItems: the equip sound comes from each ArmorMaterial's own
-    // getEquipSound(), and the crown render layer is EquipmentLayerRendererMixin (a
-    // @ModifyReturnValue on HumanoidArmorLayer#getArmorResource), so neither needs declaring here.
-    // COPPER is the one tier this mod adds itself - see ModArmorMaterials.java, whose COPPER
-    // numbers are provisional.
+    // equip sound and render layer come from ArmorMaterial/EquipmentLayerRendererMixin, nothing
+    // declared here. COPPER is this mod's own tier - see ModArmorMaterials, numbers still provisional.
     public static final RegistryObject<Item> COPPER_CROWN = register("copper_crown", settings -> new ArmorItem(ModArmorMaterials.COPPER, ArmorItem.Type.HELMET, settings), new Item.Properties());
     public static final RegistryObject<Item> IRON_CROWN = register("iron_crown", settings -> new ArmorItem(ArmorMaterials.IRON, ArmorItem.Type.HELMET, settings), new Item.Properties());
     public static final RegistryObject<Item> GOLDEN_CROWN = register("golden_crown", settings -> new ArmorItem(ArmorMaterials.GOLD, ArmorItem.Type.HELMET, settings), new Item.Properties());
@@ -232,8 +203,7 @@ public class ItemRegistry {
     public static final RegistryObject<Item> HUGE_BAMBOO_BOAT = register("huge_bamboo_boat", settings -> new ModBoatItem(EntityTypeRegistry.HUGE_BAMBOO_BOAT, settings), new Item.Properties().stacksTo(1));
 
     public static final RegistryObject<Item> SPECIAL_STEW = register("special_stew", SpecialSoupItem::new, new Item.Properties().stacksTo(1).food((new FoodProperties.Builder()).nutrition(0).saturationMod(0.0F).build()).craftRemainder(Items.BOWL));
-    // Potion: 1.20.1 registers a plain Potion instance (registerForHolder is post-1.20.5) -
-    // a new registry entry with no 26.2 counterpart. DeferredRegister<Potion> on ForgeRegistries.POTIONS.
+    // 1.20.1 registers a plain Potion instance - registerForHolder() is 1.20.5+
     public static final DeferredRegister<Potion> POTIONS =
             DeferredRegister.create(ForgeRegistries.POTIONS, NekomasFixed.NAMESPACE);
     public static final RegistryObject<Potion> LIGHTNING = POTIONS.register("lightning",
@@ -277,9 +247,8 @@ public class ItemRegistry {
     public static final RegistryObject<Item> INDIGO_STAINED_GLASSS_PANE = register(BlockRegistry.INDIGO_STAINED_GLASS_PANE);
     public static final RegistryObject<Item> MAROON_STAINED_GLASSS_PANE = register(BlockRegistry.MAROON_STAINED_GLASS_PANE);
 
-    // None of the four shulker boxes declares an empty-container default - same "default = absence
-    // of NBT" reasoning as NAUTILUS_BLOCK above; the block entity's own inventory (opened as a
-    // container in-world) is unaffected.
+    // no empty-container default needed - same "default = absence of NBT" reasoning as
+    // NAUTILUS_BLOCK above
     public static final RegistryObject<Item> AMBER_SHULKER_BOX = register(BlockRegistry.AMBER_SHULKER_BOX, new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> AQUA_SHULKER_BOX = register(BlockRegistry.AQUA_SHULKER_BOX, new Item.Properties().stacksTo(1));
     public static final RegistryObject<Item> INDIGO_SHULKER_BOX = register(BlockRegistry.INDIGO_SHULKER_BOX, new Item.Properties().stacksTo(1));
@@ -295,24 +264,22 @@ public class ItemRegistry {
     public static final RegistryObject<Item> INDIGO_CANDLE = register(BlockRegistry.INDIGO_CANDLE);
     public static final RegistryObject<Item> MAROON_CANDLE = register(BlockRegistry.MAROON_CANDLE);
 
-    // The four keep their contents in the stack's own data rather than needing anything declared in
-    // their properties. They do not ask for the bundle experiment either, so they work whether or not
-    // it is switched on - that flag only ever governed the vanilla bundle.
+    // contents live in the stack's own data, nothing declared in properties; these don't gate on
+    // the bundle experiment flag either - that only ever governed the vanilla bundle
     public static final RegistryObject<Item> AMBER_BUNDLE = register("amber_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> AQUA_BUNDLE = register("aqua_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> INDIGO_BUNDLE = register("indigo_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> MAROON_BUNDLE = register("maroon_bundle", BundleItem::new, (new Item.Properties()).stacksTo(1));
 
-    // A harness needs a happy ghast to go on, and that comes from another mod, so the four are only
-    // registered when it is installed. Everything downstream reads them through the handle rather
-    // than assuming they exist - see ItemGroupRegistry and the minecraft:harnesses tag.
+    // only registered when the mod providing happy ghast is installed; downstream always reads
+    // through the handle rather than assuming presence (see ItemGroupRegistry, minecraft:harnesses tag)
     public static final RegistryObject<Item> AMBER_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "amber_harness", (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> AQUA_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "aqua_harness", (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> INDIGO_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "indigo_harness", (new Item.Properties()).stacksTo(1));
     public static final RegistryObject<Item> MAROON_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "maroon_harness", (new Item.Properties()).stacksTo(1));
 
-    // The DyeColor each one borrows is the same one its wool/carpet family uses in BlockRegistry -
-    // see ModDyeItems for why a real DyeColor is unavoidable here.
+    // borrows the same DyeColor its wool/carpet family uses in BlockRegistry - see ModDyeItems for
+    // why a real DyeColor is unavoidable
     public static final RegistryObject<Item> AMBER_DYE = registerDye("amber_dye", DyeColor.YELLOW);
     public static final RegistryObject<Item> AQUA_DYE = registerDye("aqua_dye", DyeColor.LIGHT_BLUE);
     public static final RegistryObject<Item> INDIGO_DYE = registerDye("indigo_dye", DyeColor.MAGENTA);
@@ -486,14 +453,8 @@ public class ItemRegistry {
     public static final RegistryObject<Item> MAROON_SPOTTED_CARPET = register(BlockRegistry.MAROON_SPOTTED_CARPET);
 
 
-    // --- Item-registration helpers. block (arg 1) is always a RegistryObject<Block> - every
-    // caller passes a BlockRegistry.X field directly, never .get()'d, so evaluating it is always
-    // safe no matter when the caller itself runs; block.get() is only ever touched inside the
-    // returned supplier, invoked by Forge during RegisterEvent<Item> (well after RegisterEvent
-    // <Block> has already resolved every Block RegistryObject - Item is registered after Block in
-    // vanilla's own registry dependency order). block.getId().getPath() mirrors the block's own id
-    // eagerly and safely (RegistryObject.getId() never throws, unlike .get()). ---
-
+    // block (arg 1) is only ever RegistryObject<Block>, never .get()'d by the caller - block.get()
+    // only runs inside the deferred supplier, well after RegisterEvent<Block> has resolved every Block.
     private static RegistryObject<Item> register(RegistryObject<Block> block, BiFunction<Block, Item.Properties, Item> factory, Item.Properties settings) {
         return ITEMS.register(block.getId().getPath(), () -> {
             Item item = factory.apply(block.get(), settings);
@@ -516,11 +477,8 @@ public class ItemRegistry {
     private static RegistryObject<Item> register(String id, Item.Properties settings) {
         return register(id, Item::new, settings);
     }
-    /**
-     * Registers {@code id} only when {@code present}; otherwise hands back a handle for an id that
-     * nothing ever fills. The handle is live either way, so a field declared with it keeps the same
-     * type and every reader just has to ask whether it is there before using it.
-     */
+    // registers id only when present; otherwise returns a live handle for an id nothing ever fills,
+    // so the field keeps the same type and callers just check presence before using it
     private static RegistryObject<Item> registerIf(boolean present, String id, Item.Properties settings) {
         return present
                 ? register(id, settings)
@@ -539,13 +497,9 @@ public class ItemRegistry {
         return ITEMS.register(id, () -> new ModDyeItems(nearestVanillaColor, new Item.Properties()));
     }
 
-    /**
-     * ForgeSpawnEggItem(Supplier&lt;? extends EntityType&lt;? extends Mob&gt;&gt;,
-     * int background, int highlight, Properties) - {@code type} is a RegistryObject, passed directly
-     * (it IS a Supplier), never .get()'d at this call site. The wildcard parameter type (rather than
-     * this file's own EntityType<?>) is what lets every EntityTypeRegistry.X argument satisfy
-     * ForgeSpawnEggItem's own Supplier<? extends EntityType<? extends Mob>> with no unchecked cast.
-     */
+    // type is a RegistryObject passed directly (it IS a Supplier), never .get()'d here; the
+    // wildcard parameter type is what lets every EntityTypeRegistry.X satisfy ForgeSpawnEggItem's
+    // own bound with no unchecked cast
     private static <T extends net.minecraft.world.entity.Mob> RegistryObject<Item> registerSpawnEgg(
             RegistryObject<EntityType<T>> type, String mobId, int background, int highlight) {
         return ITEMS.register(mobId + "_spawn_egg",

@@ -15,18 +15,12 @@ import net.minecraftforge.registries.RegistryObject;
 import java.util.Optional;
 
 /**
- * The brain memories and the voice the Wildfire runs on. The mob's AI is built the way a breeze
- * behaves - charge, leap, land, inhale, shoot, slide - and none of that vocabulary exists in the
- * base game, so all of it is registered here under this mod's own namespace.
+ * The brain memories and voice the Wildfire runs on - a breeze-style AI vocabulary (charge, leap,
+ * land, inhale, shoot, slide) that doesn't exist in the base game, registered here under this mod's
+ * namespace.
  *
- * <p>Eight memory modules: seven plain flag/cooldown memories carrying nothing but {@code Unit},
- * and the jump target, which carries a {@code BlockPos}. Typing them properly here is what lets the
- * task classes read and write them without casting.
- *
- * <p>Six sounds, each mapped in {@code sounds.json} onto the closest blaze or fire sound this mod
- * can reach. A sound event with no mapping is not an error - it just plays nothing - so the entries
- * matter. When New Trials is installed it brings real breeze recordings with it, and those are
- * swapped in at the point of play.
+ * <p>Sounds map in {@code sounds.json} onto blaze/fire stand-ins; New Trials swaps in real breeze
+ * recordings at the point of play when present.
  */
 public final class WildfireRegistrations {
     private WildfireRegistrations() {

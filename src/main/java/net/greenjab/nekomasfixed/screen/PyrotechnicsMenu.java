@@ -180,11 +180,9 @@ public class PyrotechnicsMenu extends AbstractContainerMenu {
         return false;
     }
 
-    // Firework data is plain NBT, exactly as vanilla writes it: an "Explosion" compound holding byte
-    // "Type"/"Trail"/"Flicker" and int-array "Colors"/"FadeColors", and a "Fireworks" compound
-    // holding byte "Flight" plus an "Explosions" list of those same per-star compounds. The shape
-    // bytes below are vanilla's own numbering (0 small ball, 1 large ball, 2 star, 3 creeper,
-    // 4 burst).
+    // vanilla's own NBT shape: an Explosion compound with byte Type/Trail/Flicker and int-array
+    // Colors/FadeColors, and a Fireworks compound with byte Flight plus an Explosions list of those.
+    // type bytes are vanilla's numbering: 0 small ball, 1 large ball, 2 star, 3 creeper, 4 burst.
     private static final Map<Item, Byte> TYPE_MODIFIER_MAP = Map.of(
             Items.FIRE_CHARGE, (byte) 1,   // large ball
             Items.FEATHER, (byte) 4,        // burst

@@ -11,10 +11,6 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * Draws the fire bomb as a single glowing billboard quad, turned to face the camera by the
- * dispatcher's own orientation and lit at full brightness whatever the block light says.
- */
 public class FireBombRenderer extends EntityRenderer<FireBomb> {
 	private static final ResourceLocation TEXTURE = new ResourceLocation("minecraft", "textures/item/blaze_powder.png");
 	private static final RenderType LAYER = RenderType.entityTranslucentEmissive(TEXTURE);

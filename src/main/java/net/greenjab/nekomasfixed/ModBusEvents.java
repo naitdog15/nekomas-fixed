@@ -13,21 +13,13 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import java.util.Map;
 
 /**
- * The common (both-dist) mod-bus event holder. {@code @Mod.EventBusSubscriber}
- * self-registers this class onto the mod bus when the mod is constructed — no manual
- * {@code modBus.register(...)} call is needed or wanted (this mod's own convention: pick the
- * annotation idiom for handlers and never mix it with an explicit register call for the same class;
- * no class in this mod does both).
- * <p>
- * This class carries two cross-package dependencies: the cauldron interaction-map population and
- * the dyed-brush dispenser behaviours, both inside {@code FMLCommonSetupEvent#enqueueWork} because
- * both mutate vanilla's non-thread-safe global maps ({@code CauldronInteraction}'s and
- * {@code DispenserBlock.DISPENSER_REGISTRY}) after all {@code RegisterEvent}s have run.
- * <p>
- * No {@code EntityAttributeCreationEvent} handler here, deliberately:
- * {@link net.greenjab.nekomasfixed.registry.entity.EntityAttributesAndSpawns} is the mod's single
- * handler for all 8 entity types, and a second one would double-{@code put} the same attribute
- * suppliers.
+ * {@code @Mod.EventBusSubscriber} self-registers this class on the mod bus - no manual
+ * {@code modBus.register(...)} call, ever, for the same class (this mod's convention).
+ * cauldron and dyed-brush dispenser registration run inside {@code FMLCommonSetupEvent#enqueueWork}
+ * because both mutate vanilla's non-thread-safe global maps after all {@code RegisterEvent}s have run.
+ * no {@code EntityAttributeCreationEvent} handler here on purpose:
+ * {@link net.greenjab.nekomasfixed.registry.entity.EntityAttributesAndSpawns} already handles all
+ * 8 entity types, and a second handler would double-put the same suppliers.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ModBusEvents {
@@ -43,10 +35,9 @@ public final class ModBusEvents {
     }
 
     /**
-     * On 26.2 this was a Fabric {@code DispenserBlock} registration made
-     * at item-registration time; on Forge it must wait for common setup so
-     * {@link ItemDyeMap}'s static initializer (which itself calls {@code RegistryObject#get()}) runs
-     * only after {@code RegisterEvent<Item>} has completed.
+     * on 26.2 this was a Fabric {@code DispenserBlock} registration made at item-registration time;
+     * on Forge it must wait for common setup so {@link ItemDyeMap}'s static initializer (which calls
+     * {@code RegistryObject#get()}) runs only after {@code RegisterEvent<Item>} has completed.
      */
     private static void registerDyedBrushDispenserBehaviour() {
         for (Map.Entry<AllDyes, Item> entry : ItemDyeMap.BRUSH.entrySet()) {

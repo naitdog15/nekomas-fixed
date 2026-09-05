@@ -39,8 +39,7 @@ public class DrenchedRenderer extends HumanoidMobRenderer<Drenched, DrenchedMode
     @Override
     protected void setupRotations(Drenched entity, PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTick) {
         super.setupRotations(entity, poseStack, ageInTicks, rotationYaw, partialTick);
-        // Swim-lean pivot height assumes scale=1.0 (true for every current variant of this mob) rather
-        // than dividing by a value that could occasionally be near-zero and throw the pivot off.
+        // assumes scale=1.0 (true for all current variants) instead of dividing by it and risking near-zero
         float swimAmount = entity.getSwimAmount(partialTick);
         if (swimAmount > 0.0F) {
             float i = -10.0F - entity.getXRot();

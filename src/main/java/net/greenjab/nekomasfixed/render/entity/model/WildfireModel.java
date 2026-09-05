@@ -14,15 +14,9 @@ import net.minecraft.util.Mth;
 
 import java.util.Arrays;
 
-/**
- * The Wildfire's rods and the ring of shield plates around them. The per-frame spin is worked out in
- * {@code prepareMobModel}, which is the hook that still has the partial tick to hand.
- *
- * <p>{@link #bodyRot} is the odd one out: the ring counter-rotates against the mob's world yaw, and
- * no animation hook is handed raw body yaw, so
- * {@link net.greenjab.nekomasfixed.render.entity.WildfireRenderer} sets the field itself just before
- * rendering - the same way the game hands models {@code attackTime} and friends.
- */
+// spin is worked out in prepareMobModel, the hook that still has partialTick to hand
+// bodyRot: no animation hook gets raw body yaw, so WildfireRenderer sets this field directly before
+// rendering, same pattern as BasePlateModel.yaw
 public class WildfireModel extends HierarchicalModel<WildfireEntity> {
 	private final ModelPart root;
 	private final ModelPart[] rods;

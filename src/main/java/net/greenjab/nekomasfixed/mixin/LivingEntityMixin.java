@@ -27,15 +27,9 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Everything this mod adds to the damage pipeline: turtle-chestplate directional blocking, the
- * turtle helmet's mace soak, the turtle boots' underwater fall behaviour, the wildfire shield's
- * retaliation, and the leeching and dismount enchantments.
- *
- * <p>{@code hurt(DamageSource, float)} is one monolithic method, so the injectors below anchor on
- * distinct calls inside it rather than on separate helper methods - order between them matters, and
- * each anchor is noted where it is not obvious.
- */
+// hurt(DamageSource, float) is one monolithic method, so the injectors below anchor on distinct
+// calls inside it rather than on separate helper methods - order between them matters, noted where
+// not obvious.
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
 
@@ -66,7 +60,6 @@ public abstract class LivingEntityMixin {
             if (damage - f <= 0) return 0.00123f;
             return damage - f;
         }
-        // the turtle helmet soaks a mace's smash outright, and takes the whole blow in durability
         if (NekomasFixedConfig.MACE_INTERACTIONS.get()
                 && LE.getItemBySlot(EquipmentSlot.HEAD).is(Items.TURTLE_HELMET)
                 && isMaceSmash(source)) {
@@ -78,13 +71,9 @@ public abstract class LivingEntityMixin {
         return damage;
     }
 
-    /**
-     * Whether a hit is a falling mace blow. A mace deals ordinary attack damage and raises no damage
-     * source of its own, so there is nothing on the hit itself to recognise; what makes a smash a
-     * smash is read off the swing instead - a mace in the attacker's hand and a drop behind it. The
-     * weapon is matched by id, which is also the presence check: with the mace's mod absent no item
-     * carries that id and this is simply never true.
-     */
+    // a mace raises no damage source of its own, so a smash is recognised off the swing instead - a
+    // mace in hand and a drop behind it. matched by id, which doubles as the presence check: with
+    // the mace's mod absent no item carries that id and this is simply never true.
     @Unique
     private static boolean isMaceSmash(DamageSource source) {
         if (!(source.getDirectEntity() instanceof LivingEntity attacker) || attacker.fallDistance <= 1.5F) {
@@ -96,8 +85,8 @@ public abstract class LivingEntityMixin {
                 && weapon.getPath().equals("mace");
     }
 
-    // travel(Vec3) covers air, water and lava in one method here, and still routes falling motion
-    // through getFluidFallingAdjustedMovement
+    // travel(Vec3) covers air, water and lava in one method here, still routing falling motion
+    // through getFluidFallingAdjustedMovement.
     @WrapOperation(method = "travel", at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/world/entity/LivingEntity;getFluidFallingAdjustedMovement(DZLnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;"
@@ -108,8 +97,8 @@ public abstract class LivingEntityMixin {
         return original.call(instance, baseGravity, isFalling, movement);
     }
 
-    // blockUsingShield only runs once hurt() has established the hit was blocked and the attacker is
-    // a living entity, which is exactly when the wildfire shield should bite back
+    // blockUsingShield only runs once hurt() has established the hit was blocked by a living entity,
+    // exactly when the wildfire shield should bite back.
     @Inject(method = "blockUsingShield", at = @At("HEAD"))
     private void onShieldHit(LivingEntity attacker, CallbackInfo ci) {
         LivingEntity defender = (LivingEntity)(Object)this;
@@ -130,15 +119,15 @@ public abstract class LivingEntityMixin {
         }
     }
 
-    // sits after the isSleeping() anchor above (so it sees the already-reduced damage) and before
-    // hurt() acts on it - the sentinel means the chestplate absorbed the whole hit
+    // sits after the isSleeping() anchor above (so it sees the already-reduced damage) - the
+    // sentinel means the chestplate absorbed the whole hit.
     @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isDamageSourceBlocked(Lnet/minecraft/world/damagesource/DamageSource;)Z"), cancellable = true)
     private void cancel0Damage(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         if (damage == 0.00123f) cir.setReturnValue(true);
     }
 
     // fires once the hit has actually landed - hurt() calls actuallyHurt from both the
-    // invulnerability-cooldown branch and the normal one, and leeching should heal off either
+    // invulnerability-cooldown branch and the normal one, and leeching should heal off either.
     @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;actuallyHurt(Lnet/minecraft/world/damagesource/DamageSource;F)V", shift = At.Shift.AFTER))
     private void leechingEnchant(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         if (!NekomasFixedConfig.LEECHING_ENCHANTMENT.get()) return;
@@ -148,10 +137,9 @@ public abstract class LivingEntityMixin {
         }
     }
 
-    // shares the isSleeping() anchor with the chestplate rewrite above rather than sitting at the
-    // head of hurt(): everything before that point still runs on the client and still runs for hits
-    // the game is about to throw away, and yanking a rider off a mount is not something to do on a
-    // hit that never happened
+    // shares the isSleeping() anchor with the chestplate rewrite above rather than the head of hurt():
+    // everything before that point still runs on the client for hits the game is about to throw away,
+    // and yanking a rider off a mount isn't something to do on a hit that never happened.
     @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isSleeping()Z"))
     private void dismountEnchant(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         if (!NekomasFixedConfig.DISMOUNT_ENCHANTMENT.get()) return;

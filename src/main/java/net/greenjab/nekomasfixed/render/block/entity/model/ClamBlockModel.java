@@ -11,7 +11,6 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.client.renderer.RenderType;
 
-/** Lid and hinge model for the clam block entity; {@link #setupAnim} takes the lid's open progress directly from the renderer. */
 public class ClamBlockModel extends Model {
 	private final ModelPart root;
 	private final ModelPart lid;

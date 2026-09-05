@@ -14,22 +14,17 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * The common (both-dist) Forge-bus event holder.
- * {@code @Mod.EventBusSubscriber(bus = FORGE)} performs the registration by annotation when FML
- * constructs the mod, which is why {@link NekomasFixed}'s constructor does not also call
- * {@code MinecraftForge.EVENT_BUS.register(...)} by hand — doing both would fire every handler here
- * twice (confirmed no class in this mod does both).
- * <p>
- * This class carries the loot-table modifications this mod makes to vanilla tables, and the switch
- * that stops its own mobs spawning on their own.
+ * {@code @Mod.EventBusSubscriber(bus = FORGE)} registers by annotation when FML constructs the mod,
+ * so {@link NekomasFixed}'s constructor must not also call
+ * {@code MinecraftForge.EVENT_BUS.register(...)} here - doing both would fire every handler twice.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ForgeBusEvents {
     private ForgeBusEvents() {
     }
 
-    // The ghast's own mod handles wearing a harness, so switching them off here means refusing the
-    // interaction rather than unregistering anything. Both interact events fire for a mob, hence two.
+    // vetoing here refuses the interaction rather than unregistering anything - the ghast's own mod
+    // owns the harness equip. both interact events fire for a mob, hence two handlers.
     @SubscribeEvent
     public static void onHarnessInteract(PlayerInteractEvent.EntityInteract event) {
         vetoHarness(event, event.getItemStack());
@@ -51,9 +46,8 @@ public final class ForgeBusEvents {
     }
 
     /**
-     * The natural-spawn switch. Only mobs trying to spawn on their own are stopped - spawn eggs,
-     * spawners, reinforcements and {@code /summon} all take other paths and are left alone, which is
-     * what a player expects the switch to mean.
+     * only mobs spawning on their own are stopped - spawn eggs, spawners, reinforcements and
+     * {@code /summon} all take other paths and are left alone, matching what a player expects.
      */
     @SubscribeEvent
     public static void onSpawnPlacementCheck(MobSpawnEvent.SpawnPlacementCheck event) {

@@ -12,17 +12,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /**
- * This version has no {@code SuspiciousStewEffects} data component, so each variant just carries a
- * plain effect and duration instead of one of those entries, applied through
- * {@code SuspiciousStewItem.saveMobEffect(ItemStack, MobEffect, int duration)}.
+ * No {@code SuspiciousStewEffects} data component in this version, so each variant carries a plain
+ * effect and duration via {@code SuspiciousStewItem.saveMobEffect}.
  *
- * <p>Not an enum, even though it looks like fifteen fixed constants: the fifteenth,
- * open-eyeblossom, only exists once Vanilla Backport is loaded, has that flower turned on in its own
- * config, and hasn't had the mod's own {@code eyeblossomMoobloom} toggle switched off — three things
- * an enum's constant set, fixed at compile time, cannot express. The fourteen ordinary variants are
- * declared as constants as before; the fifteenth is assembled once, lazily, the first time anything
- * asks this class for its variant list, which in practice is the first time a Moobloom actually spawns
- * or is interacted with — long after mod construction and config load, never at registration.
+ * <p>Not an enum: the fifteenth variant, open-eyeblossom, only exists once Vanilla Backport is loaded
+ * and its config/toggle allow it - conditions an enum's compile-time constants can't express. It's
+ * assembled lazily on first use, well after mod construction and config load.
  */
 public final class MoobloomVariants {
     public static final MoobloomVariants ANCIENT = new MoobloomVariants("ancient", 1, Items.TORCHFLOWER.getDefaultInstance(), MobEffects.NIGHT_VISION);
@@ -40,7 +35,6 @@ public final class MoobloomVariants {
     public static final MoobloomVariants WHITE_3 = new MoobloomVariants("white", 3, Items.OXEYE_DAISY.getDefaultInstance(), MobEffects.REGENERATION);
     public static final MoobloomVariants YELLOW = new MoobloomVariants("yellow", 1, Items.DANDELION.getDefaultInstance(), MobEffects.SATURATION);
 
-    /** The name open-eyeblossom is stored under, which is what its constructor call below builds. */
     private static final String OPEN_EYEBLOSSOM_VARIANT = "gray_cow_2";
 
     /** The fifteenth variant, or null until {@link #values()} has decided whether it exists. */
@@ -61,11 +55,9 @@ public final class MoobloomVariants {
     }
 
     /**
-     * Builds (once) and returns the live variant list: the fourteen constants above, plus
-     * open-eyeblossom appended at the end exactly when Vanilla Backport's handle for it resolves and
-     * the eyeblossomMoobloom toggle is on. Cached after the first call, same as the fourteen constants
-     * are effectively cached by being static fields — a mod being unloaded or a config value flipping
-     * both require a restart already, so re-checking every call would only cost cycles for no benefit.
+     * Builds and caches the variant list: the fourteen constants, plus open-eyeblossom appended when
+     * Vanilla Backport resolves it and the config toggle is on. Never rechecked after first build - a
+     * mod unload or config flip already needs a restart.
      */
     private static List<MoobloomVariants> values() {
         if (values == null) {

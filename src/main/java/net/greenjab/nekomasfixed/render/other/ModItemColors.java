@@ -9,13 +9,8 @@ import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/**
- * Colours the items whose look depends on what went into them.
- *
- * <p>So far that is the special stew: the soup cauldron blends its ingredients' colours and writes
- * the result onto the bowl the same way a dyed item carries its colour, and this paints the stew
- * layer of the item model with it. The bowl underneath is left alone.
- */
+// tintIndex 0 is the bowl (left alone); other indices are the stew layer, tinted from the display
+// color tag the same way a dyed item stores its color
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ModItemColors {
 

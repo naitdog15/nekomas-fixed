@@ -10,10 +10,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// Vanilla hard-codes the same carve-out one item at a time - see the nether star a few lines into
-// ItemEntity#hurt - so this widens it to a tag. 1.20.1's SmithingTemplateItem builds its own
-// Item.Properties and takes none from the caller, so fireproofing the templates the ordinary way
-// is not on offer here.
+// vanilla hard-codes this carve-out one item at a time (see the nether star in ItemEntity#hurt), so
+// this widens it to a tag. 1.20.1's SmithingTemplateItem builds its own Item.Properties and takes
+// none from the caller, so fireproofing the templates the ordinary way isn't on offer here.
 @Mixin(ItemEntity.class)
 public class ItemEntityMixin {
 

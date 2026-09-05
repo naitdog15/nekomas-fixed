@@ -9,10 +9,9 @@ import net.minecraft.world.inventory.AbstractFurnaceMenu;
 import net.minecraft.world.inventory.ContainerData;
 
 /**
- * The kiln's container. It is a furnace in every mechanical respect - one input, one fuel slot, one
- * output, matched off {@code RecipeRegistry.KILN} - so it just hands {@code AbstractFurnaceMenu} its
- * own recipe type and its own recipe-book type. See {@link ModRecipeBookType} for why the book type
- * cannot be the furnace's.
+ * mechanically a furnace - one input, one fuel, one output, matched off RecipeRegistry.KILN - so
+ * this just hands AbstractFurnaceMenu its own recipe type and recipe-book type. see
+ * {@link ModRecipeBookType} for why the book type can't be the furnace's.
  */
 public class KilnMenu extends AbstractFurnaceMenu {
 

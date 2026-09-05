@@ -19,17 +19,9 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Gives a slept-in bed its rumpled sheets, and gives the four extra bed colours their own bedding.
- *
- * <p>A bed's covers are one texture off the bed sheet, chosen from its dye colour before either half
- * is drawn, so both changes are the same one-line swap of that texture. The four added colours share
- * a dye slot with a vanilla one, so the block is what tells them apart; the rumpled sheets are picked
- * out by the bed's own messy state.
- *
- * <p>The bed shown in an inventory is drawn from a shared block entity that keeps a plain red bed's
- * state, so item icons are left alone.
- */
+// the four added colours share a dye slot with a vanilla one, so the block (not the colour) tells
+// them apart. the inventory icon uses a shared block entity that keeps a plain red bed's state,
+// so item icons are left alone.
 @Mixin(BedRenderer.class)
 public class BedRendererMixin {
 

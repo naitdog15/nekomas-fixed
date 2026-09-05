@@ -13,8 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// A plain zombie stood in powder snow long enough turns into a rime. The type check keeps husks,
-// drowned and every other zombie subclass out of it - only the base zombie freezes over.
+// type check keeps husks, drowned and every other zombie subclass out of it - only the base zombie freezes over.
 @Mixin(Zombie.class)
 public abstract class ZombieMixin extends Monster {
 

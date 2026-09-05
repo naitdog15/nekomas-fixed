@@ -14,20 +14,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 
-/**
- * Widens what the mod's own weapons are allowed to be enchanted with. Whether an item may take an
- * enchantment is one check, the category the enchantment was built with, so both doors have to be
- * covered: the anvil asks {@code canEnchant}, and the enchanting table asks
- * {@code canApplyAtEnchantingTable} directly without going through it.
- * <p>
- * The two doors need two injectors even though they run the same test. {@code canApplyAtEnchantingTable}
- * is Forge's own addition to the class and keeps its plain name in every environment, so it has to be
- * matched without the name remapping a vanilla method needs; both hand straight over to
- * {@link #otherChecks}.
- * <p>
- * Individual enchantments are recognised by their translation key, which is the only per-enchantment
- * string the base class can be asked for.
- */
+// canEnchant (anvil) and canApplyAtEnchantingTable (table) run the same test but need separate
+// injectors since canApplyAtEnchantingTable is Forge's own addition and keeps its plain name in
+// every environment, so it's matched with remap = false instead of a vanilla method's remapped name.
+// enchantments are recognised by translation key, the only per-enchantment string exposed here.
 @Mixin(Enchantment.class)
 public class EnchantmentMixin {
 

@@ -18,8 +18,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// Breaking a nautilus item drops the animal stored in it back into the world, and placing a clam
-// item that was picked up open places it open again. Both bits of stack data go through StackData.
 @Mixin(BlockItem.class)
 public class BlockItemMixin {
 

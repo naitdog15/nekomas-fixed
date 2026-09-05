@@ -9,15 +9,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
-/**
- * CreativeModeTabEvent does not exist in Forge 47.x - a creative tab is an ordinary registry entry
- * on the vanilla Registries.CREATIVE_MODE_TAB key (no ForgeRegistries constant for it). Registered
- * by bare String key ("nekomasfixed"/"nekomasfixedcolours"), matching the Fabric code's own ids
- * exactly - DeferredRegister.register(String,...) takes the same shape.
- * Deliberately no BuildCreativeModeTabContentsEvent handler: items missing from these two lists do
- * not get surfaced into vanilla tabs. That matches how the mod has always behaved (there is no
- * vanilla-tab injection anywhere in the source), so it is not a bug to fix here.
- */
+// CreativeModeTabEvent doesn't exist in Forge 47.x - a creative tab is an ordinary registry entry
+// on vanilla's Registries.CREATIVE_MODE_TAB key (no ForgeRegistries constant for it).
+// deliberately no BuildCreativeModeTabContentsEvent handler - items missing from these two lists
+// don't get surfaced into vanilla tabs; that's how the mod has always behaved, not a bug to fix.
 public class ItemGroupRegistry {
 
     public static final DeferredRegister<CreativeModeTab> TABS =

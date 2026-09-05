@@ -24,8 +24,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 import java.util.Optional;
 
-// Puts a raider at the helm: whoever sits in the front seat steers the boat towards its target, or
-// carries on patrolling when it has none.
 @Mixin(Raider.class)
 public class RaiderMixin {
 

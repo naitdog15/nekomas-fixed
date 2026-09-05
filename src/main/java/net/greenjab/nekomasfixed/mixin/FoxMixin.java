@@ -32,8 +32,7 @@ public class FoxMixin {
         if (!NekomasFixedConfig.FOXES_USE_POTIONS.get()) return;
         Fox foxEntity = (Fox)(Object)this;
         Level world = foxEntity.level();
-        // Everything below writes to the world, so it belongs to the server alone; the client
-        // used to run it too and place its own soul fire off its own roll.
+        // everything below writes to the world - client used to run it too and place its own soul fire.
         if (world.isClientSide()) return;
         int chance = 10;
         boolean randInt = foxEntity.getRandom().nextInt(chance) == 5;

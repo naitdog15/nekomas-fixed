@@ -18,12 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Block.class)
 public class BlockMixin {
-    // 1.20.1 delta: 26.2's Holder<Enchantment>/registry
-    // lookup (Enchantments.SILK_TOUCH is a ResourceKey/Holder there) becomes 1.20.1's plain
-    // Enchantment instance; ItemStack#getEnchantments() (an ItemEnchantments view) becomes
-    // EnchantmentHelper.getItemEnchantmentLevel/getEnchantments(ItemStack). playerDestroy's own
-    // signature (Level, Player, BlockPos, BlockState, BlockEntity, ItemStack) is unchanged between
-    // 26.2 and 1.20.1, so the injection point itself needs no retarget.
+    // 1.20.1: Enchantments.SILK_TOUCH is a plain Enchantment here, not a Holder<Enchantment>; use
+    // EnchantmentHelper.getItemEnchantmentLevel/getEnchantments(ItemStack) instead of ItemStack#getEnchantments().
     @Inject(method = "playerDestroy", at = @At("HEAD"))
     private void customAfterBreak(Level level, Player player, BlockPos pos, BlockState state, BlockEntity blockEntity, ItemStack destroyedWith, CallbackInfo ci) {
         if (state.is(Blocks.MAGMA_BLOCK) && player != null) {

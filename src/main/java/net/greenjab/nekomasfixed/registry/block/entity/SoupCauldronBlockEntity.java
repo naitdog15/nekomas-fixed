@@ -82,9 +82,7 @@ public class SoupCauldronBlockEntity extends BlockEntity implements LidBlockEnti
         return removed;
     }
 
-    // hasStirred is written every time: absent reads back as false, which is what a fresh pot is
-    // anyway. A failed ingredient encode writes no list at all rather than a partial one, so the
-    // pot loads back empty instead of holding items nobody can identify.
+    // a failed ingredient encode writes no list at all rather than a partial one, so the pot loads back empty
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);

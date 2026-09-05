@@ -14,10 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * Draws a planted spear as its own item model, crossed with itself so it reads as a shaft from every
- * angle, and rides it up out of the ground over the first half-second it is there.
- */
+// crosses two copies of the item model so it reads as a shaft from every angle
 public class SpearRenderer extends EntityRenderer<SpearEntity> {
 	private final ItemRenderer itemRenderer;
 

@@ -28,11 +28,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 
-/**
- * Expires redstone-striker charges once their timer runs out, and rolls the copper-armour lightning
- * strike. Lightning selection is inlined in {@code tick(BooleanSupplier)} rather than sitting behind
- * a per-chunk hook, so both injectors share that method's head.
- */
+// lightning selection is inlined in tick(BooleanSupplier) rather than sitting behind a per-chunk
+// hook, so both injectors below share that method's head.
 @Mixin(ServerLevel.class)
 public abstract class ServerLevelMixin {
     @Shadow
@@ -76,9 +73,8 @@ public abstract class ServerLevelMixin {
         }
     }
 
-    // Copper armour worn, counted a piece at a time. The mod's own copper crown always counts; the
-    // rest of the tag is armour another mod supplies, so it is only counted while the option asking
-    // for it is on.
+    // copper crown always counts; the rest of the tag is other mods' armour, counted only when the
+    // config option for it is on.
     @Unique
     private static final EquipmentSlot[] COPPER_ARMOUR_SLOTS =
             { EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD };

@@ -171,7 +171,6 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
         return hunger;
     }
 
-    /** The ingredient palette: which foods tint the soup, and the colour each one lends it. */
     public static final Map<Item, Integer> FOOD_COLORS = new HashMap<>(Map.ofEntries(
             Map.entry(Items.POTION, 0x385DC6),
             Map.entry(Items.APPLE, 0xFC1C2A),
@@ -236,7 +235,7 @@ public class SoupCauldronBlock extends BaseEntityBlock implements EntityBlock {
             totalB += color & 255;
             totalWeight++;
         }
-        if (totalWeight == 0) return 0x385DC6; // fallback
+        if (totalWeight == 0) return 0x385DC6;
 
         int r = totalR / totalWeight;
         int g = totalG / totalWeight;

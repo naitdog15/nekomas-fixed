@@ -9,13 +9,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * The blocks, items and sounds New Trials adds, looked up by id so this mod never has to compile
- * against it. Unlike Vanilla Backport, New Trials keeps its content in its own namespace, which is
- * the only real difference between this class and its counterpart.
- *
- * <p>Every handle here is empty when New Trials is absent, so always ask {@code isPresent()} before
- * using one. The handles refill themselves whenever the registries are rebuilt, so they stay right
- * across a reload and across joining a server with a different set of mods.
+ * unlike Vanilla Backport, New Trials keeps its content in its own namespace - the only real
+ * difference from that counterpart class.
+ * always check {@code isPresent()} before using a handle; they refill themselves on registry
+ * rebuild, so they stay right across a reload or joining a server with a different mod set.
  */
 public final class TrialsContent {
 

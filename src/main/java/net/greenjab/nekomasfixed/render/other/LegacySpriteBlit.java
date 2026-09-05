@@ -3,15 +3,9 @@ package net.greenjab.nekomasfixed.render.other;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * Draws one of this mod's GUI sprites by its sprite id.
- *
- * <p>Every sprite this mod draws ships as a standalone PNG under
- * {@code assets/<namespace>/textures/gui/sprites/<path>.png}, so all these helpers do is expand a
- * sprite id into that path and hand it to an ordinary {@code blit}. They only work for ids in this
- * mod's own namespace; a vanilla GUI sprite is still a region of a per-screen sheet, and those call
- * sites blit the sheet directly.
- */
+// every sprite this mod draws ships as a standalone PNG under textures/gui/sprites/<path>.png, so
+// these helpers just expand a sprite id into that path and blit it - only works for this mod's own
+// namespace; a vanilla GUI sprite is still a region of a per-screen sheet, blit directly at the call site
 public final class LegacySpriteBlit {
     private LegacySpriteBlit() {
     }

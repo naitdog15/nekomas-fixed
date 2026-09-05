@@ -36,21 +36,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Random;
 
-/**
- * The player half of this mod's combat and gear behaviour: the sickle combo counter, dual-sickle
- * off-hand swings, the feather's harmless shove, the turtle leggings' underwater mining, and the
- * turtle helmet's mace soak.
- *
- * <p>{@code Player} has a {@code hurt} of its own that difficulty-scales and then calls
- * {@code super.hurt}, so anything player-specific hooks the former while everything in
- * LivingEntityMixin still reaches players through the latter - there is no reason to duplicate a
- * hook here beyond the helmet, which has to catch the blow before the scaling touches it.
- *
- * <p>Two anchors are not the obvious ones. Combo damage rides the first
- * {@code getAttributeValue(ATTACK_DAMAGE)} inside {@code attack} because that is where the base
- * damage exists before attack-strength scaling touches it; the dual-sickle full-damage override
- * rides {@code getAttackStrengthScale}, which is what {@code attack} reads at that point.
- */
+// Player has a hurt of its own that difficulty-scales then calls super.hurt, so player-specific
+// hooks go on the former while LivingEntityMixin still reaches players through the latter - no
+// reason to duplicate a hook here beyond the helmet, which must catch the blow before scaling touches it.
+// combo damage rides the first getAttributeValue(ATTACK_DAMAGE) inside attack, where base damage
+// exists before attack-strength scaling touches it; the dual-sickle override rides getAttackStrengthScale,
+// what attack reads at that point.
 @Mixin(Player.class)
 public class PlayerMixin {
 
@@ -70,8 +61,8 @@ public class PlayerMixin {
         }
     }
 
-    // 1.20.1 moved the turtle-helmet check out of tick() into its own turtleHelmetTick(),
-    // so that call is the anchor here rather than the isEyeInFluid probe inside it.
+    // 1.20.1 moved the turtle-helmet check out of tick() into its own turtleHelmetTick(), so that
+    // call is the anchor here rather than the isEyeInFluid probe inside it.
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;turtleHelmetTick()V"))
     private void customTickLogics(CallbackInfo ci) {
         Player PE = (Player)(Object)this;
@@ -136,8 +127,8 @@ public class PlayerMixin {
         if (NekomasFixedConfig.OFFHAND_ATTACK.get() && player.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && player.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) cir.setReturnValue(1f);
     }
 
-    // Player#hurt is reachable on the client, and the combo table is a single shared map - letting a
-    // client-side hurt clear it would wipe the count the server is still keeping in single-player
+    // Player#hurt is reachable on the client, and the combo table is a single shared map - a
+    // client-side hurt clearing it would wipe the count the server is still keeping in single-player.
     @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/damagesource/DamageSource;scalesWithDifficulty()Z"))
     private void cancelCombo(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         Player PE = (Player)(Object)this;
@@ -153,10 +144,8 @@ public class PlayerMixin {
         if (!NekomasFixedConfig.SICKLE_COMBO.get()) return original;
         Player player = (Player)(Object)this;
         ItemStack attackingItemStack = player.getMainHandItem();
-        // The multiplier is an item property, not stack state: 26.2 baked it on as a default data
-        // component, which 1.20.1 has no equivalent for. A stack that carries its own value still
-        // wins; a freshly crafted sickle falls back to what its tier is worth, which is also what
-        // its tooltip prints.
+        // 1.20.1 has no default data component for this, so it's an item property not stack state -
+        // a stack with its own value wins, a freshly crafted sickle falls back to its tier's value.
         ComboComponent combo = StackData.read(attackingItemStack, StackData.KEY_COMBO_MULTIPLIER,
                 ComboComponent.CODEC,
                 attackingItemStack.getItem() instanceof SickleItem sickle
@@ -183,10 +172,9 @@ public class PlayerMixin {
         return q;
     }
 
-    // The player's copy of the turtle helmet's mace soak. Player#hurt scales the blow by difficulty
-    // and only then hands on to LivingEntity#hurt, so the helmet has to catch it here as well to soak
-    // what was actually swung; the anchor is the first point inside hurt() where the hit is known to
-    // be real. The sentinel is LivingEntityMixin's - it means "wholly absorbed".
+    // Player#hurt scales the blow by difficulty before handing on to LivingEntity#hurt, so the helmet
+    // must catch it here too to soak what was actually swung. sentinel is LivingEntityMixin's - means
+    // "wholly absorbed".
     @ModifyVariable(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;removeEntitiesOnShoulder()V"), ordinal = 0, argsOnly = true)
     private float turtleHelmetMaceBlock(float damage, @Local(argsOnly = true) DamageSource source) {
         Player PE = (Player)(Object)this;
@@ -200,13 +188,9 @@ public class PlayerMixin {
         return damage;
     }
 
-    /**
-     * Whether a hit is a falling mace blow. A mace deals ordinary attack damage and raises no damage
-     * source of its own, so there is nothing on the hit itself to recognise; what makes a smash a
-     * smash is read off the swing instead - a mace in the attacker's hand and a drop behind it. The
-     * weapon is matched by id, which is also the presence check: with the mace's mod absent no item
-     * carries that id and this is simply never true.
-     */
+    // a mace raises no damage source of its own, so a smash is recognised off the swing instead - a
+    // mace in hand and a drop behind it. matched by id, which doubles as the presence check: with
+    // the mace's mod absent no item carries that id and this is simply never true.
     @Unique
     private static boolean isMaceSmash(DamageSource source) {
         if (!(source.getDirectEntity() instanceof LivingEntity attacker) || attacker.fallDistance <= 1.5F) {

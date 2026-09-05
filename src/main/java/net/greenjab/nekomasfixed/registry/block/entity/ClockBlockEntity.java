@@ -41,12 +41,8 @@ public class ClockBlockEntity extends BlockEntity {
 		this(BlockEntityTypeRegistry.CLOCK_BLOCK_ENTITY.get(), pos, state);
 	}
 
-	/**
-	 * Every read is guarded on the key actually being there. The clock has no update tag of its own
-	 * - the client is fed by {@link UpdateClockPayload} instead - so this also runs against the
-	 * empty tag of a block-entity update packet, and an unguarded getInt would silently reset the
-	 * alarm to midnight and restart the timer every time a neighbour changed.
-	 */
+	// guarded on key presence: this also runs against the empty tag of a block-entity update packet
+	// (client is fed by UpdateClockPayload instead), and an unguarded getInt would reset the alarm every time
 	@Override
 	public void load(CompoundTag tag) {
 		super.load(tag);
@@ -69,7 +65,6 @@ public class ClockBlockEntity extends BlockEntity {
 		return ClientboundBlockEntityDataPacket.create(this);
 	}
 
-	/** The bell is an item the player put in, so it has to come back out when the clock is broken. */
 	public void dropBell() {
 		if (this.level != null && bell) {
 			Containers.dropItemStack(this.level, this.worldPosition.getX(), this.worldPosition.getY(), this.worldPosition.getZ(), Items.BELL.getDefaultInstance());

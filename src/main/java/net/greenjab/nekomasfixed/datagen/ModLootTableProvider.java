@@ -8,14 +8,8 @@ import net.minecraft.world.level.block.Block;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/**
- * {@code FabricBlockLootSubProvider} → vanilla {@code BlockLootSubProvider},
- * wired into Forge's {@code LootTableProvider.SubProviderEntry} list by
- * {@code NekomasFixedDataGenerator}. Vanilla's constructor needs the explosion-resistant item set
- * (empty here — none of these blocks are explosion-resistant) and a {@code FeatureFlagSet}; it also
- * requires {@link #getKnownBlocks()} for its own dangling-loot-table validation, which 26.2's Fabric
- * wrapper didn't need.
- */
+/** vanilla's BlockLootSubProvider constructor needs an explosion-resistant item set (empty, none of
+ * these are) and a FeatureFlagSet, and getKnownBlocks() for its dangling-loot-table validation. */
 public class ModLootTableProvider extends BlockLootSubProvider {
     public ModLootTableProvider() {
         super(Set.of(), FeatureFlags.REGISTRY.allFlags());

@@ -11,7 +11,6 @@ import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.resources.ResourceLocation;
 
-/** Outer armor/clothing layer for the rime; see {@link DerelictOuterLayer}. */
 public class RimeOuterLayer extends RenderLayer<Rime, RimeModel> {
     private static final ResourceLocation RIME_OUTER_LAYER_LOCATION = NekomasFixed.id("textures/entity/zombie/rime_outer_layer.png");
     private static final ResourceLocation BABY_RIME_OUTER_LAYER_LOCATION = NekomasFixed.id("textures/entity/zombie/rime_outer_layer_baby.png");

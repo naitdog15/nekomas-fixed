@@ -22,11 +22,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Picks the sniffer's dig loot by biome instead of always rolling the one vanilla table. Loot tables
- * are plain ids here and are pulled straight off the server's loot data, so the whole drop is rebuilt
- * in place of vanilla's - same params, same item-entity placement, same sound.
- */
 @Mixin(Sniffer.class)
 public class SnifferEntityMixin {
 

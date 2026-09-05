@@ -21,11 +21,7 @@ import java.util.List;
 
 public class SpecialSoupItem extends Item {
 
-    /**
-     * The brewed ingredients, kept on the stack under this key through {@code StackData}.
-     * SoupCauldronBlock writes the copied input stacks here when it ladles the stew out of the
-     * cauldron; this class only ever reads them back.
-     */
+    // written by SoupCauldronBlock when it ladles the stew out; this class only reads it back
     public static final String KEY_INGREDIENTS = "ingredients";
     public static final Codec<List<ItemStack>> INGREDIENTS_CODEC = ItemStack.CODEC.listOf();
 
@@ -35,8 +31,6 @@ public class SpecialSoupItem extends Item {
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {
-        // always drinkable regardless of hunger - the payoff here is the brewed-in
-        // effects, not the (zero) nutrition
         user.startUsingItem(hand);
         return InteractionResultHolder.consume(user.getItemInHand(hand));
     }

@@ -156,7 +156,6 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
         }
     }
 
-    /** The horn's own instrument, resolved out of the level's registries. */
     private static Holder<Instrument> instrumentOf(LevelReader level, BlockState state) {
         return level.registryAccess().registryOrThrow(Registries.INSTRUMENT).getHolderOrThrow(state.getValue(HORN).getInstrument());
     }

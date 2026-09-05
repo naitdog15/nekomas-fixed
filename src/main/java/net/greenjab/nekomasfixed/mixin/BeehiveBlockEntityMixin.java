@@ -17,15 +17,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * A full hive lets its surplus honey drip into a cauldron sitting under it, filling an empty one and
- * topping up a honey cauldron.
- *
- * <p>Anchored on the returning bee handing over its nectar, which is the one point in
- * {@code releaseOccupant} that only runs for a honey delivery. The hive's stored-bee record is
- * package-private and so cannot appear in this handler's signature - the three values it does need
- * are captured instead.
- */
+// anchored on the bee handing over its nectar, the one point in releaseOccupant that only runs for
+// a honey delivery. the hive's stored-bee record is package-private so can't appear in this handler's
+// signature - the three values needed are captured instead.
 @Mixin(BeehiveBlockEntity.class)
 public class BeehiveBlockEntityMixin {
 

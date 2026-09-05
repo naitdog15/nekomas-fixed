@@ -98,18 +98,12 @@ public class NautilusBlockEntity extends BlockEntity {
 		} else return false;
 	}
 
-	/** What a dropped or picked shell carries its passenger in. */
 	public AnimalComponent getAnimalComponent() {
 		return new AnimalComponent(List.copyOf(this.animal));
 	}
 
-	/**
-	 * Puts the passenger back when a captured shell is placed again. The shell stores exactly one
-	 * animal, so an already-occupied shell keeps what it has rather than doubling up. The stored
-	 * blob is the same bytes {@link #getAnimalComponent} handed out, so nothing is re-encoded on
-	 * the way through - but the animal comes back as a new entity with a new UUID, because the
-	 * capture deliberately drops the old one rather than risk two entities claiming it.
-	 */
+	// shell holds exactly one animal, so an already-occupied shell keeps what it has rather than doubling up.
+	// the animal comes back as a new entity/UUID - capture drops the old one to avoid two entities claiming it.
 	public void restoreAnimal(AnimalComponent component) {
 		if (!this.animal.isEmpty() || component.animal().isEmpty()) {
 			return;
@@ -129,10 +123,8 @@ public class NautilusBlockEntity extends BlockEntity {
 		}
 	}
 
-	// No key at all when the shell is empty, so an ordinary nautilus saves an empty tag and nothing
-	// copying this block entity onto a stack stamps it with a leftover empty list. An encode that
-	// fails writes nothing rather than half an animal: the shell then loads back empty, which is a
-	// state the rest of the block already handles.
+	// no key at all when empty, so copying this block entity onto a stack never stamps a leftover empty
+	// list; a failed encode also writes nothing rather than half an animal, loading back empty instead.
 	@Override
 	protected void saveAdditional(CompoundTag tag) {
 		super.saveAdditional(tag);

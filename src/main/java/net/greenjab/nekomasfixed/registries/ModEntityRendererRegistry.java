@@ -9,9 +9,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 
-/**
- * {@code ModEntityRendererRegistry…()} maps to Forge's {@code RegisterRenderers#registerEntityRenderer}.
- */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ModEntityRendererRegistry {
 

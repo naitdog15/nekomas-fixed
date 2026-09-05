@@ -25,26 +25,11 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import javax.annotation.Nullable;
 
-/**
- * Every {@code Item} constructor calls {@code BuiltInRegistries.ITEM.createIntrusiveHolder(this)},
- * so a lazy, never-registered {@code StandingAndWallBlockItem} for clock placement would crash at
- * registry freeze - either immediately ("Registry is already frozen") if constructed after freeze,
- * or at freeze time ("Some intrusive holders were not registered") if constructed before it and
- * never registered. NO {@code Item} of any kind is instantiated anywhere in this class.
- * <p>
- * Mirrors {@code StandingAndWallBlockItem#getPlacementState}'s logic (attachmentDirection
- * = DOWN, the vanilla clock's own hardwired orientation) directly against the two clock {@link Block}
- * instances - the per-block placement logic itself ({@code FloorClockBlock#getStateForPlacement},
- * {@code WallClockBlock#getStateForPlacement}/{@code #canSurvive}) already lives on the block classes
- * (both this package's own files) and needs no Item involvement to begin with. The rest
- * ({@link BlockItem#placeBlock}'s default body, {@link BlockItem#updateCustomBlockEntityTag}) is
- * called via BlockItem's own public STATIC helpers - still zero Item instantiation.
- * <p>
- * Called from an {@code @Inject(method = "useOn", at = @At("HEAD"), cancellable = true)} on
- * {@code Item} (gated on {@code (Object) this == Items.CLOCK}) - see
- * {@code ClientSyncHandler}/{@code SyncHandler} for the sibling networking piece; this class does not
- * touch that mixin file itself.
- */
+// an Item constructor calls createIntrusiveHolder, which would crash at registry freeze for a
+// lazy, never-registered StandingAndWallBlockItem - so this class instantiates NO Item at all,
+// instead mirroring StandingAndWallBlockItem's placement logic directly against the two Block
+// instances. called from a mixin on Item#useOn gated on Items.CLOCK; see ClientSyncHandler/SyncHandler
+// for the networking side.
 public final class ClockPlacement {
     private ClockPlacement() {
     }
@@ -77,10 +62,8 @@ public final class ClockPlacement {
         if (placedState.is(state.getBlock())) {
             placedState = updateBlockStateFromTag(pos, level, stack, placedState);
             BlockItem.updateCustomBlockEntityTag(level, player, pos, stack);
-            // The recorded alarm time travels on the stack's own nekomasfixed data, not in
-            // BlockEntityTag, so the vanilla restore above never carries it. Presence of the key is
-            // the question - 0 is a real (midnight) reading, and the block entity's own unset state
-            // stays untouched for a clock that never recorded one.
+            // stored time lives on our own stack data, not BlockEntityTag, so the vanilla restore above
+            // never carries it. check key presence, not value - 0 is a real (midnight) reading.
             if (StackData.contains(stack, StackData.KEY_STORED_TIME) && level.getBlockEntity(pos) instanceof ClockBlockEntity clock) clock.setStoredTime(StackData.readStoredTime(stack).time());
             placedState.getBlock().setPlacedBy(level, pos, placedState, player, stack);
             if (player instanceof ServerPlayer serverPlayer) {
@@ -98,11 +81,8 @@ public final class ClockPlacement {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    /**
-     * {@code StandingAndWallBlockItem#getPlacementState}'s exact loop (attachmentDirection = DOWN,
-     * the vanilla clock's own hardwired orientation), reproduced against the two Block instances
-     * directly.
-     */
+    // StandingAndWallBlockItem#getPlacementState's exact loop (attachmentDirection = DOWN), reproduced
+    // directly against the two Block instances.
     @Nullable
     private static BlockState getPlacementState(BlockPlaceContext context, Block floorBlock, Block wallBlock) {
         BlockState wallState = wallBlock.getStateForPlacement(context);
@@ -125,15 +105,8 @@ public final class ClockPlacement {
         return context.getLevel().setBlock(context.getClickedPos(), state, 11);
     }
 
-    /**
-     * Vanilla {@code BlockItem#place} calls
-     * {@code updateBlockStateFromTag} between placement and the follow-up block-entity NBT /
-     * {@code setPlacedBy} / sound / game-event actions, applying any {@code BlockStateTag}
-     * compound from the item's NBT (e.g. from {@code /give ... {BlockStateTag:{...}}}) to the
-     * freshly placed state. This helper mirrors {@code BlockItem#updateBlockStateFromTag}
-     * exactly rather than exposing it via a mixin invoker, since it needs no access to any
-     * private field — only the public {@code StateDefinition}/{@code Property} API.
-     */
+    // mirrors BlockItem#updateBlockStateFromTag exactly (applies a BlockStateTag NBT compound to the
+    // placed state) rather than via a mixin invoker, since it only needs the public StateDefinition/Property API.
     private static BlockState updateBlockStateFromTag(BlockPos pos, Level level, ItemStack stack, BlockState placedState) {
         BlockState state = placedState;
         CompoundTag tag = stack.getTag();

@@ -8,14 +8,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
-/**
- * Points every minecart at the rebuilt cart's texture. The renderer is generic over its cart type,
- * so it also carries a bridge method of the same name - hence the explicit descriptor, which keeps
- * the injector on the real one.
- *
- * <p>The cart's shape and its turning wheels are {@link MinecartModelMixin}'s half of the same
- * switch.
- */
+// generic renderer also carries a bridge method of the same name, hence the explicit descriptor.
+// see MinecartModelMixin for the cart's shape/wheels half of this.
 @Mixin(MinecartRenderer.class)
 public class AbstractMinecartEntityRendererMixin {
 

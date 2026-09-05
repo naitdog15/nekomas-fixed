@@ -144,12 +144,8 @@ public class TermitehiveBlock extends BaseEntityBlock {
         return new TermitehiveBlockEntity(pos, state);
     }
 
-    /**
-     * Puts a carried colony back when the hive is placed again. It has to go in one termite at a
-     * time: marking the hive dirty is what makes it swarm, so loading a saved tag into it would
-     * eject everything it had just been given. Only refills an empty hive, and only on the server -
-     * the client learns the count from the termites property once the hive ticks.
-     */
+    // goes in one termite at a time via addTermite - marking the hive dirty is what makes it swarm,
+    // so loading a saved tag into it would eject everything just given back. server-only, empty-hive-only.
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.setPlacedBy(level, pos, state, placer, itemStack);

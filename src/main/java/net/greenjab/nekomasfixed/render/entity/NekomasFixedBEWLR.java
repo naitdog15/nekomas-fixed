@@ -20,20 +20,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * Draws the wildfire trident and the wildfire shield as real models rather than flat sprites.
- * An item that wants that asks for it through {@code Item#initializeClient(...)}, handing back this
- * renderer from {@code IClientItemExtensions#getCustomRenderer()} — both items do exactly that. It
- * only takes over for an item whose model declares {@code builtin/entity}; anything still pointing
- * at a flat sprite draws as a sprite and never reaches here.
- * <p>
- * The two branches follow the shape of the game's own trident and shield rendering — same foil
- * buffer, same {@code scale(1, -1, -1)} flip — with this mod's textures and the shield's swap to
- * its soul face once it is past half worn.
- * <p>
- * Model geometry comes out of code rather than a resource pack, so baking it once is enough; only
- * the textures are looked up per draw, and those are picked fresh every time.
- */
+// items opt in via Item#initializeClient -> IClientItemExtensions#getCustomRenderer(); only reached
+// when the item model declares builtin/entity, otherwise it draws as a flat sprite
 public class NekomasFixedBEWLR extends BlockEntityWithoutLevelRenderer {
     private static final ResourceLocation TRIDENT_TEXTURE = NekomasFixed.id("textures/entity/wildfire_trident/default.png");
     private static final ResourceLocation SHIELD_TEXTURE = NekomasFixed.id("textures/entity/wildfire_shield/default.png");
@@ -48,8 +36,6 @@ public class NekomasFixedBEWLR extends BlockEntityWithoutLevelRenderer {
         super(dispatcher, modelSet);
     }
 
-    /** Built the first time an item asks for one, and shared from then on — the same one instance
-     * serves every stack of both items. */
     public static NekomasFixedBEWLR instance() {
         if (INSTANCE == null) {
             Minecraft mc = Minecraft.getInstance();

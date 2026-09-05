@@ -2,17 +2,6 @@ package net.greenjab.nekomasfixed.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 
-/**
- * Everything that ends up in {@code nekomasfixed-common.toml} — one switch per feature, all of them
- * on by default, so a pack can keep the parts of this mod it wants and turn the rest off without
- * pulling the jar out.
- *
- * <p>Every switch is read at the moment its feature runs and is never copied into a field of its
- * own, so editing the file and reloading takes effect straight away. The values do not exist yet
- * while the mod is still being constructed: registration cannot depend on them, only behaviour can.
- * Anything that borrows content from another mod lives under {@code connected_mods} and needs that
- * mod installed as well — with the mod missing the feature stays off whatever this file says.
- */
 public final class NekomasFixedConfig {
 
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();

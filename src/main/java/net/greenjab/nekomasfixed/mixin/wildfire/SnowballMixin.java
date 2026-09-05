@@ -8,8 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-// Snowballs sting a Wildfire the way they sting a blaze - a snowball is water, and the Wildfire is
-// as sensitive to it as anything else made of fire.
+// snowball = water; the wildfire is as sensitive to it as anything else made of fire.
 @Mixin(Snowball.class)
 public class SnowballMixin {
     @ModifyArg(method = "onHitEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z"), index = 1)

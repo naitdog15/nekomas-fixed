@@ -25,15 +25,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * Wholesale DeferredRegister conversion.
- * RegistryObject fields keep every original name exactly; call sites elsewhere gain `.get()`.
- * Two DeferredRegisters: {@link #BLOCKS} (nekomasfixed namespace) and {@link #VANILLA_BLOCKS}
- * (CLOCK/WALL_CLOCK stay minecraft: so existing worlds' placed clocks are not orphaned).
- * <p>
- * Vanilla's own {@code Blocks.shulkerBox(...)} property recipe is private, as is
- * {@code Blocks.never}; the equivalents are spelled out in this file's helpers instead of reached
- * for through an access transformer, so the properties stay readable next to the blocks that use
- * them.
+ * Two DeferredRegisters: BLOCKS (nekomasfixed) and VANILLA_BLOCKS (CLOCK/WALL_CLOCK stay
+ * minecraft: so existing worlds' placed clocks aren't orphaned). Blocks.shulkerBox(...) and
+ * Blocks.never are private vanilla helpers, spelled out below instead of reached via an AT.
  */
 public class BlockRegistry {
 
@@ -56,16 +50,15 @@ public class BlockRegistry {
     public static final RegistryObject<Block> NAUTILUS_BLOCK = register("nautilus_block", settings -> new NautilusBlock(NautilusBlockType.REGULAR, settings), BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PINK).strength(1F).sound(SoundType.CORAL_BLOCK).pushReaction(PushReaction.DESTROY));
     public static final RegistryObject<Block> ZOMBIE_NAUTILUS_BLOCK = register("zombie_nautilus_block", settings -> new NautilusBlock(NautilusBlockType.ZOMBIE, settings), BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PINK).strength(1F).sound(SoundType.CORAL_BLOCK).pushReaction(PushReaction.DESTROY));
     public static final RegistryObject<Block> CORAL_NAUTILUS_BLOCK = register("coral_nautilus_block",settings -> new NautilusBlock(NautilusBlockType.CORAL, settings), BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PINK).strength(1F).sound(SoundType.CORAL_BLOCK).pushReaction(PushReaction.DESTROY));
-    // Fully qualified: this file wildcard-imports both net.minecraft.world.level.block and the mod's
-    // own registry.block package, and MelonBlock exists in both.
+    // fully qualified - MelonBlock exists in both wildcard-imported packages here
     public static final RegistryObject<Block> GLISTERING_MELON = register("glistering_melon", settings -> new net.greenjab.nekomasfixed.registry.block.MelonBlock(true, settings), BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).strength(1F).sound(SoundType.WOOD).pushReaction(PushReaction.DESTROY));
     public static final RegistryObject<Block> GEYSER = register("geyser", GeyserBlock::new , BlockBehaviour.Properties.of().randomTicks().strength(0.5f, 0.5f).lightLevel(ignored -> 15));
     public static final RegistryObject<Block> KILN = register("kiln", KilnBlock::new,BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_LIGHT_GRAY).instrument(NoteBlockInstrument.BASEDRUM)
             .sound(SoundType.GILDED_BLACKSTONE).requiresCorrectToolForDrops().strength(3.5f));
     public static final RegistryObject<Block> PYROTECHNICS_TABLE = register("pyrotechnics_table", PyrotechnicsTableBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.WOOD).instrument(NoteBlockInstrument.BASS).strength(2.5F).sound(SoundType.WOOD).ignitedByLava());
     public static final RegistryObject<Block> ENDERMAN_HEAD = register("enderman_head", FloorEndermanHeadHead::new, BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLACK).strength(1F).sound(SoundType.METAL).pushReaction(PushReaction.DESTROY).instrument(NoteBlockInstrument.CUSTOM_HEAD));
-    // copyLootTable(...) reads ENDERMAN_HEAD.get() (etc.) internally, so - same as the walls/stairs
-    // above - the whole declaration must build inside one deferred lambda, not the eager 3-arg form.
+    // copyLootTable reads ENDERMAN_HEAD.get() internally, so this must build inside one deferred
+    // lambda, not the eager 3-arg register()
     public static final RegistryObject<Block> WALL_ENDERMAN_HEAD = register("wall_enderman_head",
             () -> new WallEndermanHeadHead(copyLootTable(ENDERMAN_HEAD).mapColor(MapColor.COLOR_BLACK).strength(1F).sound(SoundType.METAL).pushReaction(PushReaction.DESTROY)));
     public static final RegistryObject<Block> GLOW_TORCH = register(
@@ -109,8 +102,8 @@ public class BlockRegistry {
     public static final RegistryObject<Block> HOLLOW_DARK_OAK_LOG = register("hollow_dark_oak_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.DARK_OAK_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
     public static final RegistryObject<Block> HOLLOW_MANGROVE_LOG = register("hollow_mangrove_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.MANGROVE_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
     public static final RegistryObject<Block> HOLLOW_CHERRY_LOG = register("hollow_cherry_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.CHERRY_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
-    // Pale oak arrives with 1.21.4; the block keeps its id, item and textures and borrows dark oak's
-    // material properties so worlds and recipes referencing it still work on 1.20.1.
+    // pale oak arrives in 1.21.4 - borrows dark oak's material properties since it doesn't exist
+    // as a block on 1.20.1
     public static final RegistryObject<Block> HOLLOW_PALE_OAK_LOG = register("hollow_pale_oak_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.DARK_OAK_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
     public static final RegistryObject<Block> HOLLOW_BAMBOO_BLOCK = register("hollow_bamboo_block", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.BAMBOO_BLOCK).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
     public static final RegistryObject<Block> HOLLOW_CRIMSON_STEM = register("hollow_crimson_stem", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.CRIMSON_HYPHAE).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
@@ -328,13 +321,10 @@ public class BlockRegistry {
     public static final RegistryObject<Block> MAROON_SPOTTED_CARPET = register("maroon_spotted_carpet", CarpetBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_RED).instrument(NoteBlockInstrument.GUITAR).strength(0.1F).sound(SoundType.WOOL).ignitedByLava());
 
 
-    // --- DeferredRegister helpers. `settings` (arg 3) is evaluated EAGERLY
-    // by the caller (field-initializer time, before RegisterEvent fires), so it is safe ONLY when
-    // it contains no cross-reference to another RegistryObject in this file - such sites are
-    // restructured above onto the single-lambda `register(String, Supplier<Block>)` overload
-    // instead, following the rule "never .get() in a field initializer".
-    // 1.20.1 BlockBehaviour.Properties has no .setId(key) (that is a 1.20.5+ addition); Forge's
-    // DeferredRegister associates the id via the supplier's registration key instead.
+    // settings (arg 3) is evaluated eagerly at field-init time, so this overload is only safe with
+    // no cross-reference to another RegistryObject in this file - see the single-lambda overload
+    // below for those. No Properties.setId() on 1.20.1 (a 1.20.5+ addition) - DeferredRegister
+    // keys off the supplier's own id instead.
     private static RegistryObject<Block> register(String id, BlockBehaviour.Properties settings) {
         return register(id, Block::new, settings);
     }
@@ -354,11 +344,8 @@ public class BlockRegistry {
     public static BlockBehaviour.Properties createCandleSettings(MapColor mapColor) {
         return BlockBehaviour.Properties.of().mapColor(mapColor).noOcclusion().strength(0.1F).sound(SoundType.CANDLE).lightLevel(CandleBlock.LIGHT_EMISSION).pushReaction(PushReaction.DESTROY);
     }
-    // Takes a Supplier<Block> (every RegistryObject<Block> IS one) rather than a plain Block so
-    // callers never need a bare cross-reference `.get()` at field-initializer time; Forge's
-    // lootFrom(Supplier) keeps the dereference lazy all the way to loot-table lookup time.
-    // 1.20.1 has no Properties-level translation-key override (that arrives with the 1.20.5
-    // component rework), so each wall/floor pair now needs its own lang entry.
+    // Supplier<Block>, not Block, so callers never need a bare .get() at field-init time -
+    // lootFrom(Supplier) stays lazy until loot-table lookup time.
     private static BlockBehaviour.Properties copyLootTable(Supplier<? extends Block> block) {
         return BlockBehaviour.Properties.of().lootFrom(block);
     }
@@ -370,8 +357,8 @@ public class BlockRegistry {
     private static RegistryObject<Block> registerStainedGlassPaneBlock(String id, DyeColor color) {
         return register(id, (settings) -> new StainedGlassPaneBlock(color, settings), BlockBehaviour.Properties.of().mapColor(color).instrument(NoteBlockInstrument.HAT).strength(0.3F).sound(SoundType.GLASS).noOcclusion());
     }
-    // Vanilla's shulkerBox(...) recipe, spelled out: an open box must not suffocate or block sight,
-    // and it always conducts redstone.
+    // vanilla's shulkerBox(...) recipe spelled out here - open box doesn't suffocate/block sight,
+    // always conducts redstone
     private static RegistryObject<Block> registerShulkerBoxBlock(String id, DyeColor color) {
         BlockBehaviour.StatePredicate closed = (state, world, pos) ->
                 !(world.getBlockEntity(pos) instanceof ShulkerBoxBlockEntity shulkerBox) || shulkerBox.isClosed();
@@ -380,8 +367,8 @@ public class BlockRegistry {
                         .dynamicShape().noOcclusion().isSuffocating(closed).isViewBlocking(closed)
                         .pushReaction(PushReaction.DESTROY).isRedstoneConductor(BlockRegistry::always));
     }
-    // Supplier<Block>, not Block - see copyLootTable's javadoc note; base.get() only runs inside the
-    // deferred lambda BLOCKS.register(...) stores, well after the base block is itself registered.
+    // Supplier<Block>, not Block - base.get() only runs inside the deferred lambda, after the base
+    // block is registered
     private static RegistryObject<Block> registerOldStairsBlock(String id, Supplier<? extends Block> base) {
         return register(id, () -> new StairBlock(base.get().defaultBlockState(), BlockBehaviour.Properties.copy(base.get())));
     }
@@ -395,8 +382,8 @@ public class BlockRegistry {
         return false;
     }
 
-    // No bounce-restitution property on 1.20.1: BedBlock.bounceUp() hard-codes the 0.66 factor, so
-    // these beds already bounce exactly like vanilla ones without declaring it.
+    // no bounce-restitution property on 1.20.1 - BedBlock.bounceUp() hard-codes the 0.66 factor,
+    // so these beds already bounce like vanilla ones without declaring it
     private static RegistryObject<Block> registerBedBlock(String id, DyeColor color) {
         return register(id,
                 settings -> new BedBlock(color, settings),
@@ -412,9 +399,4 @@ public class BlockRegistry {
         );
     }
 
-    // registerBlocks()/registerBlockEntityType()-style no-op entrypoint methods are gone: no file
-    // in the repo called this one (grepped repo-wide), and DeferredRegister's own RegisterEvent
-    // dispatch (BLOCKS.register(modBus) from the aggregator, Registries.java) is what used to
-    // need this call site. The 5 cauldron RegistryObjects (formerly this method's body) moved up
-    // into ordinary field declarations above.
 }

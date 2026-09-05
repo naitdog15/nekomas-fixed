@@ -11,18 +11,11 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
- * {@code cloth_config}
- * is declared {@code mandatory=false} in {@code mods.toml}, so classes that reference Cloth types at
- * the CLASS level (like {@code ConfigTrial}, which imports {@code me.shedaniel.clothconfig2.api.*}
- * directly) must never be classloaded when Cloth is absent. The registration call itself - the only
- * place anything needs to reference {@code ConfigTrial} - is isolated behind an explicit {@code
- * ModList.get().isLoaded(CompatMods.CLOTH_CONFIG)} check, so {@code ConfigTrial::createConfigScreen}
- * (and therefore Cloth's own classes, transitively) is only ever resolved when that branch actually
- * executes. {@code ConfigTrial} keeps exactly the shape that needs:
- * {@code public static Screen createConfigScreen(Screen)}, matching {@code
- * ConfigScreenHandler.ConfigScreenFactory}'s {@code Function<Screen,Screen>} convenience constructor.
- * Client-only ({@code FMLClientSetupEvent} never fires on a dedicated server - no
- * {@code @OnlyIn} needed beyond the event-subscriber's own {@code value = Dist.CLIENT}).
+ * cloth_config is mandatory=false in mods.toml, so anything referencing Cloth types at the class
+ * level (ConfigTrial imports me.shedaniel.clothconfig2.api.* directly) must never classload when
+ * Cloth is absent - registerClothScreen is isolated behind the isLoaded check below so ConfigTrial
+ * is only resolved once that branch runs.
+ * client-only: FMLClientSetupEvent never fires on a dedicated server.
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClothConfigIntegration {
@@ -36,8 +29,6 @@ public final class ClothConfigIntegration {
         }
     }
 
-    // Kept in its own method so ConfigTrial (and, transitively, Cloth Config's own classes) is never
-    // referenced - and therefore never resolved/classloaded - unless that check passed.
     private static void registerClothScreen() {
         ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
                 () -> new ConfigScreenHandler.ConfigScreenFactory(ConfigTrial::createConfigScreen));

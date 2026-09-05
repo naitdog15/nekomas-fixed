@@ -12,18 +12,9 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
 /**
- * EntityAttributeCreationEvent and the 5 SpawnPlacements.register calls inside
- * FMLCommonSetupEvent#enqueueWork could sit on {@code ModBusEvents}, but keeping them next to the
- * entities they describe is easier to follow. This is a second {@code @Mod.EventBusSubscriber}
- * class self-registering via FML's annotation scan exactly like {@code ModBusEvents} does — same
- * mechanism, different file — so the handlers still land on the same events, just closer to home.
- * (Sticking to one idiom for handlers matters: mixing the annotation with a manual
- * {@code register(...)} is the usual source of "my event never fired".)
- * <p>
- * Registers attributes for the 8 living entity types in this package (projectiles and vehicles -
- * SlownessSnowball, SlingshotProjectile, WildfireTrident, SpearEntity, FireBomb, BigBoat, HugeBoat,
- * FakeBoat - are not LivingEntity and need none). Rime and Derelict have no custom attribute builder
- * of their own (both plain Zombie subclasses) and reuse {@code Zombie.createAttributes()} directly.
+ * Second {@code @Mod.EventBusSubscriber} class, same mechanism as {@code ModBusEvents} but kept near
+ * the entities it describes. Don't mix this annotation scan with a manual {@code register(...)} call -
+ * that's the usual source of "my event never fired".
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class EntityAttributesAndSpawns {

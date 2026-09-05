@@ -12,7 +12,6 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 
-/** Body, legs and antler/pincher mesh for the termite; the swipe and chew animations play through {@link HierarchicalModel#animate}. */
 public class TermiteModel extends HierarchicalModel<Termite> {
     private final ModelPart root;
     private final ModelPart head;
@@ -24,11 +23,10 @@ public class TermiteModel extends HierarchicalModel<Termite> {
     private final ModelPart back_right_leg;
     private final ModelPart back_left_leg;
 
-    /** How far the abdomen swells while the termite is carrying wood back to its mound. */
     private static final float LADEN_SACK_X_SCALE = 1.30F;
     private static final float LADEN_SACK_Y_SCALE = 1.25F;
     private static final float LADEN_SACK_Z_SCALE = 1.30F;
-    /** Shifts that keep the swollen sack's underside off the legs and grow it backwards instead of into the body. */
+    // keeps the swollen sack's underside off the legs, growing it backwards instead of into the body
     private static final float LADEN_SACK_Y_SHIFT = 0.35F;
     private static final float LADEN_SACK_Z_SHIFT = 0.15F;
 

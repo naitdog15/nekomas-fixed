@@ -24,13 +24,8 @@ import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Swaps a spotted sheep's wool drop for the matching spotted wool, and gives copper armour a
- * lightning kick.
- *
- * <p>The drop hook sits on {@code spawnAtLocation(ItemStack, float)} - the overload every other one
- * funnels into - so it catches the drop however the sheep produced it.
- */
+// drop hook sits on spawnAtLocation(ItemStack, float) - the overload every other one funnels into -
+// so it catches the drop however the sheep produced it.
 @Mixin(Entity.class)
 public abstract class EntityMixin {
 
@@ -86,9 +81,8 @@ public abstract class EntityMixin {
         }
     }
 
-    // Copper armour worn, counted a piece at a time. The mod's own copper crown always counts; the
-    // rest of the tag is armour another mod supplies, so it is only counted while the option asking
-    // for it is on.
+    // copper crown always counts; the rest of the tag is other mods' armour, counted only when the
+    // config option for it is on.
     @Unique
     private static final EquipmentSlot[] COPPER_ARMOUR_SLOTS =
             { EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD };

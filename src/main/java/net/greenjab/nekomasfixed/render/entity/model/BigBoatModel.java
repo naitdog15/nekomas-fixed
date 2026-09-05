@@ -11,17 +11,13 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 
-/**
- * The hull, its optional chest, and a paddle per rowing seat. Paddle angle has to be interpolated
- * between ticks, which {@code setupAnim} has no partial tick for, so it is worked out once per frame
- * in {@code prepareMobModel} and read back below.
- */
+// paddle angle needs interpolating between ticks, which setupAnim has no partial tick for, so it's
+// worked out once per frame in prepareMobModel and read back below
 public class BigBoatModel<T extends BigBoat> extends HierarchicalModel<T> {
 
 	/** The stand posts sit flush inside the hull; shaving them keeps the faces from z-fighting. */
 	protected static final CubeDeformation STAND_INSET = new CubeDeformation(-0.001F);
 
-	// Part names for the chest half, looked up by the constructor.
 	protected static final String CHEST_BOTTOM = "chest_bottom";
 	protected static final String CHEST_LID = "chest_lid";
 	protected static final String CHEST_LOCK = "chest_lock";

@@ -6,29 +6,13 @@ import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
-/**
- * The per-hit damage step a combo weapon adds, as a percentage. Read and written through
- * {@code StackData} under key {@code "combo_multiplier"}.
- * <p>
- * On 26.2 the value was baked onto the sickle as a default data component
- * ({@code 10 - material.attackDamageBonus()}), so every sickle carried one from the moment it was
- * crafted. 1.20.1 has no default-component mechanism, so the sickle supplies that starting value
- * itself ({@code ModItemSettings#sickleDefaultCombo}) and this record is only what a stack stores
- * once something writes a different one.
- * <p>
- * The tooltip text the record used to contribute through {@code TooltipProvider} — an interface with
- * no 1.20.1 counterpart — is {@link #tooltipLines()}, called from the sickle's own
- * {@code appendHoverText}.
- */
+// 1.20.1 has no default-component mechanism, so the sickle bakes its own starting value
+// (ModItemSettings#sickleDefaultCombo); this record only holds a stack's override
 public record ComboComponent(int multiplier) {
     public static final Codec<ComboComponent> CODEC =
             Codec.INT.xmap(ComboComponent::new, ComboComponent::multiplier);
 
-    /**
-     * The two lines a combo weapon shows: the damage ramp ({@code component.nekomasfixed.combo}) and
-     * the off-hand note ({@code component.nekomasfixed.duel_wield}). The ramp spells out the first
-     * three steps and the tenth, which is where the combo caps.
-     */
+    // ramp shown is steps 1-3 then step 10, where the combo caps
     public List<Component> tooltipLines() {
         StringBuilder ramp = new StringBuilder();
         for (int step = 1; step <= 3; step++) {

@@ -18,15 +18,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import java.util.List;
 
 /**
- * The pyrotechnics table's screen: the pattern buttons down the left, the animated preview of the
- * shape they select, and the hint icons that sit in the empty ingredient slots.
- *
- * <p>Everything the table draws of its own is a loose PNG under {@code textures/gui/sprites/}, put
- * on screen through {@link LegacySpriteBlit}. The pattern previews are tall vertical strips of
- * square frames; the frame to show is picked by hand from the tick counter and the strip's own
- * length, recorded per pattern below. The empty-slot hints cycle through their alternatives on the
- * same timer, and the chest-slot outline behind the ingredient row is lifted out of
- * {@code textures/gui/container/horse.png}.
+ * everything drawn here of its own is a loose PNG under {@code textures/gui/sprites/}, put on
+ * screen through {@link LegacySpriteBlit}; the chest-slot outline behind the ingredient row is
+ * lifted from {@code textures/gui/container/horse.png}.
  */
 @OnlyIn(Dist.CLIENT)
 public class PyrotechnicsTableScreen extends AbstractContainerScreen<PyrotechnicsMenu> {

@@ -18,15 +18,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Replaces the minecart's geometry with the rebuilt cart - chassis, railings, chain hitch and four
- * turning wheels - and spins those wheels as the cart travels. Every minecart layer bakes from the
- * one method, so replacing it covers hoppers, chests, furnaces and the rest along with the plain
- * cart.
- *
- * <p>The shape is chosen while the model is baked, so switching the rebuilt cart off takes effect on
- * the next resource reload; the texture, which is the other half of the same switch, changes at once.
- */
+// createBodyLayer is shared by every minecart variant (hopper/chest/furnace/etc), so replacing it
+// here covers all of them. shape is chosen at bake time, so toggling the config needs a resource
+// reload; the texture half of the same switch applies at once.
 @Mixin(MinecartModel.class)
 public class MinecartModelMixin {
 

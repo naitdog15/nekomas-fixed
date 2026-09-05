@@ -8,7 +8,6 @@ import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/** {@code BlockEntityRendererRegistry…()} maps to Forge's {@code RegisterRenderers#registerBlockEntityRenderer}. */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class BlockEntityRendererRegistry {
 

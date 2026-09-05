@@ -25,15 +25,8 @@ import java.util.function.Consumer;
 import static net.minecraft.data.recipes.ShapedRecipeBuilder.shaped;
 import static net.minecraft.data.recipes.ShapelessRecipeBuilder.shapeless;
 
-/**
- * Plain vanilla {@code RecipeProvider} - the mod bus's {@code GatherDataEvent} handler adds it
- * straight to the generator, no Forge-side wrapper needed. 1.20.1's {@code RecipeProvider} only
- * takes a {@code PackOutput} (the registries future isn't needed for anything a recipe builds), and
- * {@code buildRecipes} hands its results to a plain {@code Consumer<FinishedRecipe>} rather than a
- * dedicated output type - every {@code .save(output)} call below feeds that consumer directly.
- * {@code shaped}/{@code shapeless} aren't inherited from {@code RecipeProvider} itself on this
- * version; they're static-imported from {@code ShapedRecipeBuilder}/{@code ShapelessRecipeBuilder}.
- */
+/** 1.20.1's RecipeProvider only takes a PackOutput, and buildRecipes hands its results to a plain
+ * {@code Consumer<FinishedRecipe>}; shaped/shapeless aren't inherited here, they're static-imported. */
 public class ModRecipeProvider extends RecipeProvider {
     public ModRecipeProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
         super(output);
@@ -76,9 +69,7 @@ public class ModRecipeProvider extends RecipeProvider {
                 Pair.of(Items.DARK_OAK_PLANKS, ItemRegistry.HOLLOW_DARK_OAK_LOG.get()),
                 Pair.of(Items.MANGROVE_PLANKS, ItemRegistry.HOLLOW_MANGROVE_LOG.get()),
                 Pair.of(Items.CHERRY_PLANKS, ItemRegistry.HOLLOW_CHERRY_LOG.get()),
-                // Items.PALE_OAK_PLANKS dropped: Pale Garden wood is a post-1.20.1 vanilla addition,
-                // absent from this Minecraft version entirely (no analogue to fall back to — a real,
-                // content gap, not an oversight).
+                // Items.PALE_OAK_PLANKS dropped: Pale Garden wood doesn't exist on 1.20.1.
                 Pair.of(Items.BAMBOO_PLANKS, ItemRegistry.HOLLOW_BAMBOO_BLOCK.get()),
                 Pair.of(Items.CRIMSON_PLANKS, ItemRegistry.HOLLOW_CRIMSON_STEM.get()),
                 Pair.of(Items.WARPED_PLANKS, ItemRegistry.HOLLOW_WARPED_STEM.get()));
@@ -113,10 +104,8 @@ public class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(inside), has(inside));
     }
 
-    // Vanilla's colorBlockWithDye (RecipeProvider) hardcodes RecipeCategory.BUILDING_BLOCKS and
-    // takes no category argument - the carpet call site here needs DECORATIONS, so this is that
-    // same "dye + any other colour of the same item -> the target colour" shapeless pattern with
-    // the category opened up as a parameter instead.
+    // vanilla's colorBlockWithDye hardcodes BUILDING_BLOCKS; the carpet call site here needs
+    // DECORATIONS, so this opens the category up as a parameter instead.
     private static void colorItemWithDye(Consumer<FinishedRecipe> output, RecipeCategory category, List<Item> dyes, List<Item> results, String group) {
         for (int i = 0; i < dyes.size(); i++) {
             Item dye = dyes.get(i);

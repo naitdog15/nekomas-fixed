@@ -13,8 +13,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-// There's no shorthand VoxelShape/AABB builder here, so the 14x4-wide, 0-to-1-tall detection box
-// is built directly as an AABB. getSignalStrength(Level, BlockPos) is otherwise unchanged.
 @Mixin(WeightedPressurePlateBlock.class)
 public class WeightedPressurePlateBlockMixin {
 

@@ -9,7 +9,6 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-/** Draws the up-to-three stacked cake layers plus a candle, each via {@link BlockRenderDispatcher#renderSingleBlock}. */
 public class StackedCakeBlockEntityRenderer implements BlockEntityRenderer<StackedCakeBlockEntity> {
     private final BlockRenderDispatcher blockRenderer;
 

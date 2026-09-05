@@ -18,32 +18,9 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 
-/**
- * A crafting recipe that recolours an item instead of replacing it: exactly one stack matching
- * {@code input} plus exactly one stack matching {@code material} anywhere in the grid produce a
- * single {@code result} item that carries the input stack's NBT over unchanged.
- * <p>
- * Carrying the NBT is the whole point of the type. A dyed shulker box keeps its contents, a dyed
- * bundle keeps what is stowed in it, and a renamed or enchanted input keeps its name and its
- * enchantments - none of which a shapeless recipe can do, since a shapeless recipe always assembles
- * a fresh copy of its declared result stack. That is also why the result is always a single item
- * with no count: the output is the input, wearing a different colour.
- * <p>
- * JSON shape, under the serializer id {@code nekomasfixed:crafting_transmute}:
- * <pre>
- * {
- *   "type": "nekomasfixed:crafting_transmute",
- *   "category": "building",          // optional, defaults to misc
- *   "group": "wool",                 // optional
- *   "input": { "tag": "minecraft:wool" },
- *   "material": { "item": "minecraft:black_dye" },
- *   "result": "minecraft:black_wool"
- * }
- * </pre>
- * {@code input} and {@code material} are ordinary ingredients, so an array of alternatives works
- * too, as does the {@code "#tag"} / {@code "item"} string shorthand. {@code result} may be written
- * as a bare item id or as an object naming the item under either {@code id} or {@code item}.
- */
+/** Recolours an item instead of replacing it: one stack matching input plus one matching material
+ * anywhere in the grid produce a single result that carries the input stack's NBT over - a shapeless
+ * recipe can't do that, since it always assembles a fresh copy of its declared result. */
 public class TransmuteRecipe implements CraftingRecipe {
 
     public static final RecipeSerializer<TransmuteRecipe> SERIALIZER = new Serializer();

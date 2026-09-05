@@ -13,7 +13,6 @@ public final class SoundRegistry {
     public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
             DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, NekomasFixed.NAMESPACE);
 
-    // The three sounds the termite makes while eating wood, composed in sounds.json out of vanilla events.
     public static final RegistryObject<SoundEvent> TERMITE_CHEW = SOUND_EVENTS.register("termite_chew",
             () -> SoundEvent.createVariableRangeEvent(NekomasFixed.id("termite_chew")));
     public static final RegistryObject<SoundEvent> TERMITE_CHEW_FINISH = SOUND_EVENTS.register("termite_chew_finish",

@@ -25,20 +25,14 @@ import java.util.List;
 @Mixin(Item.class)
 public class ItemMixin {
 
-	// Presence of the recorded-time key is the question, not its value against a default: the
-	// recorded time is (dayTime + 6000) % 24000, which is 0 at midnight, and a clock stopped at
-	// midnight still has a recording. Comparing against a zero-valued default would read a
-	// midnight recording as "nothing stored".
+	// presence of the recorded-time key is the question, not its value against a default - a clock
+	// stopped at midnight records 0, and comparing against a zero default would read that as unset.
 	@Inject(method="isFoil", at = @At(value = "HEAD"), cancellable = true)
 	private void clockHasStoredTime(ItemStack itemStack, CallbackInfoReturnable<Boolean> cir) {
 		if (StackData.contains(itemStack, StackData.KEY_STORED_TIME)) cir.setReturnValue(true);
 	}
 
-	/**
-	 * The two tooltip lines whose carriers have no item class of their own: the recorded time on a
-	 * clock, and the creature a nautilus shell is holding. The hook is Item#appendHoverText, and a
-	 * block item reaches this injection too because BlockItem's override calls super first.
-	 */
+	// hook is Item#appendHoverText; a block item reaches this too since BlockItem's override calls super first.
 	@Inject(method = "appendHoverText", at = @At("HEAD"))
 	private void modTooltipText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
 	                            TooltipFlag flag, CallbackInfo ci) {
@@ -63,19 +57,11 @@ public class ItemMixin {
 		}
 	}
 
-	/**
-	 * The vanilla-clock placement hijack. {@code Items.<clinit>} runs inside
-	 * {@code Bootstrap.bootStrap()}, strictly before any registration event fires, so there is no
-	 * point at which the {@code Items.CLOCK} field assignment itself can still be intercepted; this
-	 * HEAD injection on {@code Item#useOn}, gated on identity, is the replacement.
-	 * <p>
-	 * Every {@code Item} constructor registers an intrusive holder for itself, so building a fresh,
-	 * never-registered {@code StandingAndWallBlockItem} here to delegate to would throw at registry
-	 * freeze. Instead this calls
-	 * {@link net.greenjab.nekomasfixed.registry.block.ClockPlacement#place(UseOnContext)}, which
-	 * reproduces {@code StandingAndWallBlockItem#getPlacementState} + {@code BlockItem#place}
-	 * against the two Block instances directly and instantiates no {@code Item} at all.
-	 */
+	// Items.<clinit> runs inside Bootstrap.bootStrap(), strictly before any registration event, so
+	// Items.CLOCK's field assignment can't be intercepted there - hence this HEAD injection on useOn
+	// instead. can't build a fresh StandingAndWallBlockItem to delegate to either: every Item
+	// constructor registers an intrusive holder, which would throw at registry freeze. ClockPlacement.place
+	// reproduces the vanilla placement logic directly against the Block instances, no Item involved.
 	@Inject(method = "useOn", at = @At("HEAD"), cancellable = true)
 	private void nekomasfixed$clockPlacesBlock(UseOnContext ctx, CallbackInfoReturnable<InteractionResult> cir) {
 		if ((Object) this != Items.CLOCK) return;

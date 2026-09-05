@@ -4,11 +4,8 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 
-/**
- * This version has no {@code MeshTransformer}/{@code MeshDefinition#apply(...)}. The original
- * {@code BABY_TRANSFORMER} pass was layered on top of this already-hand-authored baby mesh; dropped
- * here since the mesh below is the real source of the baby proportions.
- */
+// no MeshTransformer/MeshDefinition#apply() here - the original BABY_TRANSFORMER pass is already
+// baked into this hand-authored baby mesh
 public class BabyMoobloomModel extends MoobloomModel {
     public BabyMoobloomModel(final ModelPart root) {
         super(root);

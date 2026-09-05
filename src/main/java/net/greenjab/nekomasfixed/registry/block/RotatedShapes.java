@@ -7,11 +7,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.Map;
 
-/**
- * Spins a shape authored facing north around the Y axis, the way vanilla's wall-mounted blocks
- * hand-write their four boxes. Saves writing each rotation out for the wall clock, the wall
- * enderman head, the clam and the horn.
- */
+// spins a shape authored facing north around the Y axis, the way vanilla's wall-mounted blocks hand-write theirs
 public final class RotatedShapes {
     private RotatedShapes() {
     }

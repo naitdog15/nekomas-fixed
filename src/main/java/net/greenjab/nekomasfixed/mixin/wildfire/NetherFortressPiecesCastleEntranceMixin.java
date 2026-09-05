@@ -23,16 +23,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Blows the fortress castle entrance out into a proper 17x15x17 arena and rebuilds its interior:
- * fenced gallery walls, a magma-and-netherrack floor with corner fires, and a lava pool at the
- * centre. The Wildfire's room.
- *
- * <p>A trial spawner sits in the middle of the pool when one is available. Nothing in the base game
- * provides one, so the room asks New Trials for it at build time and leaves the middle alone when
- * nothing answers - the room is laid out block by block anyway, so skipping one placement costs
- * nothing.
- */
 @Mixin(NetherFortressPieces.CastleEntrance.class)
 public class NetherFortressPiecesCastleEntranceMixin {
     @Unique
@@ -66,18 +56,15 @@ public class NetherFortressPiecesCastleEntranceMixin {
         BlockState fenceNS = Blocks.NETHER_BRICK_FENCE.defaultBlockState().setValue(FenceBlock.NORTH, true).setValue(FenceBlock.SOUTH, true);
 
 
-        //main box
         piece.generateBox(level, chunkBB, 0, 2, 0, X-1, Y-2, X-1, bricks, bricks, false);
         piece.generateBox(level, chunkBB, 2, 5, 2, X-3, Y-3, X-3, air, air, false);
         piece.generateBox(level, chunkBB, 3, 4, 3, X-4, 4, X-4, air, air, false);
 
-        //doorways
         piece.generateBox(level, chunkBB, XC-1, 5, 0, XC+1, 8, 1, air, air, false);
         piece.generateBox(level, chunkBB, XC-1, 5, X-2, XC+1, 8, X-1, air, air, false);
         piece.generateBox(level, chunkBB, XC-1, 8, 0, XC+1, 8, 0, Blocks.NETHER_BRICK_FENCE.defaultBlockState(), Blocks.NETHER_BRICK_FENCE.defaultBlockState(), false);
         piece.generateBox(level, chunkBB, XC-2, 0, 0, XC+2, 1, 0, bricks, bricks, false);
 
-        //roof
         int i;
         for (i = 1; i <= X-2; i += 2) {
             piece.generateBox(level, chunkBB, i, 11, 0, i, Y-3, 0, fenceEW, fenceEW, false);
@@ -101,7 +88,6 @@ public class NetherFortressPiecesCastleEntranceMixin {
         piece.placeBlock(level, Blocks.NETHER_BRICK_FENCE.defaultBlockState().setValue(FenceBlock.SOUTH, true).setValue(FenceBlock.WEST, true), X-1, Y-1, X-1, chunkBB);
         piece.placeBlock(level, Blocks.NETHER_BRICK_FENCE.defaultBlockState().setValue(FenceBlock.NORTH, true).setValue(FenceBlock.WEST, true), X-1, Y-1, 0, chunkBB);
 
-        //walls
         for(i = 3; i <= X-4; i += 2) {
             piece.generateBox(level, chunkBB, 1, 7, i, 1, 10, i, fenceNS.setValue(FenceBlock.WEST, true), fenceNS.setValue(FenceBlock.WEST, true), false);
             piece.generateBox(level, chunkBB, X-2, 7, i, X-2, 10, i, fenceNS.setValue(FenceBlock.EAST, true), fenceNS.setValue(FenceBlock.EAST, true), false);
@@ -111,7 +97,6 @@ public class NetherFortressPiecesCastleEntranceMixin {
             }
         }
 
-        //floor
         piece.placeBlock(level, Blocks.NETHERRACK.defaultBlockState(), 2, 4, 2, chunkBB);
         piece.placeBlock(level, Blocks.NETHERRACK.defaultBlockState(), 2, 4, X-3, chunkBB);
         piece.placeBlock(level, Blocks.NETHERRACK.defaultBlockState(), X-3, 4, 2, chunkBB);
@@ -158,12 +143,8 @@ public class NetherFortressPiecesCastleEntranceMixin {
         ci.cancel();
     }
 
-    /**
-     * Drops a trial spawner into the middle of the lava pool and points it at the Wildfire, if a
-     * trial spawner exists to place. The spawner's settings go in as plain tag data - one mob per
-     * wave, one in total, and the room's own two reward tables - so the room never has to hold a
-     * reference to a block it may not be running alongside.
-     */
+    // settings go in as plain tag data rather than a live block reference, since the trial spawner
+    // mod this room asks for may not be present at all.
     @Unique
     private static void placeTrialSpawner(NetherFortressPieces.NetherBridgePiece piece, WorldGenLevel level, BoundingBox chunkBB) {
         if (!NekomasFixedConfig.TRIAL_SPAWNERS_IN_FORTRESS_ROOMS.get() || !TrialsContent.TRIAL_SPAWNER.isPresent()) {

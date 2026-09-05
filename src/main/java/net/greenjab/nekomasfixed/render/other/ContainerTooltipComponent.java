@@ -10,13 +10,8 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 
-/**
- * {@code ItemContainerContents} is replaced by a plain
- * {@code List<ItemStack>}-based {@link ContainerTooltipData}; {@code extractImage(...,
- * GuiGraphicsExtractor)} becomes 1.20.1's real {@code renderImage(Font, x, y, GuiGraphics)}. This DOES
- * restore the container-contents tooltip grid (slot backgrounds + item icons + count/durability
- * decorations); it does not depend on anything else from the deleted 1.21+ tooltip pipeline.
- */
+// ItemContainerContents is replaced by a plain List<ItemStack>-based ContainerTooltipData;
+// extractImage(..., GuiGraphicsExtractor) becomes 1.20.1's real renderImage(Font, x, y, GuiGraphics)
 public class ContainerTooltipComponent implements ClientTooltipComponent {
     /** 1.20.1 has no GUI sprite atlas: the bundle's slot background is a corner of this one sheet. */
     private static final ResourceLocation BUNDLE_TEXTURE = new ResourceLocation("textures/gui/container/bundle.png");

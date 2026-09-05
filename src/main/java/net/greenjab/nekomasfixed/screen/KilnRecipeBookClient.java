@@ -21,15 +21,12 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.Set;
 
 /**
- * The kiln's recipe book: its three tabs (search / blocks / misc), the rule that sorts a kiln recipe
- * into one of them, and the book component the screen hangs off.
- *
- * <p>Everything here is client-only - both {@link RecipeBookCategories} and the event that registers
- * them are - which is why the tabs live in this file and {@link ModRecipeBookType#KILN}, which the
- * common {@link KilnMenu} has to name, lives on its own beside the menus.
- *
- * <p>The search tab holds no recipes of its own; it is declared as an aggregate over the other two,
- * the way vanilla's furnace search tab is, or it opens empty.
+ * three tabs (search / blocks / misc) plus the rule sorting a kiln recipe into one of them.
+ * everything here is client-only ({@link RecipeBookCategories} and its registration event both
+ * are), which is why {@link ModRecipeBookType#KILN} - needed by the common {@link KilnMenu} - lives
+ * on its own instead.
+ * the search tab holds no recipes of its own; it's an aggregate over the other two, like vanilla's
+ * furnace search tab, or it opens empty.
  */
 @OnlyIn(Dist.CLIENT)
 public final class KilnRecipeBookClient {
@@ -58,7 +55,7 @@ public final class KilnRecipeBookClient {
         }
     }
 
-    /** The book itself. Fuel is the same list the vanilla furnaces accept - a kiln burns anything they do. */
+    /** fuel is the same list the vanilla furnaces accept - a kiln burns anything they do. */
     public static final class KilnRecipeBookComponent extends AbstractFurnaceRecipeBookComponent {
         @Override
         protected Set<Item> getFuelItems() {

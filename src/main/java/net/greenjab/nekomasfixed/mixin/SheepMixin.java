@@ -15,13 +15,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Gives a sheep a "spotted" flag of its own, tracked and saved alongside vanilla's wool state. It is
- * synched rather than a plain field because the renderer needs it on the client.
- *
- * <p>Leave the {@code "Spotted"} NBT key exactly as it is - changing it, even by case, un-spots
- * every sheep in every existing world.
- */
+// synched rather than a plain field because the renderer needs it on the client.
+// leave the "Spotted" NBT key exactly as it is - changing it, even by case, un-spots every sheep in
+// every existing world.
 @Mixin(Sheep.class)
 public abstract class SheepMixin extends Animal implements SpottedSheepAccess {
 

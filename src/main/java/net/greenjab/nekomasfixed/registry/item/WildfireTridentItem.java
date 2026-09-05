@@ -64,8 +64,7 @@ public class WildfireTridentItem extends Item {
             int i = this.getUseDuration(stack) - remainingUseTicks;
             if (i < 10) return;
             int j = EnchantmentHelper.getRiptide(stack);
-            // wildfire trident's spin-attack triggers off the same riptide enchant as a
-            // regular trident, but fire counts as wet - matches the item's theming
+            // riptide trigger treats being on fire as "wet" too - matches the item's theming
             if (j > 0 && !playerEntity.isInWaterOrRain() && !playerEntity.isOnFire()) return;
             if (stack.getDamageValue() >= stack.getMaxDamage() - 1) return;
 
@@ -119,11 +118,7 @@ public class WildfireTridentItem extends Item {
         }
     }
 
-    /**
-     * The trident is a real model rather than a flat sprite, so it draws through the mod's own
-     * item renderer. That only takes over for a model that asks for it; a plain sprite model
-     * simply ignores this.
-     */
+    // custom renderer only kicks in for a model that asks for it; sprite models ignore this
     @Override
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
         consumer.accept(new IClientItemExtensions() {

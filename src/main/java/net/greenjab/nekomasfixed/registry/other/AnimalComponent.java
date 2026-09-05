@@ -16,36 +16,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * A creature a nautilus shell is carrying, as a full serialized entity NBT blob — minus the denylist
- * below, plus the {@code EntityType} key {@link EntityNbtHelper#store} writes. It has to be a real
- * blob rather than a tooltip-only summary: the entity is genuinely reconstructed and spawned by both
- * live callers, the shell item being destroyed and the nautilus block entity releasing its guest.
- * <p>
- * None of the machinery the Fabric version built this from — {@code TypedEntityData},
- * {@code ProblemReporter.ScopedCollector}, {@code TagValueOutput}, {@code TooltipProvider},
- * {@code DataComponentGetter} — has a 1.20.1 counterpart, so this record stands on plain codecs
- * instead. Read and written through {@code StackData} under key {@code "animal"}, never a 1.21+
- * data component.
- */
+// needs the full serialized entity NBT, not a tooltip summary - both live callers (shell destroyed,
+// nautilus block entity releasing its guest) actually reconstruct and spawn the entity from this.
+// no 1.20.1 counterpart to the Fabric-side TypedEntityData/TagValueOutput/etc, so this is plain
+// codecs instead, read/written through StackData under key "animal", never a 1.21+ data component.
 public record AnimalComponent(List<AnimalComponent.StoredEntityData> animal) {
-    /**
-     * The 26.2 source's list carried
-     * post-1.21 snake_case key names that simply do not appear in a 1.20.1 entity tag, so pruning
-     * them removed nothing and captured animals kept stale fall/sleep/leash/hive/drop-chance state.
-     * The 1.20.1 names for the same data:
-     * <ul>
-     *   <li>{@code fall_distance} -> {@code FallDistance}</li>
-     *   <li>{@code sleeping_pos} -> {@code SleepingX}/{@code SleepingY}/{@code SleepingZ} (three
-     *       separate int fields on 1.20.1, not one compound)</li>
-     *   <li>{@code drop_chances} -> {@code ArmorDropChances} + {@code HandDropChances} (two lists)</li>
-     *   <li>{@code leash} -> {@code Leash}</li>
-     *   <li>{@code hive_pos} -> {@code HivePos}</li>
-     * </ul>
-     * Names already correct for 1.20.1 and kept verbatim: Air, Brain, CanPickUpLoot, DeathTime,
-     * FallFlying, Fire, HurtByTimestamp, HurtTime, LeftHanded, Motion, NoGravity, OnGround,
-     * PortalCooldown, Pos, Rotation, CannotEnterHiveTicks, Passengers, UUID.
-     */
+    // 1.20.1 NBT keys, not the post-1.21 snake_case names (fall_distance, sleeping_pos, etc) -
+    // those don't exist in this NBT and pruning them silently keeps stale state
     public static final List<String> IRRELEVANT_ANIMAL_NBT_KEYS = Arrays.asList(
             "Air", "ArmorDropChances", "HandDropChances", "Brain", "CanPickUpLoot", "DeathTime",
             "FallDistance", "FallFlying", "Fire", "HurtByTimestamp", "HurtTime", "LeftHanded", "Motion",
@@ -79,17 +56,8 @@ public record AnimalComponent(List<AnimalComponent.StoredEntityData> animal) {
 
     public static final AnimalComponent DEFAULT = new AnimalComponent(List.of());
 
-    /**
-     * The "Holding: …" summary line, keyed {@code container.nautilus}. Empty when nothing is stored,
-     * and only ever the FIRST creature — a nautilus shell holds one.
-     * <p>
-     * Called from {@code Item#appendHoverText} (the base-class injection in {@code mixin/ItemMixin});
-     * on 26.2 this was the record's own {@code addToTooltip}, which 1.20.1 has no interface for.
-     * <p>
-     * The {@code variant} handling differs from the original in one way that matters: 26.2 assumed a
-     * namespaced value and took {@code split(":")[1]} unconditionally, which throws on an unnamespaced
-     * variant. This takes the last segment when there is one and the whole string otherwise.
-     */
+    // variant may not be namespaced here (unlike the original's assumed split(":")[1], which would
+    // throw) - take the last segment when there is one, else the whole string
     public Optional<Component> tooltipLine() {
         if (this.animal.isEmpty()) {
             return Optional.empty();

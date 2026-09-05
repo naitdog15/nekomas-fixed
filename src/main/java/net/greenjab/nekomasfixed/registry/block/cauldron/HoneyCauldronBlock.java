@@ -47,19 +47,14 @@ public class HoneyCauldronBlock extends AbstractCauldronBlock {
         builder.add(HONEY_LEVEL);
     }
 
-    // Built with the same factory vanilla's own EMPTY/WATER/LAVA/POWDER_SNOW maps use, so the
-    // honey cauldron behaves like any other. Content is populated by registerInteractions(), not
-    // here - see its own javadoc.
+    // same factory vanilla's EMPTY/WATER/LAVA/POWDER_SNOW maps use; populated by registerInteractions(), not here
     public static final Map<Item, CauldronInteraction> HONEY = CauldronInteraction.newInteractionMap();
 
     private static Map<Item, CauldronInteraction> createBehaviorMap() {
         return HONEY;
     }
 
-    /**
-     * Called from {@code FMLCommonSetupEvent#enqueueWork} by {@code CauldronBehaviour.register()},
-     * not eagerly at class-load/field-initializer time.
-     */
+    // called from FMLCommonSetupEvent#enqueueWork by CauldronBehaviour.register(), not at class-load time
     public static void registerInteractions() {
         HONEY.put(Items.AIR, (state, level, pos, player, hand, stack) -> {
             if(state.getValue(HONEY_LEVEL) == MAX_LEVEL) {

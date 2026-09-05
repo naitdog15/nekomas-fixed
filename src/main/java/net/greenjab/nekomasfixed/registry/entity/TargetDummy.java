@@ -52,23 +52,11 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
- * Built on top of {@code net.minecraft.world.entity.decoration.ArmorStand}, whose behaviour surface
- * matches everything this class needs almost 1:1 - entity-event wobble handling, the armor-stand
- * sound set, main-arm handling, fall sounds, per-slot equip with y-position hit detection. Since the
- * real ArmorStand already carries head/body/arm/leg pose tracking natively (setHeadPose/getHeadPose
- * etc.), a hand-rolled duplicate of that tracking would be redundant; this class instead exposes thin
- * delegates to the base class's own accessors under the same public names
- * (setHeadRotation/getHeadRotation/...), same behaviour, less code.
- *
- * <p>Profile ownership (for a player-head-styled dummy) is a plain nullable {@code GameProfile}
- * synced via {@code EntityDataSerializers.COMPOUND_TAG} plus {@code NbtUtils.writeGameProfile}/
+ * Profile ownership (for a player-head-styled dummy) is a plain nullable {@code GameProfile} synced
+ * via {@code EntityDataSerializers.COMPOUND_TAG} plus {@code NbtUtils.writeGameProfile}/
  * {@code readGameProfile} - the same NBT shape {@code SkullBlockEntity} uses for player-head owners.
- * {@code canUseSlot} is trivially true since every equipment slot this version has is fair game for a
- * dummy. Step height is fixed at zero in the constructor. The click-position-based "empty hand removes
- * whichever slot was clicked" behaviour falls through to vanilla ArmorStand's own click-to-equip
- * resolution via the static {@code Mob.getEquipmentSlotForItem} - deriving hit-position math to
- * distinguish "nothing in hand, unequip by position" from an ordinary equip-by-click belongs with the
- * client renderer, not this data class.
+ * The click-position-based "empty hand removes whichever slot was clicked" behaviour falls through to
+ * vanilla ArmorStand's own click-to-equip resolution via {@code Mob.getEquipmentSlotForItem}.
  */
 public class TargetDummy extends ArmorStand implements Shearable {
 	protected static final EntityDataAccessor<CompoundTag> PROFILE = SynchedEntityData.defineId(TargetDummy.class, EntityDataSerializers.COMPOUND_TAG);
@@ -252,15 +240,9 @@ public class TargetDummy extends ArmorStand implements Shearable {
 	}
 
 	/**
-	 * The dummy's whole point is that it eats a hit and reports the number, so it deliberately runs
-	 * its own pipeline instead of {@code LivingEntity#hurt}'s: no invulnerability window (every swing
-	 * has to register, so {@code invulnerableTime} is never consulted or set), no health bookkeeping,
-	 * and no knockback - {@code Attributes.KNOCKBACK_RESISTANCE} is 1.0 and nothing here calls
-	 * {@code knockback}. Shield blocking is likewise not in play: the dummy carries no shield, and by
-	 * the time this runs the attacker's own shield handling has already happened on their side.
-	 * <p>
-	 * Client-guarded the way vanilla's {@code ArmorStand#hurt} is, since 1.20.1 has one two-sided
-	 * {@code hurt} rather than a server-only entry point.
+	 * Runs its own hit pipeline instead of {@code LivingEntity#hurt}'s: no invulnerability window (every
+	 * swing must register), no health bookkeeping, no knockback ({@code KNOCKBACK_RESISTANCE} is 1.0).
+	 * <p>Client-guarded like vanilla's {@code ArmorStand#hurt}, since 1.20.1 has one two-sided hurt.
 	 */
 	@Override
 	public boolean hurt(DamageSource source, float amount) {

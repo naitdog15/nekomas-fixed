@@ -8,15 +8,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * The items and entities Vanilla Backport puts into the vanilla namespace, looked up by id so
- * this mod never has to compile against it. Every handle here is empty when Vanilla Backport is
- * absent — and can still be empty when it is present, since it lets a pack turn individual
- * features off — so always ask {@code isPresent()} before using one.
- *
- * <p>The handles are live rather than a value fetched once: they refill themselves whenever the
- * registries are rebuilt, which is what keeps them right after a reload or after joining a server
- * with a different set of mods. Declaring one costs nothing and never throws, so an id that turns
- * out to be missing simply stays empty.
+ * a handle can be empty even when Vanilla Backport is present - it lets a pack turn individual
+ * features off - so always ask {@code isPresent()} before using one.
+ * handles are live, not fetched once: they refill on every registry rebuild, so they stay right
+ * across a reload or joining a server with a different set of mods.
  */
 public final class BackportedContent {
 

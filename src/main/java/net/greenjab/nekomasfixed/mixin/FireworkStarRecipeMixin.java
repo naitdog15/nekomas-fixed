@@ -12,14 +12,8 @@ import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.List;
 
-/**
- * 1.20.1's {@code FireworkStarRecipe#assemble(CraftingContainer, RegistryAccess)} (not
- * {@code CraftingInput} — that abstraction is newer) collects dye colours into a plain
- * {@code List<Integer>} ({@code List<Integer> list = Lists.newArrayList(); ...
- * list.add(((DyeItem)itemstack1.getItem()).getDyeColor().getFireworkColor());}), not fastutil's
- * {@code IntList} — same intent (intercept the colour value about to be recorded), different
- * collection type to wrap.
- */
+// 1.20.1's assemble(CraftingContainer, RegistryAccess) collects dye colours into a plain
+// List<Integer>, not fastutil's IntList - same intent, different collection type to wrap.
 @Mixin(FireworkStarRecipe.class)
 public class FireworkStarRecipeMixin {
 

@@ -12,13 +12,8 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * This version has no {@code AgeableMobRenderer}; vanilla mobs with babies just scale one model via
- * the young flag. Since this mod's baby model is a bespoke mesh, not an auto-scale of the adult one,
- * the adult/baby swap is done by hand: {@code this.model} (protected on
- * {@code LivingEntityRenderer}) is reassigned before {@code super.render(...)} runs — the same
- * choice the Fabric version made once per frame in {@code extractRenderState}.
- */
+// no AgeableMobRenderer here: the baby model is a bespoke mesh, not an auto-scaled adult, so
+// this.model (protected on LivingEntityRenderer) is swapped by hand before super.render() runs
 public class MoobloomRenderer extends MobRenderer<Moobloom, MoobloomModel> {
     private final MoobloomModel adultModel;
     private final MoobloomModel babyModel;

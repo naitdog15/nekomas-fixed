@@ -13,11 +13,8 @@ import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.function.Predicate;
 
-/**
- * A hopper pointed at a big boat should only find an inventory once someone has actually put a chest
- * in it. The entity scan runs off a shared selector, so the selector is swapped for a stricter one
- * for the length of that lookup. {@code getContainerAt} is overloaded, hence the full descriptor.
- */
+// a big boat only counts as a container once it has a chest; getContainerAt is overloaded, hence
+// the full descriptor on the @WrapOperation target.
 @Mixin(HopperBlockEntity.class)
 public class HopperBlockEntityMixin {
     @Unique

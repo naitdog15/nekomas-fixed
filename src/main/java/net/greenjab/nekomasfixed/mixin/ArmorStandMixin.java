@@ -14,9 +14,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-// Sneak-clicking an armour stand swaps whatever it is wearing with what you are. The hook is
-// interactAt rather than plain interact, since that is the one an armour stand overrides. There are
-// no per-slot armour item tags on this version, so each stack is asked which slot it belongs in.
+// hooks interactAt, not interact, since that's the one armour stand overrides. no per-slot armour
+// item tags on this version, so each stack is asked which slot it belongs in.
 @Mixin(ArmorStand.class)
 public class ArmorStandMixin {
 

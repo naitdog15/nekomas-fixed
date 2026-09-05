@@ -12,7 +12,6 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.client.renderer.RenderType;
 
-/** Head and mouth model for the enderman head block; {@link #setupAnim} nudges the parts when powered. */
 public class EndermanHeadBlockModel extends Model {
 	private final ModelPart root;
 	private final ModelPart head;

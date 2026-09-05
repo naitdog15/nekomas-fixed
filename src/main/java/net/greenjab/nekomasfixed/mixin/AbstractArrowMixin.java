@@ -19,14 +19,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * A tipped arrow leaves a lingering cloud of its own potion wherever it lands - on a mob or in a
- * block - and loses that potion if it is picked back up.
- *
- * <p>The potion rides in the arrow's own pickup stack, which is where {@code Arrow} already keeps
- * it, and {@code onHitBlock} stands in for "the arrow has just embedded itself" since being stuck is
- * a plain field here rather than a setter call.
- */
+// onHitBlock stands in for "arrow just embedded" since being stuck is a plain field here, not a setter call.
 @Mixin(AbstractArrow.class)
 public abstract class AbstractArrowMixin {
 

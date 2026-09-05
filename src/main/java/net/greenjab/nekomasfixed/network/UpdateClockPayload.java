@@ -9,13 +9,11 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 /**
- * Frozen wire contract. Field order is x, y, z, timer as VarInt, then hasBell, showsTime as boolean.
- * Do not reorder, retype, add or remove a field without also bumping {@link SyncHandler}'s
- * {@code PROTOCOL}.
+ * Frozen wire contract: x, y, z, timer as VarInt, then hasBell, showsTime as boolean. Do not
+ * reorder, retype, add or remove a field without also bumping {@link SyncHandler}'s PROTOCOL.
  * <p>
- * Plain final class, not a record: {@code SimpleChannel#registerMessage} needs an instance
- * {@code encode(FriendlyByteBuf)} method reference and a static {@code decode(FriendlyByteBuf)}
- * factory reference — see {@link SyncHandler#init()}.
+ * Plain final class, not a record: {@code SimpleChannel#registerMessage} needs an instance encode
+ * method reference and a static decode factory reference.
  */
 public final class UpdateClockPayload {
     private final int x;
@@ -73,26 +71,12 @@ public final class UpdateClockPayload {
     }
 
     /**
-     * Two Forge-specific requirements — the work runs inside
-     * {@code enqueueWork}, and {@code setPacketHandled(true)} is mandatory (omitting it logs a
-     * warning per packet and, in some Forge builds, disconnects). {@link ClientSyncHandler} is
-     * reached through {@link DistExecutor#unsafeRunWhenOn} — the one legitimate DistExecutor use
-     * in this mod — because this handler is common code that must touch client-only state.
-     * <p>
-     * FROZEN HANDLER SIGNATURE. An earlier draft of this handler used
-     * {@code DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ClientSyncHandler::apply)}, which
-     * supplies no decoded message and therefore drops it. The shape below is the corrected, frozen
-     * one and must not be "simplified" back to a bare method reference:
-     * <ul>
-     *   <li>{@code handle(Supplier&lt;NetworkEvent.Context&gt;)} — instance method, matching
-     *       {@code SimpleChannel#registerMessage}'s {@code BiConsumer<MSG, Supplier<Context>>};</li>
-     *   <li>the decoded payload is captured as {@code this} <em>inside</em> the enqueued client-side
-     *       closure, so the client receives the actual message, not a fresh/empty one;</li>
-     *   <li>the {@code () -> () -> ...} double lambda is required: the outer
-     *       {@code Supplier&lt;Runnable&gt;} keeps the {@code @OnlyIn(Dist.CLIENT)}
-     *       {@link ClientSyncHandler} reference out of any class the dedicated server verifies;</li>
-     *   <li>{@code setPacketHandled(true)} is unconditional and outside the closure.</li>
-     * </ul>
+     * FROZEN HANDLER SIGNATURE - do not simplify to a bare method reference. An earlier draft used
+     * {@code DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ClientSyncHandler::apply)}, which supplies
+     * no decoded message and silently drops every packet. The payload must be captured as {@code this}
+     * inside the enqueued closure, and the outer {@code () -> () -> ...} double lambda keeps the
+     * {@code @OnlyIn(Dist.CLIENT)} {@link ClientSyncHandler} reference out of classes the dedicated
+     * server verifies. {@code setPacketHandled(true)} must stay unconditional and outside the closure.
      */
     public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();

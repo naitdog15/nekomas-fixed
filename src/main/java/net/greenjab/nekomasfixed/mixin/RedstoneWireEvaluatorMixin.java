@@ -10,14 +10,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * A wire the redstone striker has hit reads as fully powered. There is no separate wire evaluator on
- * this version: the strength calculation lives on {@code RedStoneWireBlock} itself, and it is what
- * {@code updatePowerStrength} feeds the POWER property from, so that is where the strike is
- * answered. Doing it here rather than at the wire's own {@code getSignal} matters - it leaves the
- * block's shouldSignal bookkeeping alone, lights the struck wire itself up, and lets the rest of the
- * line fall away one step at a time the way it would from any other source.
- */
+// no separate wire evaluator on this version: strength calc lives on RedStoneWireBlock itself, feeding
+// updatePowerStrength's POWER property, so the strike is answered here rather than at getSignal -
+// that leaves shouldSignal bookkeeping alone and lets the rest of the line fall away normally.
 @Mixin(RedStoneWireBlock.class)
 public class RedstoneWireEvaluatorMixin {
     @Inject(method = "calculateTargetStrength", at = @At("HEAD"), cancellable = true)

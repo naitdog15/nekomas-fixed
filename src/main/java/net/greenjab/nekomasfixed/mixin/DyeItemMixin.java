@@ -29,10 +29,9 @@ import static net.greenjab.nekomasfixed.util.ModColors.*;
 @Mixin(DyeItem.class)
 public class DyeItemMixin {
 
-    // The four extra dyes have to borrow a vanilla DyeColor, and every DyeItem files itself under
-    // its colour on the way through the constructor. Letting them do that would leave
-    // DyeItem.byColor(YELLOW) answering "amber" - which is what a bred sheep's colour lookup and the
-    // shepherd's random dye trade both read - so the mod's dyes skip the map and vanilla keeps it.
+    // the four extra dyes borrow a vanilla DyeColor, and every DyeItem files itself into byColor on
+    // construction - letting them would leave DyeItem.byColor(YELLOW) answering "amber", which a bred
+    // sheep's colour lookup and the shepherd's dye trade both read. mod dyes skip the map instead.
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", remap = false))
     private Object keepVanillaDyeForBorrowedColor(Map<DyeColor, DyeItem> itemByColor, Object color, Object dye) {
         if (dye instanceof ModDyeItems) return null;
