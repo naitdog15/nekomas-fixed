@@ -1,6 +1,7 @@
 package net.greenjab.nekomasfixed.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 
 public final class NekomasFixedClientConfig {
 
@@ -16,6 +17,14 @@ public final class NekomasFixedClientConfig {
     public static final ForgeConfigSpec SPEC;
 
     private NekomasFixedClientConfig() {
+    }
+
+    /**
+     * this spec is client-only, so it is never loaded on a dedicated server and reading a value
+     * there throws. common code that only matters on a client asks through here.
+     */
+    public static boolean enabled(ForgeConfigSpec.BooleanValue value) {
+        return FMLEnvironment.dist.isClient() && value.get();
     }
 
     static {

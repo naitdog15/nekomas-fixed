@@ -263,6 +263,10 @@ public class TargetDummy extends ArmorStand implements Shearable {
 		} else if (this.isInvulnerableTo(source)) {
 			return false;
 		} else if (source.is(DamageTypeTags.IS_EXPLOSION)) {
+			// staying planted is the whole point of the setting - survive the blast, keep the readout
+			if (NekomasFixedConfig.TARGET_DUMMY_RESISTS_EXPLOSIONS.get()) {
+				return false;
+			}
 			this.onBreak(source);
 			this.kill();
 			return false;

@@ -12,6 +12,7 @@ public class PollinatingMoobloomGoal extends Goal {
     // canUse() runs every tick for every bee, and the scan below is not cheap, so only look
     // about once a second. The offset keeps a hive's worth of bees off the same tick.
     private int nextScanTick;
+    private int runTicks;
 
     public PollinatingMoobloomGoal(Bee bee) {this.bee = bee;}
 
@@ -30,11 +31,13 @@ public class PollinatingMoobloomGoal extends Goal {
 
     @Override
     public void start() {
+        this.runTicks = 0;
         bee.getNavigation().moveTo(target, 1.2D);
     }
 
     @Override
     public void tick() {
+        this.runTicks++;
         if (target == null) return;
         bee.getLookControl().setLookAt(target);
 
@@ -48,7 +51,9 @@ public class PollinatingMoobloomGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return target != null && target.isAlive() && !bee.hasNectar() && !target.getEntityData().get(Moobloom.SHEARED);
+        // the 200 stops a bee locking onto a moobloom it can never path to and never pollinating again
+        return NekomasFixedConfig.BEES_POLLINATE_MOOBLOOMS.get() && this.runTicks < 200
+                && target != null && target.isAlive() && !bee.hasNectar() && !target.getEntityData().get(Moobloom.SHEARED);
     }
 
     @Override

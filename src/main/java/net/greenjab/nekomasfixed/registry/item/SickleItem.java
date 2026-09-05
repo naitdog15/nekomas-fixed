@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.registry.item;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
 import com.google.common.collect.Multimap;
 import net.greenjab.nekomasfixed.registry.other.ComboComponent;
@@ -47,7 +48,7 @@ public class SickleItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
-        if (NekomasFixedClientConfig.COMBO_DAMAGE_TOOLTIP.get()) {
+        if (NekomasFixedClientConfig.enabled(NekomasFixedClientConfig.COMBO_DAMAGE_TOOLTIP)) {
             tooltip.addAll(StackData.read(stack, StackData.KEY_COMBO_MULTIPLIER, ComboComponent.CODEC,
                     new ComboComponent(this.comboMultiplier)).tooltipLines());
         }
@@ -74,6 +75,7 @@ public class SickleItem extends Item {
     }
 
     public InteractionResult interactLivingEntity(ItemStack stack, Player user, LivingEntity entity, InteractionHand hand) {
+        if (!NekomasFixedConfig.OFFHAND_ATTACK.get()) return InteractionResult.PASS;
         if (hand == InteractionHand.MAIN_HAND) return InteractionResult.PASS;
         if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResult.PASS;
         if (user.getAttackStrengthScale(0)<0.5) return InteractionResult.PASS;

@@ -44,7 +44,7 @@ public class ItemStackMixin {
 	private void modTooltipImage(CallbackInfoReturnable<Optional<TooltipComponent>> cir) {
 		ItemStack stack = (ItemStack)(Object)this;
 		List<ItemStack> contents = containerContents(stack);
-		if (NekomasFixedClientConfig.CONTAINER_GRID_TOOLTIPS.get() && !contents.isEmpty()) {
+		if (NekomasFixedClientConfig.enabled(NekomasFixedClientConfig.CONTAINER_GRID_TOOLTIPS) && !contents.isEmpty()) {
 			cir.setReturnValue(Optional.of(new ContainerTooltipData(contents)));
 		} else if (StackData.contains(stack, StackData.KEY_ANIMAL)) {
 			cir.setReturnValue(Optional.of(new AnimalTooltipData(StackData.readAnimal(stack))));

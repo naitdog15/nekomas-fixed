@@ -29,7 +29,6 @@ import net.minecraft.world.phys.Vec3;
 public class FoxMixin {
     @Inject(method = "tick", at = @At("HEAD"))
     private void customTick(CallbackInfo ci){
-        if (!NekomasFixedConfig.FOXES_USE_POTIONS.get()) return;
         Fox foxEntity = (Fox)(Object)this;
         Level world = foxEntity.level();
         // everything below writes to the world - client used to run it too and place its own soul fire.
@@ -64,7 +63,7 @@ public class FoxMixin {
                 world.setBlockAndUpdate(foxEntity.blockPosition().relative(dir), Blocks.FIRE.defaultBlockState());
                 stack.hurtAndBreak(1, foxEntity, holder -> holder.broadcastBreakEvent(InteractionHand.MAIN_HAND));
             }
-        }else if(stack.is(Items.POTION) && randInt){
+        }else if(stack.is(Items.POTION) && randInt && NekomasFixedConfig.FOXES_USE_POTIONS.get()){
             Potion potionContent = PotionUtils.getPotion(stack);
             if (potionContent != null && !potionContent.getEffects().isEmpty()) {
                 for(MobEffectInstance effect : potionContent.getEffects()){

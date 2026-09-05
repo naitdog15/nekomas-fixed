@@ -273,10 +273,10 @@ public class ItemRegistry {
 
     // only registered when the mod providing happy ghast is installed; downstream always reads
     // through the handle rather than assuming presence (see ItemGroupRegistry, minecraft:harnesses tag)
-    public static final RegistryObject<Item> AMBER_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "amber_harness", (new Item.Properties()).stacksTo(1));
-    public static final RegistryObject<Item> AQUA_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "aqua_harness", (new Item.Properties()).stacksTo(1));
-    public static final RegistryObject<Item> INDIGO_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "indigo_harness", (new Item.Properties()).stacksTo(1));
-    public static final RegistryObject<Item> MAROON_HARNESS = registerIf(CompatMods.vanillaBackportLoaded(), "maroon_harness", (new Item.Properties()).stacksTo(1));
+    public static final RegistryObject<Item> AMBER_HARNESS = registerIf(CompatMods.vanillaBackportHarnesses(), "amber_harness", (new Item.Properties()).stacksTo(1));
+    public static final RegistryObject<Item> AQUA_HARNESS = registerIf(CompatMods.vanillaBackportHarnesses(), "aqua_harness", (new Item.Properties()).stacksTo(1));
+    public static final RegistryObject<Item> INDIGO_HARNESS = registerIf(CompatMods.vanillaBackportHarnesses(), "indigo_harness", (new Item.Properties()).stacksTo(1));
+    public static final RegistryObject<Item> MAROON_HARNESS = registerIf(CompatMods.vanillaBackportHarnesses(), "maroon_harness", (new Item.Properties()).stacksTo(1));
 
     // borrows the same DyeColor its wool/carpet family uses in BlockRegistry - see ModDyeItems for
     // why a real DyeColor is unavoidable

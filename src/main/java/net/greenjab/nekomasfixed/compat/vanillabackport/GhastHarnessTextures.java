@@ -34,7 +34,7 @@ public final class GhastHarnessTextures {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        if (!CompatMods.vanillaBackportLoaded()
+        if (!CompatMods.vanillaBackportHarnesses()
                 || !NekomasFixedConfig.HARNESSES.get()
                 || !NekomasFixedClientConfig.HARNESS_RENDERING.get()) {
             return;
