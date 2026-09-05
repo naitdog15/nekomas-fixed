@@ -1,7 +1,7 @@
 package net.greenjab.nekomasfixed.mixin.boat;
 
+import net.greenjab.nekomasfixed.network.ServerFlags;
 import net.greenjab.nekomasfixed.compat.vanillabackport.BackportedContent;
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -31,7 +31,7 @@ public class PillagerMixin {
     @Inject(method = "populateDefaultEquipmentSlots", at = @At("HEAD"), cancellable = true)
     protected void initSpearEquipment(RandomSource random, DifficultyInstance difficulty, CallbackInfo ci) {
         Pillager pillager = (Pillager)(Object)this;
-        if (NekomasFixedConfig.SPEAR_INTERACTIONS.get() && BackportedContent.IRON_SPEAR.isPresent()
+        if (ServerFlags.spearInteractions() && BackportedContent.IRON_SPEAR.isPresent()
                 && random.nextInt(20) == 0) {
             pillager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(BackportedContent.IRON_SPEAR.get()));
         } else {

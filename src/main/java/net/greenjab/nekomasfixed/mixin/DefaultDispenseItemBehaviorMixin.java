@@ -1,6 +1,6 @@
 package net.greenjab.nekomasfixed.mixin;
 
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
+import net.greenjab.nekomasfixed.network.ServerFlags;
 import net.greenjab.nekomasfixed.registry.entity.SpearEntity;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
 import net.greenjab.nekomasfixed.util.ModTags;
@@ -23,7 +23,7 @@ public abstract class DefaultDispenseItemBehaviorMixin {
 
     @Inject(at = @At("HEAD"), method = "execute", cancellable = true)
     public void SpearAttack(BlockSource source, ItemStack dispensed, CallbackInfoReturnable<ItemStack> cir) {
-        if (!NekomasFixedConfig.SPEAR_INTERACTIONS.get()) return;
+        if (!ServerFlags.spearInteractions()) return;
 
         Level level = source.getLevel();
         if (level.isClientSide())  return;

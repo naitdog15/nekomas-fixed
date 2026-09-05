@@ -13,13 +13,17 @@ import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
  */
 public final class ServerFlags {
 
-    private static boolean turtleArmourAbilities = true;
-    private static boolean offhandAttack = true;
-    private static boolean featherKnockback = true;
-    private static boolean featherFallingSavesCrops = true;
+    // volatile because in singleplayer the server thread writes these and the client thread reads
+    // them, with no lock between the two.
+    private static volatile boolean turtleArmourAbilities = true;
+    private static volatile boolean offhandAttack = true;
+    private static volatile boolean featherKnockback = true;
+    private static volatile boolean featherFallingSavesCrops = true;
+    private static volatile boolean sickleCombo = true;
+    private static volatile boolean spearInteractions = true;
 
     /** set once a server has spoken, so a local config reload cannot talk over it. */
-    private static boolean fromServer;
+    private static volatile boolean fromServer;
 
     private ServerFlags() {
     }
@@ -40,6 +44,14 @@ public final class ServerFlags {
         return featherFallingSavesCrops;
     }
 
+    public static boolean sickleCombo() {
+        return sickleCombo;
+    }
+
+    public static boolean spearInteractions() {
+        return spearInteractions;
+    }
+
     /** the spec is the authority on a server, and the fallback on a client that is not connected. */
     public static void fromSpec() {
         if (fromServer || !NekomasFixedConfig.SPEC.isLoaded()) {
@@ -49,15 +61,21 @@ public final class ServerFlags {
         offhandAttack = NekomasFixedConfig.OFFHAND_ATTACK.get();
         featherKnockback = NekomasFixedConfig.FEATHER_KNOCKBACK.get();
         featherFallingSavesCrops = NekomasFixedConfig.FEATHER_FALLING_SAVES_CROPS.get();
+        sickleCombo = NekomasFixedConfig.SICKLE_COMBO.get();
+        spearInteractions = NekomasFixedConfig.SPEAR_INTERACTIONS.get();
     }
 
     /** what the server actually sent; overrides the local file for as long as we are connected. */
-    public static void fromServer(boolean turtle, boolean offhand, boolean knockback, boolean crops) {
-        fromServer = true;
+    public static void fromServer(boolean turtle, boolean offhand, boolean knockback, boolean crops,
+                                  boolean combo, boolean spears) {
         turtleArmourAbilities = turtle;
         offhandAttack = offhand;
         featherKnockback = knockback;
         featherFallingSavesCrops = crops;
+        sickleCombo = combo;
+        spearInteractions = spears;
+        // set last so a reader that sees the latch also sees every value behind it
+        fromServer = true;
     }
 
     /** back to our own file once we leave. */
@@ -71,6 +89,8 @@ public final class ServerFlags {
                 NekomasFixedConfig.TURTLE_ARMOUR_ABILITIES.get(),
                 NekomasFixedConfig.OFFHAND_ATTACK.get(),
                 NekomasFixedConfig.FEATHER_KNOCKBACK.get(),
-                NekomasFixedConfig.FEATHER_FALLING_SAVES_CROPS.get());
+                NekomasFixedConfig.FEATHER_FALLING_SAVES_CROPS.get(),
+                NekomasFixedConfig.SICKLE_COMBO.get(),
+                NekomasFixedConfig.SPEAR_INTERACTIONS.get());
     }
 }

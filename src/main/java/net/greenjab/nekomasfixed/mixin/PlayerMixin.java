@@ -142,7 +142,7 @@ public class PlayerMixin {
     // Ordinal 0 is still the ATTACK_DAMAGE read; 1 is ATTACK_KNOCKBACK and 2 is Forge's entity reach.
     @ModifyExpressionValue(method = "attack", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;)D", ordinal = 0))
     private double comboDamage(double original){
-        if (!NekomasFixedConfig.SICKLE_COMBO.get()) return original;
+        if (!ServerFlags.sickleCombo()) return original;
         Player player = (Player)(Object)this;
         ItemStack attackingItemStack = player.getMainHandItem();
         // 1.20.1 has no default data component for this, so it's an item property not stack state -

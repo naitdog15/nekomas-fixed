@@ -14,7 +14,7 @@ public final class SyncHandler {
     }
 
     /** Bump this - and only this - if either payload's wire contract or this message set changes. */
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
             .named(NekomasFixed.id("main"))
