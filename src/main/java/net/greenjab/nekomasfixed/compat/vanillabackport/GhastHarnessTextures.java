@@ -3,6 +3,7 @@ package net.greenjab.nekomasfixed.compat.vanillabackport;
 import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.compat.CompatMods;
 import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -17,8 +18,8 @@ import java.lang.reflect.Method;
 
 /**
  * Tells Vanilla Backport which texture to draw for each of this mod's harnesses. Its ghast renderer
- * reads a static map of harness item to texture; there is no other hook, so the entries go in by
- * name. If the map has moved or changed shape the harnesses simply render untextured — never a
+ * keeps a static map of harness item to texture and a register call to add to it, which is what
+ * these four go to. Reached by name; if that call is missing they simply render untextured — never a
  * crash, and never a hard reference to a class that may not be installed.
  *
  * <p>The map is read fresh on every frame the ghast is drawn, so it does not matter that these
@@ -29,7 +30,7 @@ import java.lang.reflect.Method;
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class GhastHarnessTextures {
 
-    private static final String HANDLER = "com.blackgear.vanillabackport.client.level.layer.GhastHarnessHandler";
+    private static final String HANDLER = "com.blackgear.vanillabackport.client.level.entities.layer.GhastHarnessHandler";
     private static final String TEXTURE_PATH = "textures/entity/ghast/harness/";
 
     private GhastHarnessTextures() {
@@ -37,7 +38,9 @@ public final class GhastHarnessTextures {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        if (!CompatMods.vanillaBackportLoaded() || !NekomasFixedClientConfig.HARNESS_RENDERING.get()) {
+        if (!CompatMods.vanillaBackportLoaded()
+                || !NekomasFixedConfig.HARNESSES.get()
+                || !NekomasFixedClientConfig.HARNESS_RENDERING.get()) {
             return;
         }
         event.enqueueWork(GhastHarnessTextures::register);
@@ -50,9 +53,11 @@ public final class GhastHarnessTextures {
             put(handoff, ItemRegistry.AQUA_HARNESS, "aqua_harness");
             put(handoff, ItemRegistry.INDIGO_HARNESS, "indigo_harness");
             put(handoff, ItemRegistry.MAROON_HARNESS, "maroon_harness");
-        } catch (Throwable ignored) {
-            // Nothing to hand the texture to. The harnesses are still wearable; they just have no
-            // artwork on the ghast.
+        } catch (Throwable failure) {
+            // Older builds of the supplying mod have no handler to hand these to. The harnesses stay
+            // wearable, they just turn up bare, and this is the only hint anyone gets as to why.
+            NekomasFixed.LOGGER.warn("No {} in the installed Vanilla Backport, so the four harnesses "
+                    + "will render untextured. A newer build of it supplies one.", HANDLER);
         }
     }
 
