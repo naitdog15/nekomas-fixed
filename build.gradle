@@ -97,6 +97,11 @@ tasks.named('processResources', ProcessResources).configure {
     inputs.properties sharedReplaceProperties
     filesMatching(['META-INF/mods.toml','pack.mcmeta']) { expand sharedReplaceProperties + [project: project] }
 }
+// The MIT text has to travel with every copy that goes out, so it rides along in the plain
+// jar and in the jarJar 'all' jar that is the one people actually download.
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE'))
+}
 tasks.named('jar', Jar).configure {
     manifest { attributes([
         'Specification-Title'     : mod_id,
