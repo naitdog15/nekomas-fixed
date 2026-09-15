@@ -3,7 +3,9 @@ package net.greenjab.nekomasfixed;
 import net.greenjab.nekomasfixed.registry.block.cauldron.SoupCauldronBlock;
 import net.greenjab.nekomasfixed.registry.block.entity.SoupCauldronBlockEntity;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
+import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.minecraft.client.color.block.BlockColor;
+import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockAndTintGetter;
@@ -12,6 +14,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 import javax.annotation.Nullable;
 
@@ -25,6 +28,12 @@ import javax.annotation.Nullable;
  */
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class NekomasFixedClient {
+
+    @SubscribeEvent
+    public static void onClientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> ItemProperties.register(ItemRegistry.WILDFIRE_SHIELD.get(), NekomasFixed.id("blocking"),
+                (stack, level, entity, seed) -> entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F));
+    }
 
     @SubscribeEvent
     public static void onRegisterBlockColors(RegisterColorHandlersEvent.Block event) {

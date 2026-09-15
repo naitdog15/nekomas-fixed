@@ -12,6 +12,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+import net.minecraftforge.common.ToolAction;
+import net.minecraftforge.common.ToolActions;
 
 import java.util.function.Consumer;
 
@@ -27,6 +29,14 @@ public class WildfireShieldItem extends ShieldItem {
     @Override
     public boolean isValidRepairItem(ItemStack stack, ItemStack ingredient) {
         return ingredient.is(Items.NETHERITE_INGOT);
+    }
+
+    @Override
+    public boolean canPerformAction(ItemStack stack, ToolAction toolAction) {
+        if (toolAction == ToolActions.SHIELD_BLOCK) {
+            return NekomasFixedConfig.WILDFIRE_SHIELD_BLOCKING.get();
+        }
+        return super.canPerformAction(stack, toolAction);
     }
 
     // checked live at use-time, so toggling this config takes effect immediately
