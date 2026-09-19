@@ -9,8 +9,8 @@ import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.greenjab.nekomasfixed.screen.KilnScreen;
 import net.greenjab.nekomasfixed.registry.registries.ScreenHandlerRegistry;
 import net.greenjab.nekomasfixed.screen.PyrotechnicsTableScreen;
-import net.minecraft.client.gui.screen.ingame.HandledScreens;
-import net.minecraft.client.render.BlockRenderLayer;
+import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 
 public class NekomasFixedClient implements ClientModInitializer {
 
@@ -23,11 +23,11 @@ public class NekomasFixedClient implements ClientModInitializer {
 
 		ClientSyncHandler.init();
 
-		HandledScreens.register(ScreenHandlerRegistry.KILN_SCREEN_HANDLER, KilnScreen::new);
-		HandledScreens.register(ScreenHandlerRegistry.PYROTECHNICS_TABLE_HANDLER, PyrotechnicsTableScreen::new);
+		MenuScreens.register(ScreenHandlerRegistry.KILN_SCREEN_HANDLER, KilnScreen::new);
+		MenuScreens.register(ScreenHandlerRegistry.PYROTECHNICS_TABLE_HANDLER, PyrotechnicsTableScreen::new);
 
 		BlockRenderLayerMap.putBlocks(
-				BlockRenderLayer.TRANSLUCENT,
+				ChunkSectionLayer.TRANSLUCENT,
 				BlockRegistry.AMBER_STAINED_GLASS,
 				BlockRegistry.AQUA_STAINED_GLASS,
 				BlockRegistry.INDIGO_STAINED_GLASS,

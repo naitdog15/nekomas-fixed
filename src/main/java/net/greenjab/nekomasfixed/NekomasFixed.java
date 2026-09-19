@@ -13,13 +13,13 @@ import net.greenjab.nekomasfixed.util.ItemDyeMap;
 import net.greenjab.nekomasfixed.util.ModTreeDecorators;
 import net.greenjab.nekomasfixed.util.ModTrunkPlacers;
 import net.greenjab.nekomasfixed.registry.worldgen.ModWorldGeneration;
-import net.minecraft.block.DispenserBlock;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Identifier;
+import net.minecraft.world.level.block.DispenserBlock;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,14 +60,14 @@ public class NekomasFixed implements ModInitializer {
 
 
 	public static Identifier id(String path) {
-		return Identifier.of(NAMESPACE, path);
+		return Identifier.fromNamespaceAndPath(NAMESPACE, path);
 	}
 
 	public static int enchantLevel(ItemStack stack, String name) {
 		int level = 0;
-		ItemEnchantmentsComponent itemEnchantmentsComponent = stack.getOrDefault(DataComponentTypes.ENCHANTMENTS, ItemEnchantmentsComponent.DEFAULT);
-		for (RegistryEntry<Enchantment> e : stack.getEnchantments().getEnchantments()) {
-			if (e.getIdAsString().toLowerCase().contains(name.toLowerCase())) {
+		ItemEnchantments itemEnchantmentsComponent = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+		for (Holder<Enchantment> e : stack.getEnchantments().keySet()) {
+			if (e.getRegisteredName().toLowerCase().contains(name.toLowerCase())) {
 				level += itemEnchantmentsComponent.getLevel(e);
 			}
 		}

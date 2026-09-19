@@ -1,11 +1,11 @@
 package net.greenjab.nekomasfixed.util;
 
-import net.minecraft.recipe.book.RecipeBookCategory;
-import net.minecraft.recipe.book.RecipeBookGroup;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
+import net.minecraft.world.item.crafting.ExtendedRecipeBookCategory;
 
 import java.util.List;
 
-public class ModRecipeBookType extends RecipeBookCategory implements RecipeBookGroup {
+public class ModRecipeBookType extends RecipeBookCategory implements ExtendedRecipeBookCategory {
     private final List<RecipeBookCategory> categories;
 
     public ModRecipeBookType(final RecipeBookCategory... categories) {

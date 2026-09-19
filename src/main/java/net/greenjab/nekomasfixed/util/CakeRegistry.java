@@ -2,11 +2,11 @@ package net.greenjab.nekomasfixed.util;
 
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +39,6 @@ public class CakeRegistry {
 
     public static BlockState getDefaultState(ItemStack stack) {
         Block block = ITEM_TO_BLOCK.get(stack.getItem());
-        return block == null ? Blocks.AIR.getDefaultState() : block.getDefaultState();
+        return block == null ? Blocks.AIR.defaultBlockState() : block.defaultBlockState();
     }
 }

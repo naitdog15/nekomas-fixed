@@ -8,6 +8,8 @@ plugins {
 version = mod_version
 group   = mod_group_id
 base { archivesName = mod_id }
+// shares the repo folder with the 1.20.1 branches, so its build output stays out of theirs
+layout.buildDirectory = layout.projectDirectory.dir('build/1.21.11')
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 // the generated data was Fabric's datagen output, so it keeps its own root next to the hand-written resources
@@ -15,6 +17,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 minecraft {
     mappings channel: 'official', version: minecraft_version
+    useDefaultAccessTransformer()
     runs {
         configureEach {
             workingDir = layout.projectDirectory.dir('run/1.21.11')

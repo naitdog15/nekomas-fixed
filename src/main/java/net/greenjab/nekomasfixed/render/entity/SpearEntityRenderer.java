@@ -4,75 +4,77 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.greenjab.nekomasfixed.registry.entity.SpearEntity;
 import net.greenjab.nekomasfixed.render.entity.state.SpearEntityRenderState;
-import net.minecraft.client.item.ItemModelManager;
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.command.OrderedRenderCommandQueue;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.EntityRendererFactory;
-import net.minecraft.client.render.item.ItemRenderState;
-import net.minecraft.client.render.state.CameraRenderState;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemDisplayContext;
-import net.minecraft.util.math.*;
+import net.minecraft.client.renderer.item.ItemModelResolver;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.state.CameraRenderState;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.item.ItemDisplayContext;
+import com.mojang.math.Axis;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.Vec3;
 
 
 @Environment(EnvType.CLIENT)
 public class SpearEntityRenderer extends EntityRenderer<SpearEntity, SpearEntityRenderState> {
-	private final ItemModelManager itemModelManager;
+	private final ItemModelResolver itemModelManager;
 	
-	public SpearEntityRenderer(EntityRendererFactory.Context context) {
+	public SpearEntityRenderer(EntityRendererProvider.Context context) {
 		super(context);
-		this.itemModelManager = context.getItemModelManager();
+		this.itemModelManager = context.getItemModelResolver();
 	}
 
 	public SpearEntityRenderState createRenderState() {
 		return new SpearEntityRenderState();
 	}
 
-	public void updateRenderState(SpearEntity spearEntity, SpearEntityRenderState spearEntityRenderState, float f) {
-		super.updateRenderState(spearEntity, spearEntityRenderState, f);
-		spearEntityRenderState.duration = spearEntity.age;
+	public void extractRenderState(SpearEntity spearEntity, SpearEntityRenderState spearEntityRenderState, float f) {
+		super.extractRenderState(spearEntity, spearEntityRenderState, f);
+		spearEntityRenderState.duration = spearEntity.tickCount;
 		spearEntityRenderState.direction = spearEntity.getDirection();
 
-		this.itemModelManager.updateForNonLivingEntity(spearEntityRenderState.spearRenderState, spearEntity.getStack(), ItemDisplayContext.FIXED, spearEntity);
+		this.itemModelManager.updateForNonLiving(spearEntityRenderState.spearRenderState, spearEntity.getStack(), ItemDisplayContext.FIXED, spearEntity);
 	}
 
-	public void render(
+	public void submit(
 			SpearEntityRenderState spearEntityRenderState,
-			MatrixStack matrixStack,
-			OrderedRenderCommandQueue orderedRenderCommandQueue,
+			PoseStack matrixStack,
+			SubmitNodeCollector orderedRenderCommandQueue,
 			CameraRenderState cameraRenderState
 	) {
-		super.render(spearEntityRenderState, matrixStack, orderedRenderCommandQueue, cameraRenderState);
-		ItemRenderState spearRenderState = spearEntityRenderState.spearRenderState;
+		super.submit(spearEntityRenderState, matrixStack, orderedRenderCommandQueue, cameraRenderState);
+		ItemStackRenderState spearRenderState = spearEntityRenderState.spearRenderState;
 		if (spearRenderState != null) {
-			matrixStack.push();
-			matrixStack.translate(new Vec3d(0, 0.3, 0));
+			matrixStack.pushPose();
+			matrixStack.translate(new Vec3(0, 0.3, 0));
 
 			Direction dir = spearEntityRenderState.direction;
 			if (dir.getAxis().isHorizontal()) {
-				matrixStack.translate(new Vec3d(0, -0.13, 0));
-				matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(90));
-				matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-dir.getPositiveHorizontalDegrees()+90));
+				matrixStack.translate(new Vec3(0, -0.13, 0));
+				matrixStack.mulPose(Axis.ZP.rotationDegrees(90));
+				matrixStack.mulPose(Axis.XP.rotationDegrees(-dir.toYRot()+90));
 			} else if (dir == Direction.DOWN) {
-				matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(180));
+				matrixStack.mulPose(Axis.ZP.rotationDegrees(180));
 			}
 
 
-			matrixStack.translate(new Vec3d(0, -1.1+Math.min(-Math.abs((spearEntityRenderState.age-10)/5)+2,1), 0));
+			matrixStack.translate(new Vec3(0, -1.1+Math.min(-Math.abs((spearEntityRenderState.ageInTicks-10)/5)+2,1), 0));
 
-			matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(45));
-			matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(-45));
+			matrixStack.mulPose(Axis.YP.rotationDegrees(45));
+			matrixStack.mulPose(Axis.ZP.rotationDegrees(-45));
 			matrixStack.scale(1, 1, 0.01f);
-			spearRenderState.render(matrixStack, orderedRenderCommandQueue, spearEntityRenderState.light, OverlayTexture.DEFAULT_UV, 0);
+			spearRenderState.submit(matrixStack, orderedRenderCommandQueue, spearEntityRenderState.light, OverlayTexture.NO_OVERLAY, 0);
 			matrixStack.scale(1, 1,  100f);
-			matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(45));
-			matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(90));
-			matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(-45));
+			matrixStack.mulPose(Axis.ZP.rotationDegrees(45));
+			matrixStack.mulPose(Axis.YP.rotationDegrees(90));
+			matrixStack.mulPose(Axis.ZP.rotationDegrees(-45));
 			matrixStack.scale(1, 1, 0.01f);
-			spearRenderState.render(matrixStack, orderedRenderCommandQueue, spearEntityRenderState.light, OverlayTexture.DEFAULT_UV, 0);
+			spearRenderState.submit(matrixStack, orderedRenderCommandQueue, spearEntityRenderState.light, OverlayTexture.NO_OVERLAY, 0);
 			matrixStack.scale(1, 1,  100f);
-			matrixStack.pop();
+			matrixStack.popPose();
 		}
 	}
 }

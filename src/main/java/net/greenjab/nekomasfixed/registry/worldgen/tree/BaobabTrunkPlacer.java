@@ -5,20 +5,20 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.greenjab.nekomasfixed.util.ModTrunkPlacers;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.PillarBlock;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.ChunkRegion;
-import net.minecraft.world.TestableWorld;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
+import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.world.level.LevelSimulatedReader;
 import net.minecraft.world.attribute.EnvironmentAttributes;
-import net.minecraft.world.gen.feature.TreeFeatureConfig;
-import net.minecraft.world.gen.foliage.FoliagePlacer;
-import net.minecraft.world.gen.trunk.TrunkPlacer;
-import net.minecraft.world.gen.trunk.TrunkPlacerType;
+import net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration;
+import net.minecraft.world.level.levelgen.feature.foliageplacers.FoliagePlacer;
+import net.minecraft.world.level.levelgen.feature.trunkplacers.TrunkPlacer;
+import net.minecraft.world.level.levelgen.feature.trunkplacers.TrunkPlacerType;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -29,33 +29,33 @@ public class BaobabTrunkPlacer extends TrunkPlacer {
 
     public static final MapCodec<BaobabTrunkPlacer> CODEC =
             RecordCodecBuilder.mapCodec(instance ->
-                    fillTrunkPlacerFields(instance).apply(instance, BaobabTrunkPlacer::new));
+                    trunkPlacerParts(instance).apply(instance, BaobabTrunkPlacer::new));
 
     @Override
-    protected TrunkPlacerType<?> getType() {
+    protected TrunkPlacerType<?> type() {
         return ModTrunkPlacers.BAOBAB_TRUNK_PLACER;
     }
 
     @Override
 
-    public List<FoliagePlacer.TreeNode> generate(TestableWorld world, BiConsumer<BlockPos, BlockState> replacer, Random random, int height, BlockPos startPos, TreeFeatureConfig config) {
-        List<FoliagePlacer.TreeNode> list = Lists.newArrayList();
+    public List<FoliagePlacer.FoliageAttachment> placeTrunk(LevelSimulatedReader world, BiConsumer<BlockPos, BlockState> replacer, RandomSource random, int height, BlockPos startPos, TreeConfiguration config) {
+        List<FoliagePlacer.FoliageAttachment> list = Lists.newArrayList();
         boolean water = false;
-        if (world instanceof ChunkRegion chunkRegion)
-            if (!chunkRegion.toServerWorld().getEnvironmentAttributes().getAttributeValue(EnvironmentAttributes.WATER_EVAPORATES_GAMEPLAY, startPos))
+        if (world instanceof WorldGenRegion chunkRegion)
+            if (!chunkRegion.getLevel().environmentAttributes().getValue(EnvironmentAttributes.WATER_EVAPORATES, startPos))
                 water = random.nextBoolean();
         int x,y,z;
         float X = random.nextFloat()-0.5f;
         float Z = random.nextFloat()-0.5f;
 
-        boolean playerGrown = !(world instanceof ChunkRegion);
+        boolean playerGrown = !(world instanceof WorldGenRegion);
 
         if (playerGrown) {
             for (int dx = 0; dx < 2; dx++) {
                 for (int dz = 0; dz < 2; dz++) {
-                    BlockPos basePos = startPos.add(dx, 0, dz);
-                    replacer.accept(basePos, Blocks.BARRIER.getDefaultState());
-                    replacer.accept(basePos, Blocks.AIR.getDefaultState());
+                    BlockPos basePos = startPos.offset(dx, 0, dz);
+                    replacer.accept(basePos, Blocks.BARRIER.defaultBlockState());
+                    replacer.accept(basePos, Blocks.AIR.defaultBlockState());
                 }
             }
         }
@@ -67,8 +67,8 @@ public class BaobabTrunkPlacer extends TrunkPlacer {
                 for (z = -4; z <= 4; z++) {
                     float distSq = (x - X) * (x - X) + (z - Z) * (z - Z)+ y*y;
                     if (distSq <= r * r && distSq >= (r - 1) * (r - 1)) {
-                        BlockPos pos = startPos.add(x, y, z);
-                        this.getAndSetState(world, replacer, random, pos, config);
+                        BlockPos pos = startPos.offset(x, y, z);
+                        this.placeLog(world, replacer, random, pos, config);
                     }
                 }
             }
@@ -82,12 +82,12 @@ public class BaobabTrunkPlacer extends TrunkPlacer {
                     float distSq = (x - X) * (x - X) + (z - Z) * (z - Z);
                     if (distSq <= r*r) {
                         if (distSq >= (r - 1) * (r - 1)) {
-                            BlockPos pos = startPos.add(x, y, z);
-                            this.getAndSetState(world, replacer, random, pos, config);
+                            BlockPos pos = startPos.offset(x, y, z);
+                            this.placeLog(world, replacer, random, pos, config);
                         } else if (water && y < 3) {
-                            BlockPos pos = startPos.add(x, y, z);
-                            if (world.testBlockState(pos,  state -> state.isIn(BlockTags.REPLACEABLE))) {
-                                replacer.accept(pos, Blocks.WATER.getDefaultState());
+                            BlockPos pos = startPos.offset(x, y, z);
+                            if (world.isStateAtPosition(pos,  state -> state.is(BlockTags.REPLACEABLE))) {
+                                replacer.accept(pos, Blocks.WATER.defaultBlockState());
                             }
                         }
                     }
@@ -109,13 +109,13 @@ public class BaobabTrunkPlacer extends TrunkPlacer {
                 dx += (float) Math.sin(rot*Math.PI/180f);
                 dz += (float) Math.cos(rot*Math.PI/180f);
                 BlockPos pos = new BlockPos((int) dx, dy, (int) dz);
-                if (world.testBlockState(pos,  state -> state.isIn(BlockTags.REPLACEABLE))) {
-                    if (length < 3) replacer.accept(pos, BlockRegistry.BAOBAB_LOG.getDefaultState());
-                    else replacer.accept(pos, BlockRegistry.BAOBAB_LOG.getDefaultState().with(PillarBlock.AXIS, Direction.fromHorizontalDegrees(rot).getAxis()));
+                if (world.isStateAtPosition(pos,  state -> state.is(BlockTags.REPLACEABLE))) {
+                    if (length < 3) replacer.accept(pos, BlockRegistry.BAOBAB_LOG.defaultBlockState());
+                    else replacer.accept(pos, BlockRegistry.BAOBAB_LOG.defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.fromYRot(rot).getAxis()));
                 }
                 if (length == 0) {
-                    BlockPos leafPos = pos.up(1);
-                    list.add(new FoliagePlacer.TreeNode(leafPos, 0, true));
+                    BlockPos leafPos = pos.above(1);
+                    list.add(new FoliagePlacer.FoliageAttachment(leafPos, 0, true));
                 }
             }
         }

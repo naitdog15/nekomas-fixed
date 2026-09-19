@@ -2,19 +2,22 @@ package net.greenjab.nekomasfixed.registry.recipe;
 
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.registry.registries.RecipeRegistry;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.*;
-import net.minecraft.recipe.book.CookingRecipeCategory;
-import net.minecraft.recipe.book.RecipeBookCategory;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.AbstractCookingRecipe;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.CookingBookCategory;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
 
 
 public class KilnRecipe extends AbstractCookingRecipe {
-    public KilnRecipe(String string, CookingRecipeCategory cookingRecipeCategory, Ingredient ingredient, ItemStack itemStack, float f, int i) {
+    public KilnRecipe(String string, CookingBookCategory cookingRecipeCategory, Ingredient ingredient, ItemStack itemStack, float f, int i) {
         super(string, cookingRecipeCategory, ingredient, itemStack, f, i);
     }
 
-    protected Item getCookerItem() {
+    protected Item furnaceIcon() {
         return ItemRegistry.KILN;
     }
 
@@ -26,8 +29,8 @@ public class KilnRecipe extends AbstractCookingRecipe {
         return RecipeRegistry.KILN;
     }
 
-    public RecipeBookCategory getRecipeBookCategory() {
-        return switch (this.getCategory()) {
+    public RecipeBookCategory recipeBookCategory() {
+        return switch (this.category()) {
             case BLOCKS -> RecipeRegistry.KILNING_BLOCK;
             case FOOD, MISC -> RecipeRegistry.KILNING_MISC;
         };

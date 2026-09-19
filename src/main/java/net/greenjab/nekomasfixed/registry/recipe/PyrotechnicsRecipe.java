@@ -2,19 +2,19 @@ package net.greenjab.nekomasfixed.registry.recipe;
 
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeSerializer;
-import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.input.RecipeInput;
-import net.minecraft.recipe.IngredientPlacement;
-import net.minecraft.recipe.book.RecipeBookCategory;
-import net.minecraft.recipe.book.RecipeBookCategories;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.world.World;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.RecipeInput;
+import net.minecraft.world.item.crafting.PlacementInfo;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
+import net.minecraft.world.item.crafting.RecipeBookCategories;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.world.level.Level;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,7 +25,7 @@ public class PyrotechnicsRecipe implements Recipe<RecipeInput> {
     private final Ingredient paper;
     private final Ingredient gunpowder;
     private final ItemStack output;
-    private IngredientPlacement ingredientPlacement;
+    private PlacementInfo ingredientPlacement;
 
     public PyrotechnicsRecipe(Ingredient dye1, Ingredient dye2, Ingredient paper, Ingredient gunpowder, ItemStack output) {
         this.dye1 = dye1;
@@ -40,41 +40,41 @@ public class PyrotechnicsRecipe implements Recipe<RecipeInput> {
             Ingredient.CODEC.fieldOf("dye2").forGetter(recipe -> recipe.dye2),
             Ingredient.CODEC.fieldOf("paper").forGetter(recipe -> recipe.paper),
             Ingredient.CODEC.fieldOf("gunpowder").forGetter(recipe -> recipe.gunpowder),
-            ItemStack.VALIDATED_CODEC.fieldOf("result").forGetter(recipe -> recipe.output)
+            ItemStack.STRICT_CODEC.fieldOf("result").forGetter(recipe -> recipe.output)
     ).apply(instance, PyrotechnicsRecipe::new));
 
-    public static final PacketCodec<RegistryByteBuf, PyrotechnicsRecipe> PACKET_CODEC = PacketCodec.tuple(
-            Ingredient.PACKET_CODEC, recipe -> recipe.dye1,
-            Ingredient.PACKET_CODEC, recipe -> recipe.dye2,
-            Ingredient.PACKET_CODEC, recipe -> recipe.paper,
-            Ingredient.PACKET_CODEC, recipe -> recipe.gunpowder,
-            ItemStack.PACKET_CODEC, recipe -> recipe.output,
+    public static final StreamCodec<RegistryFriendlyByteBuf, PyrotechnicsRecipe> PACKET_CODEC = StreamCodec.composite(
+            Ingredient.CONTENTS_STREAM_CODEC, recipe -> recipe.dye1,
+            Ingredient.CONTENTS_STREAM_CODEC, recipe -> recipe.dye2,
+            Ingredient.CONTENTS_STREAM_CODEC, recipe -> recipe.paper,
+            Ingredient.CONTENTS_STREAM_CODEC, recipe -> recipe.gunpowder,
+            ItemStack.STREAM_CODEC, recipe -> recipe.output,
             PyrotechnicsRecipe::new
     );
 
     @Override
-    public boolean matches(RecipeInput input, World world) {
+    public boolean matches(RecipeInput input, Level world) {
         if (input.size() < 4) return false;
-        return this.dye1.test(input.getStackInSlot(0)) &&
-                this.dye2.test(input.getStackInSlot(1)) &&
-                this.paper.test(input.getStackInSlot(2)) &&
-                this.gunpowder.test(input.getStackInSlot(3));
+        return this.dye1.test(input.getItem(0)) &&
+                this.dye2.test(input.getItem(1)) &&
+                this.paper.test(input.getItem(2)) &&
+                this.gunpowder.test(input.getItem(3));
     }
 
     @Override
-    public ItemStack craft(RecipeInput input, RegistryWrapper.WrapperLookup lookup) {
+    public ItemStack assemble(RecipeInput input, HolderLookup.Provider lookup) {
         return this.output.copy();
     }
 
     @Override
-    public RecipeBookCategory getRecipeBookCategory() {
+    public RecipeBookCategory recipeBookCategory() {
         return RecipeBookCategories.CRAFTING_MISC;
     }
 
     @Override
-    public IngredientPlacement getIngredientPlacement() {
+    public PlacementInfo placementInfo() {
         if (this.ingredientPlacement == null) {
-            this.ingredientPlacement = IngredientPlacement.forMultipleSlots(List.of(
+            this.ingredientPlacement = PlacementInfo.createFromOptionals(List.of(
                     Optional.of(this.dye1),
                     Optional.of(this.dye2),
                     Optional.of(this.paper),
@@ -109,7 +109,7 @@ public class PyrotechnicsRecipe implements Recipe<RecipeInput> {
         }
 
         @Override
-        public PacketCodec<RegistryByteBuf, PyrotechnicsRecipe> packetCodec() {
+        public StreamCodec<RegistryFriendlyByteBuf, PyrotechnicsRecipe> streamCodec() {
             return PACKET_CODEC;
         }
     }

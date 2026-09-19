@@ -3,7 +3,7 @@ package net.greenjab.nekomasfixed;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.greenjab.nekomasfixed.network.UpdateClockPayload;
 import net.greenjab.nekomasfixed.registry.block.entity.ClockBlockEntity;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 
 public class ClientSyncHandler {
     public static void init() {

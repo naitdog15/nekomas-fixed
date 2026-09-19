@@ -2,22 +2,22 @@ package net.greenjab.nekomasfixed.render.block.entity;
 
 import net.greenjab.nekomasfixed.registry.block.entity.HollowLogBlockEntity;
 import net.greenjab.nekomasfixed.render.block.entity.state.HollowLogBlockEntityRenderState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.block.BlockRenderManager;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
-import net.minecraft.client.render.block.entity.state.BlockEntityRenderState;
-import net.minecraft.client.render.command.ModelCommandRenderer;
-import net.minecraft.client.render.command.OrderedRenderCommandQueue;
-import net.minecraft.client.render.state.CameraRenderState;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.state.CameraRenderState;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 public class HollowLogBlockEntityRenderer implements BlockEntityRenderer<HollowLogBlockEntity, HollowLogBlockEntityRenderState>{
 
-    public HollowLogBlockEntityRenderer(BlockEntityRendererFactory.Context context) {
+    public HollowLogBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
     }
 
     @Override
@@ -26,39 +26,39 @@ public class HollowLogBlockEntityRenderer implements BlockEntityRenderer<HollowL
     }
 
     @Override
-    public void updateRenderState(HollowLogBlockEntity blockEntity,
+    public void extractRenderState(HollowLogBlockEntity blockEntity,
                                   HollowLogBlockEntityRenderState state,
                                   float tickProgress,
-                                  Vec3d cameraPos,
-                                  ModelCommandRenderer.@Nullable CrumblingOverlayCommand crumblingOverlay) {
+                                  Vec3 cameraPos,
+                                  ModelFeatureRenderer.@Nullable CrumblingOverlay crumblingOverlay) {
 
         state.blockState = blockEntity.getStoredBlock();
-        BlockEntityRenderState.updateBlockEntityRenderState(blockEntity, state, crumblingOverlay);
+        BlockEntityRenderState.extractBase(blockEntity, state, crumblingOverlay);
     }
 
     @Override
-    public void render(HollowLogBlockEntityRenderState state,
-                       MatrixStack matrixStack,
-                       OrderedRenderCommandQueue queue,
+    public void submit(HollowLogBlockEntityRenderState state,
+                       PoseStack matrixStack,
+                       SubmitNodeCollector queue,
                        CameraRenderState cameraState) {
 
-        MinecraftClient client = MinecraftClient.getInstance();
-        BlockRenderManager blockRenderManager = client.getBlockRenderManager();
+        Minecraft client = Minecraft.getInstance();
+        BlockRenderDispatcher blockRenderManager = client.getBlockRenderer();
 
         if (state.blockState == null) return;
 
-        matrixStack.push();
+        matrixStack.pushPose();
         matrixStack.translate(0.125, 0.125, 0.125);
         matrixStack.scale(0.75f, 0.75f, 0.75f);
 
-        blockRenderManager.renderBlockAsEntity(
+        blockRenderManager.renderSingleBlock(
                 state.blockState,
                 matrixStack,
-                client.getBufferBuilders().getEntityVertexConsumers(),
-                state.lightmapCoordinates,
-                OverlayTexture.DEFAULT_UV
+                client.renderBuffers().bufferSource(),
+                state.lightCoords,
+                OverlayTexture.NO_OVERLAY
         );
 
-        matrixStack.pop();
+        matrixStack.popPose();
     }
 }

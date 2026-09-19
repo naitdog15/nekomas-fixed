@@ -1,15 +1,15 @@
 package net.greenjab.nekomasfixed.registry.registries;
 
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.text.Text;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.Registry;
+import net.minecraft.network.chat.Component;
 
 public class ItemGroupRegistry {
 
-    public static final ItemGroup NEKOMASFIXED = FabricItemGroup.builder().displayName(Text.translatable("itemgroup.nekomasfixed"))
+    public static final CreativeModeTab NEKOMASFIXED = FabricItemGroup.builder().displayName(Component.translatable("itemgroup.nekomasfixed"))
             .icon( () -> new ItemStack(ItemRegistry.CLAM))
             .entries(
                     (displayContext, entries) -> {
@@ -141,7 +141,7 @@ public class ItemGroupRegistry {
 
                     }).build();
 
-    public static final ItemGroup NEKOMASFIXEDCOLOURS = FabricItemGroup.builder().displayName(Text.translatable("itemgroup.nekomasfixedcolours"))
+    public static final CreativeModeTab NEKOMASFIXEDCOLOURS = FabricItemGroup.builder().displayName(Component.translatable("itemgroup.nekomasfixedcolours"))
             .icon( () -> new ItemStack(ItemRegistry.AMBER_DYE))
             .entries(
                     (displayContext, entries) -> {
@@ -383,7 +383,7 @@ public class ItemGroupRegistry {
 
     public static void registerItemGroup() {
         System.out.println("register ItemGroup");
-        Registry.register(Registries.ITEM_GROUP, "nekomasfixed", NEKOMASFIXED);
-        Registry.register(Registries.ITEM_GROUP, "nekomasfixedcolours", NEKOMASFIXEDCOLOURS);
+        Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, "nekomasfixed", NEKOMASFIXED);
+        Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, "nekomasfixedcolours", NEKOMASFIXEDCOLOURS);
     }
 }
