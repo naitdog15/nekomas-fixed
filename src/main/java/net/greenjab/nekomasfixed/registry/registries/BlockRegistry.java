@@ -56,6 +56,7 @@ public class BlockRegistry {
     public static final RegistryObject<Block> KILN = register("kiln", KilnBlock::new,BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_LIGHT_GRAY).instrument(NoteBlockInstrument.BASEDRUM)
             .sound(SoundType.GILDED_BLACKSTONE).requiresCorrectToolForDrops().strength(3.5f));
     public static final RegistryObject<Block> PYROTECHNICS_TABLE = register("pyrotechnics_table", PyrotechnicsTableBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.WOOD).instrument(NoteBlockInstrument.BASS).strength(2.5F).sound(SoundType.WOOD).ignitedByLava());
+    public static final RegistryObject<Block> CORRUPTED_BEACON = register("corrupted_beacon", CorruptedBeaconBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).strength(5F).requiresCorrectToolForDrops().lightLevel(ignored -> 15).instrument(NoteBlockInstrument.HAT).noOcclusion().isRedstoneConductor(BlockRegistry::never));
     public static final RegistryObject<Block> ENDERMAN_HEAD = register("enderman_head", FloorEndermanHeadHead::new, BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLACK).strength(1F).sound(SoundType.METAL).pushReaction(PushReaction.DESTROY).instrument(NoteBlockInstrument.CUSTOM_HEAD));
     // copyLootTable reads ENDERMAN_HEAD.get() internally, so this must build inside one deferred
     // lambda, not the eager 3-arg register()
@@ -83,14 +84,14 @@ public class BlockRegistry {
             )
     );
 
-    public static final RegistryObject<Block> SWEETBERRY_CAKE = register("sweetberry_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
-    public static final RegistryObject<Block> PAN_CAKE = register("pan_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
-    public static final RegistryObject<Block> GLOWBERRY_CAKE = register("glowberry_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
-    public static final RegistryObject<Block> APPLE_CAKE = register("apple_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
-    public static final RegistryObject<Block> VANILLA_CAKE = register("vanilla_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
-    public static final RegistryObject<Block> COOKIE_CAKE = register("cookie_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
-    public static final RegistryObject<Block> CHOCOLATE_CAKE = register("chocolate_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
-    public static final RegistryObject<Block> BEETROOT_CAKE = register("beetroot_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
+    public static final RegistryObject<Block> SWEETBERRY_CAKE = register("sweetberry_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
+    public static final RegistryObject<Block> PAN_CAKE = register("pan_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
+    public static final RegistryObject<Block> GLOWBERRY_CAKE = register("glowberry_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
+    public static final RegistryObject<Block> APPLE_CAKE = register("apple_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
+    public static final RegistryObject<Block> VANILLA_CAKE = register("vanilla_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
+    public static final RegistryObject<Block> COOKIE_CAKE = register("cookie_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
+    public static final RegistryObject<Block> CHOCOLATE_CAKE = register("chocolate_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
+    public static final RegistryObject<Block> BEETROOT_CAKE = register("beetroot_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
 
     public static final RegistryObject<Block> TERMITE_BLOCK = register("termite_block", BlockBehaviour.Properties.of().strength(1f));
     public static final RegistryObject<Block> TERMITE_HIVE = register("termite_hive", TermitehiveBlock::new, BlockBehaviour.Properties.of().strength(1f));

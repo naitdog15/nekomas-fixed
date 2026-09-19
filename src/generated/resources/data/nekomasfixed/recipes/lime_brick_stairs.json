@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "dyed_brick_stairs",
+  "key": {
+    "#": {
+      "item": "nekomasfixed:lime_bricks"
+    }
+  },
+  "pattern": [
+    "#  ",
+    "## ",
+    "###"
+  ],
+  "result": {
+    "count": 4,
+    "item": "nekomasfixed:lime_brick_stairs"
+  },
+  "show_notification": true
+}

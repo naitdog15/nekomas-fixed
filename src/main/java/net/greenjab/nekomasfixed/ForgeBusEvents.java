@@ -11,9 +11,14 @@ import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.registries.LootTableAdditions;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.MobSpawnType;
+import net.greenjab.nekomasfixed.registry.entity.goal.AvoidTrustingOcelotGoal;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraftforge.event.LootTableLoadEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -52,6 +57,17 @@ public final class ForgeBusEvents {
     private static void vetoHarness(PlayerInteractEvent event, net.minecraft.world.item.ItemStack stack) {
         if (NekomasFixedConfig.HARNESSES.get()) return;
         if (HarnessHelper.isModHarness(stack)) event.setCanceled(true);
+    }
+
+    // creepers already keep away from ocelots on their own, so every other monster is given the same goal -
+    // but only for the trusting ones, the wild ones still get no respect
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onMonsterJoin(EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide()) return;
+        if (event.getEntity() instanceof Monster monster && !(monster instanceof Creeper)
+                && monster.goalSelector.getAvailableGoals().stream().noneMatch(wrapped -> wrapped.getGoal() instanceof AvoidTrustingOcelotGoal)) {
+            monster.goalSelector.addGoal(1, new AvoidTrustingOcelotGoal(monster));
+        }
     }
 
     @SubscribeEvent

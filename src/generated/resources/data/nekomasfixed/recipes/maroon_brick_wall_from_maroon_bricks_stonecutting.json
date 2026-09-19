@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "count": 1,
+  "ingredient": {
+    "item": "nekomasfixed:maroon_bricks"
+  },
+  "result": "nekomasfixed:maroon_brick_wall"
+}

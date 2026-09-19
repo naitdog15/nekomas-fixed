@@ -15,6 +15,7 @@ public class BlockEntityRendererRegistry {
     public static void registerBlockEntityRenderer(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY.get(), ClamBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(BlockEntityTypeRegistry.CLOCK_BLOCK_ENTITY.get(), ClockBlockEntityRenderer::new);
+        event.registerBlockEntityRenderer(BlockEntityTypeRegistry.CORRUPTED_BEACON_BLOCK_ENTITY.get(), CorruptedBeaconBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(BlockEntityTypeRegistry.ENDERMAN_HEAD_BLOCK_ENTITY.get(), EndermanHeadBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(BlockEntityTypeRegistry.HOLLOW_LOG_BLOCK_ENTITY.get(), HollowLogBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(BlockEntityTypeRegistry.SOUP_CAULDRON_BLOCK_ENTITY.get(), SoupCauldronBlockEntityRenderer::new);

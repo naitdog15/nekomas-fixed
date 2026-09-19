@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "count": 2,
+  "ingredient": {
+    "item": "nekomasfixed:aqua_bricks"
+  },
+  "result": "nekomasfixed:aqua_brick_slab"
+}

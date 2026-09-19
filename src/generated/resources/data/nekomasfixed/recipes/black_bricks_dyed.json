@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "dyed_bricks_dyed",
+  "key": {
+    "#": {
+      "item": "minecraft:bricks"
+    },
+    "D": {
+      "item": "minecraft:black_wool"
+    }
+  },
+  "pattern": [
+    "###",
+    "#D#",
+    "###"
+  ],
+  "result": {
+    "count": 8,
+    "item": "nekomasfixed:black_bricks"
+  },
+  "show_notification": true
+}

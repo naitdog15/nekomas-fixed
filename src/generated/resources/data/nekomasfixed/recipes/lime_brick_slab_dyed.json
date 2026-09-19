@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "dyed_brick_slab_dyed",
+  "key": {
+    "#": {
+      "item": "minecraft:brick_slab"
+    },
+    "D": {
+      "item": "minecraft:lime_wool"
+    }
+  },
+  "pattern": [
+    "###",
+    "#D#",
+    "###"
+  ],
+  "result": {
+    "count": 8,
+    "item": "nekomasfixed:lime_brick_slab"
+  },
+  "show_notification": true
+}

@@ -10,12 +10,14 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.FinishedRecipe;
 import net.minecraft.data.recipes.RecipeCategory;
+import net.minecraft.data.recipes.SingleItemRecipeBuilder;
 import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.ItemLike;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,9 +47,9 @@ public class ModRecipeProvider extends RecipeProvider {
                     .save(output, NekomasFixed.id(BlockDyeMap.BRICK_STAIRS.get(colour).asItem() + "_dyed"));
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICK_WALL, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICK_WALL.get(colour).asItem(), "dyed_brick_wall_dyed", 8)
                     .save(output, NekomasFixed.id(BlockDyeMap.BRICK_WALL.get(colour).asItem() + "_dyed"));
-            stonecutterResultFromBase(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_SLAB.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem(), 2);
-            stonecutterResultFromBase(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_STAIRS.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem());
-            stonecutterResultFromBase(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_WALL.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem());
+            stonecutting(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_SLAB.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem(), 2);
+            stonecutting(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_STAIRS.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem(), 1);
+            stonecutting(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_WALL.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem(), 1);
             slabBuilder(RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_SLAB.get(colour).asItem(), Ingredient.of(BlockDyeMap.BRICKS.get(colour).asItem())).group("dyed_brick_slab").unlockedBy(getHasName(BlockDyeMap.BRICKS.get(colour).asItem()), has(BlockDyeMap.BRICKS.get(colour).asItem())).save(output);
             stairBuilder(BlockDyeMap.BRICK_STAIRS.get(colour).asItem(), Ingredient.of(BlockDyeMap.BRICKS.get(colour).asItem())).group("dyed_brick_stairs").unlockedBy(getHasName(BlockDyeMap.BRICKS.get(colour).asItem()), has(BlockDyeMap.BRICKS.get(colour).asItem())).save(output);
             wallBuilder(RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_WALL.get(colour).asItem(), Ingredient.of(BlockDyeMap.BRICKS.get(colour).asItem())).group("dyed_brick_wall").unlockedBy(getHasName(BlockDyeMap.BRICKS.get(colour).asItem()), has(BlockDyeMap.BRICKS.get(colour).asItem())).save(output);
@@ -106,6 +108,13 @@ public class ModRecipeProvider extends RecipeProvider {
 
     // vanilla's colorBlockWithDye hardcodes BUILDING_BLOCKS; the carpet call site here needs
     // DECORATIONS, so this opens the category up as a parameter instead.
+    // the stock stonecutterResultFromBase names its recipes in the minecraft namespace, so the same recipe is built here under ours
+    private static void stonecutting(Consumer<FinishedRecipe> output, RecipeCategory category, ItemLike result, ItemLike material, int count) {
+        SingleItemRecipeBuilder.stonecutting(Ingredient.of(material), category, result, count)
+                .unlockedBy(getHasName(material), has(material))
+                .save(output, NekomasFixed.id(getConversionRecipeName(result, material) + "_stonecutting"));
+    }
+
     private static void colorItemWithDye(Consumer<FinishedRecipe> output, RecipeCategory category, List<Item> dyes, List<Item> results, String group) {
         for (int i = 0; i < dyes.size(); i++) {
             Item dye = dyes.get(i);

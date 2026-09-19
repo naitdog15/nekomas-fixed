@@ -13,7 +13,10 @@ import net.minecraft.world.item.FlintAndSteelItem;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ComparatorBlock;
 import net.minecraft.world.level.block.ObserverBlock;
+import net.minecraft.world.level.block.RepeaterBlock;
+import net.minecraft.world.level.block.entity.ComparatorBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class RedstoneStrikerItem extends FlintAndSteelItem {
@@ -42,6 +45,19 @@ public class RedstoneStrikerItem extends FlintAndSteelItem {
             }
         }
         state.neighborChanged(level, pos, Blocks.AIR, pos, false);
+        // a diode has no wire to strike, so it is switched on outright; the expiry nudge in ServerLevelMixin
+        // makes it re-check its input and fall back off. server only, and not a locked repeater - it ignores
+        // that nudge and would stay on
+        if (level instanceof ServerLevel) {
+            if (state.is(Blocks.REPEATER) && !state.getValue(RepeaterBlock.LOCKED))
+                level.setBlock(pos, state.setValue(RepeaterBlock.POWERED, true), 3);
+            if (state.is(Blocks.COMPARATOR)) {
+                level.setBlock(pos, state.setValue(ComparatorBlock.POWERED, true), 3);
+                if (level.getBlockEntity(pos) instanceof ComparatorBlockEntity comparator) {
+                    comparator.setOutputSignal(15);
+                }
+            }
+        }
         level.updateNeighborsAt(pos, state.getBlock());
         return InteractionResult.SUCCESS;
     }

@@ -27,6 +27,7 @@ import net.minecraft.world.item.StandingAndWallBlockItem;
 import net.minecraft.world.item.Tiers;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.registries.DeferredRegister;
@@ -69,6 +70,7 @@ public class ItemRegistry {
     public static final RegistryObject<Item> GEYSER = register(BlockRegistry.GEYSER);
     public static final RegistryObject<Item> KILN = register(BlockRegistry.KILN);
     public static final RegistryObject<Item> PYROTECHNICS_TABLE = register(BlockRegistry.PYROTECHNICS_TABLE);
+    public static final RegistryObject<Item> CORRUPTED_BEACON = register(BlockRegistry.CORRUPTED_BEACON);
     // factory reads WALL_ENDERMAN_HEAD.get(), so single-lambda form is required (BlockRegistry javadoc).
     // no waypoint hide-attribute on 1.20.1; wearing it works via AbstractEndermanHeadBlock
     // implementing Equipable, same as vanilla skulls
@@ -144,7 +146,7 @@ public class ItemRegistry {
     public static final RegistryObject<Item> SLINGSHOT = register("slingshot", SlingshotItem::new, new Item.Properties().durability(384));
     public static final RegistryObject<Item> WOODEN_SICKLE = register("wooden_sickle", settings -> new SickleItem(Tiers.WOOD, settings), ModItemSettings.sickle(Tiers.WOOD, SickleItem.SPEED));
     public static final RegistryObject<Item> STONE_SICKLE = register("stone_sickle", settings -> new SickleItem(Tiers.STONE, settings), ModItemSettings.sickle(Tiers.STONE, SickleItem.SPEED));
-    public static final RegistryObject<Item> COPPER_SICKLE = register("copper_sickle", settings -> new SickleItem(Tiers.STONE, settings), ModItemSettings.sickle(Tiers.STONE, SickleItem.SPEED));
+    public static final RegistryObject<Item> COPPER_SICKLE = register("copper_sickle", settings -> new SickleItem(Tiers.STONE, 13, () -> Ingredient.of(Items.COPPER_INGOT), settings),ModItemSettings.sickle(Tiers.STONE, SickleItem.SPEED));
     public static final RegistryObject<Item> IRON_SICKLE = register("iron_sickle", settings -> new SickleItem(Tiers.IRON, settings), ModItemSettings.sickle(Tiers.IRON, SickleItem.SPEED));
     public static final RegistryObject<Item> GOLDEN_SICKLE = register("golden_sickle", settings -> new SickleItem(Tiers.GOLD, settings), ModItemSettings.sickle(Tiers.GOLD, SickleItem.SPEED));
     public static final RegistryObject<Item> DIAMOND_SICKLE = register("diamond_sickle", settings -> new SickleItem(Tiers.DIAMOND, settings), ModItemSettings.sickle(Tiers.DIAMOND, SickleItem.SPEED));

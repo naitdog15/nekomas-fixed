@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "dyed_brush",
+  "key": {
+    "#": {
+      "item": "minecraft:white_wool"
+    },
+    "D": {
+      "item": "minecraft:brush"
+    }
+  },
+  "pattern": [
+    "###",
+    "#D#",
+    "###"
+  ],
+  "result": {
+    "item": "nekomasfixed:white_dyed_brush"
+  },
+  "show_notification": true
+}

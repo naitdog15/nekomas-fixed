@@ -18,13 +18,14 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class SickleItem extends Item {
 
@@ -35,10 +36,21 @@ public class SickleItem extends Item {
     // fallback combo step for this tier - can't bake a starting value onto the stack at craft time
     private final int comboMultiplier;
 
+    // Item has no tier of its own here, so the enchantability and repair ingredient are kept next to the modifiers
+    private final int enchantability;
+    private final Supplier<Ingredient> repairIngredient;
+
     public SickleItem(Tier material, Item.Properties settings) {
+        this(material, material.getEnchantmentValue(), material::getRepairIngredient, settings);
+    }
+
+    // the copper sickle borrows the stone tier's damage and durability, but not its cobblestone repair
+    public SickleItem(Tier material, int enchantability, Supplier<Ingredient> repairIngredient, Item.Properties settings) {
         super(settings);
         this.defaultModifiers = ModItemSettings.sickleAttributeModifiers(material, SPEED);
         this.comboMultiplier = ModItemSettings.sickleDefaultCombo(material);
+        this.enchantability = enchantability;
+        this.repairIngredient = repairIngredient;
     }
 
     public int comboMultiplier() {
@@ -60,8 +72,13 @@ public class SickleItem extends Item {
     }
 
     @Override
+    public int getEnchantmentValue() {
+        return this.enchantability;
+    }
+
+    @Override
     public boolean isValidRepairItem(ItemStack stack, ItemStack ingredient) {
-        return ingredient.is(Items.IRON_INGOT);
+        return this.repairIngredient.get().test(ingredient);
     }
 
     public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {

@@ -25,6 +25,9 @@ public class BlockEntityTypeRegistry {
     public static final RegistryObject<BlockEntityType<ClockBlockEntity>> CLOCK_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("clock",
             () -> BlockEntityType.Builder.of(ClockBlockEntity::new, BlockRegistry.CLOCK.get(), BlockRegistry.WALL_CLOCK.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<CorruptedBeaconBlockEntity>> CORRUPTED_BEACON_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("corrupted_beacon",
+            () -> BlockEntityType.Builder.of(CorruptedBeaconBlockEntity::new, BlockRegistry.CORRUPTED_BEACON.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<EndermanHeadBlockEntity>> ENDERMAN_HEAD_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("enderman_head",
             () -> BlockEntityType.Builder.of(EndermanHeadBlockEntity::new, BlockRegistry.ENDERMAN_HEAD.get(), BlockRegistry.WALL_ENDERMAN_HEAD.get()).build(null));
 
