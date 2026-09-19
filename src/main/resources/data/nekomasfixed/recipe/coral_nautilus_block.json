@@ -1,0 +1,17 @@
+{
+  "type": "nekomasfixed:coral_nautilus",
+  "category": "misc",
+  "key": {
+    "#": "nekomasfixed:zombie_nautilus_block",
+    "C": "#nekomasfixed:corals"
+  },
+  "pattern": [
+    "CCC",
+    "C#C",
+    "CCC"
+  ],
+  "result": {
+    "count": 1,
+    "id": "nekomasfixed:coral_nautilus_block"
+  }
+}

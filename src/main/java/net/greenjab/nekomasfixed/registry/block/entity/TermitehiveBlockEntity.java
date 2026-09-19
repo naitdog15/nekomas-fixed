@@ -3,49 +3,49 @@ package net.greenjab.nekomasfixed.registry.block.entity;
 import com.google.common.collect.Lists;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.greenjab.nekomasfixed.registry.entity.TermiteChewEffects;
+import net.greenjab.nekomasfixed.registry.entity.TermiteEntity;
+import net.greenjab.nekomasfixed.registry.other.TermitesComponent;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
+import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
-import net.greenjab.nekomasfixed.registry.registries.SoundRegistry;
-import net.greenjab.nekomasfixed.util.EntityNbtHelper;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.VisibleForDebug;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.gameevent.GameEvent;
-import javax.annotation.Nullable;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.component.ComponentMap;
+import net.minecraft.component.ComponentsAccess;
+import net.minecraft.entity.*;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.NbtWriteView;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
+import net.minecraft.util.ErrorReporter;
+import net.minecraft.util.annotation.Debug;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 public class TermitehiveBlockEntity extends BlockEntity {
     static final Logger LOGGER = LogUtils.getLogger();
-    // mirrors AnimalComponent.IRRELEVANT_ANIMAL_NBT_KEYS plus the two pollination counters
     static final List<String> IRRELEVANT_TERMITE_NBT_KEYS = Arrays.asList(
             "Air",
-            "ArmorDropChances",
-            "HandDropChances",
-            "ArmorItems",
-            "HandItems",
+            "drop_chances",
+            "equipment",
             "Brain",
             "CanPickUpLoot",
             "DeathTime",
-            "FallDistance",
+            "fall_distance",
             "FallFlying",
             "Fire",
             "HurtByTimestamp",
@@ -57,29 +57,25 @@ public class TermitehiveBlockEntity extends BlockEntity {
             "PortalCooldown",
             "Pos",
             "Rotation",
-            "SleepingX",
-            "SleepingY",
-            "SleepingZ",
+            "sleeping_pos",
             "CannotEnterHiveTicks",
             "TicksSincePollination",
             "CropsGrownSincePollination",
-            "HivePos",
+            "hive_pos",
             "Passengers",
-            "Leash",
+            "leash",
             "UUID"
     );
     private final List<TermitehiveBlockEntity.Termite> termites = Lists.newArrayList();
 
     public TermitehiveBlockEntity(BlockPos pos, BlockState state) {
-        super(BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY.get(), pos, state);
+        super(BlockEntityTypeRegistry.TERMITE_HIVE_BLOCK_ENTITY, pos, state);
     }
 
-    // setChanged empties the hive (swarm comes out), so restoring a populated hive must go through
-    // addTermite - which deliberately does not mark it - never load a tag then call this.
     @Override
-    public void setChanged() {
+    public void markDirty() {
         this.angerTermites(TermitehiveBlockEntity.TermiteState.EMERGENCY);
-        super.setChanged();
+        super.markDirty();
     }
 
     public boolean hasNoTermites() {
@@ -91,61 +87,37 @@ public class TermitehiveBlockEntity extends BlockEntity {
     }
 
     public void angerTermites(TermitehiveBlockEntity.TermiteState termiteState) {
-        // Nothing to swarm out into before the hive is in a world; the occupants stay put until it is.
-        if (this.level == null) {
-            return;
-        }
         List<Entity> list = Lists.newArrayList();
-        this.termites.removeIf( termite -> releaseTermite(this.level, this.worldPosition, termite.createData(), list, termiteState));
+        this.termites.removeIf( termite -> releaseTermite(this.world, this.pos, termite.createData(), list, termiteState));
         if (!list.isEmpty()) {
-            super.setChanged();
+            super.markDirty();
         }
     }
 
-    @VisibleForDebug
+    @Debug
     public int getTermiteCount() {
         return this.termites.size();
     }
 
 
-    // nothing inside the hive changes here, so deliberately nothing to mark dirty - that would empty it
-    public void onTermiteDeposit(net.greenjab.nekomasfixed.registry.entity.Termite termite) {
-        if (this.level == null) {
-            return;
-        }
-        BlockPos blockPos = this.getBlockPos();
-        this.level.playSound(null, blockPos, SoundRegistry.TERMITE_DEPOSIT.get(), SoundSource.BLOCKS,
-                0.55F, 0.95F + this.level.getRandom().nextFloat() * 0.13F);
-        this.level.gameEvent(termite, GameEvent.BLOCK_CHANGE, blockPos);
-        if (this.level instanceof ServerLevel serverLevel) {
-            TermiteChewEffects.onDeposit(serverLevel, blockPos, this.getBlockState());
-        }
-    }
-
-    public void tryEnterMound(net.greenjab.nekomasfixed.registry.entity.Termite entity) {
+    public void tryEnterMound(TermiteEntity entity) {
         if (this.termites.size() < 2) {
             entity.stopRiding();
-            entity.ejectPassengers();
-            entity.dropLeash(true, true);
-            // unload before it settles in, so the load isn't still on its back when the hive releases it
-            if (entity.isLaden()) {
-                this.onTermiteDeposit(entity);
-                entity.setLaden(false);
-                entity.resetHunger();
-            }
+            entity.removeAllPassengers();
+            entity.detachLeash();
             this.addTermite(TermitehiveBlockEntity.TermiteData.of(entity));
-            if (this.level != null) {
+            if (this.world != null) {
 
-                BlockPos blockPos = this.getBlockPos();
-                this.level
+                BlockPos blockPos = this.getPos();
+                this.world
                         .playSound(
-                                null, blockPos.getX(), blockPos.getY(), blockPos.getZ(), SoundEvents.BEEHIVE_ENTER, SoundSource.BLOCKS, 1.0F, 1.0F
+                                null, blockPos.getX(), blockPos.getY(), blockPos.getZ(), SoundEvents.BLOCK_BEEHIVE_ENTER, SoundCategory.BLOCKS, 1.0F, 1.0F
                         );
-                this.level.gameEvent(GameEvent.BLOCK_CHANGE, blockPos, GameEvent.Context.of(entity, this.getBlockState()));
+                this.world.emitGameEvent(GameEvent.BLOCK_CHANGE, blockPos, GameEvent.Emitter.of(entity, this.getCachedState()));
             }
 
             entity.discard();
-            super.setChanged();
+            super.markDirty();
         }
     }
 
@@ -154,45 +126,45 @@ public class TermitehiveBlockEntity extends BlockEntity {
     }
 
     private static boolean releaseTermite(
-            Level level,
+            World world,
             BlockPos pos,
             TermitehiveBlockEntity.TermiteData termite,
             @Nullable List<Entity> entities,
             TermitehiveBlockEntity.TermiteState termiteState
     ) {
 
-        Direction direction = Direction.fromYRot(level.getRandom().nextInt(360));
-        BlockPos blockPos = pos.relative(direction);
-        boolean bl = !level.getBlockState(blockPos).getCollisionShape(level, blockPos).isEmpty();
+        Direction direction = Direction.fromHorizontalDegrees(world.random.nextInt(360));
+        BlockPos blockPos = pos.offset(direction);
+        boolean bl = !world.getBlockState(blockPos).getCollisionShape(world, blockPos).isEmpty();
         if (bl && termiteState != TermitehiveBlockEntity.TermiteState.EMERGENCY) {
             return false;
         } else {
-            Entity entity = termite.loadEntity(level);
+            Entity entity = termite.loadEntity(world);
             if (entity != null) {
-                if (entity instanceof net.greenjab.nekomasfixed.registry.entity.Termite termiteEntity) {
+                if (entity instanceof TermiteEntity termiteEntity) {
 
                     if (entities != null) {
                         entities.add(termiteEntity);
                     }
 
-                    float f = entity.getBbWidth();
+                    float f = entity.getWidth();
                     double d = bl ? 0.0 : 0.55 + f / 2.0F;
-                    double e = pos.getX() + 0.5 + d * direction.getStepX();
-                    double g = pos.getY() + 0.5 - entity.getBbHeight() / 2.0F;
-                    double h = pos.getZ() + 0.5 + d * direction.getStepZ();
-                    entity.moveTo(e, g, h, entity.getYRot(), entity.getXRot());
+                    double e = pos.getX() + 0.5 + d * direction.getOffsetX();
+                    double g = pos.getY() + 0.5 - entity.getHeight() / 2.0F;
+                    double h = pos.getZ() + 0.5 + d * direction.getOffsetZ();
+                    entity.refreshPositionAndAngles(e, g, h, entity.getYaw(), entity.getPitch());
                 }
 
-                level.playSound(null, pos, SoundEvents.BEEHIVE_EXIT, SoundSource.BLOCKS, 1.0F, 1.0F);
-                level.gameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Context.of(entity, level.getBlockState(pos)));
-                return level.addFreshEntity(entity);
+                world.playSound(null, pos, SoundEvents.BLOCK_BEEHIVE_EXIT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                world.emitGameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Emitter.of(entity, world.getBlockState(pos)));
+                return world.spawnEntity(entity);
             } else {
                 return false;
             }
         }
     }
 
-    private static void tickTermites(Level level, BlockPos pos, BlockState state, List<TermitehiveBlockEntity.Termite> termites) {
+    private static void tickTermites(World world, BlockPos pos, BlockState state, List<TermitehiveBlockEntity.Termite> termites) {
         boolean bl = false;
         Iterator<TermitehiveBlockEntity.Termite> iterator = termites.iterator();
 
@@ -200,7 +172,7 @@ public class TermitehiveBlockEntity extends BlockEntity {
             TermitehiveBlockEntity.Termite termite = iterator.next();
             if (termite.canExitHive()) {
                 TermitehiveBlockEntity.TermiteState termiteState = TermitehiveBlockEntity.TermiteState.TERMITE_RELEASED;
-                if (releaseTermite(level, pos, termite.createData(), null, termiteState)) {
+                if (releaseTermite(world, pos, termite.createData(), null, termiteState)) {
                     bl = true;
                     iterator.remove();
                 }
@@ -208,47 +180,61 @@ public class TermitehiveBlockEntity extends BlockEntity {
         }
 
         if (bl) {
-            setChanged(level, pos, state);
+            markDirty(world, pos, state);
         }
     }
 
-    public static void serverTick(Level level, BlockPos pos, BlockState state, TermitehiveBlockEntity blockEntity) {
-        tickTermites(level, pos, state, blockEntity.termites);
-        if (!blockEntity.termites.isEmpty() && level.getRandom().nextDouble() < 0.005) {
+    public static void serverTick(World world, BlockPos pos, BlockState state, TermitehiveBlockEntity blockEntity) {
+        tickTermites(world, pos, state, blockEntity.termites);
+        if (!blockEntity.termites.isEmpty() && world.getRandom().nextDouble() < 0.005) {
             double d = pos.getX() + 0.5;
             double e = pos.getY();
             double f = pos.getZ() + 0.5;
-            level.playSound(null, d, e, f, SoundEvents.BEEHIVE_WORK, SoundSource.BLOCKS, 1.0F, 1.0F);
+            world.playSound(null, d, e, f, SoundEvents.BLOCK_BEEHIVE_WORK, SoundCategory.BLOCKS, 1.0F, 1.0F);
         }
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void readData(ReadView view) {
+        super.readData(view);
         this.termites.clear();
-        if (tag.contains("termites", Tag.TAG_LIST)) {
-            TermitehiveBlockEntity.TermiteData.LIST_CODEC.parse(NbtOps.INSTANCE, tag.get("termites"))
-                    .resultOrPartial(error -> LOGGER.error("nekomasfixed: unreadable termites in the hive at {}: {}", this.worldPosition, error))
-                    .ifPresent(list -> list.forEach(this::addTermite));
-        }
+        (view.read("termites", TermitehiveBlockEntity.TermiteData.LIST_CODEC).orElse(List.of())).forEach(this::addTermite);
     }
 
-    // no key at all when empty, so copying this block entity onto a stack never stamps a leftover
-    // empty list; writes the live tick counts so a termite keeps its queue position across a save.
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        List<TermitehiveBlockEntity.TermiteData> data = this.createTermitesData();
-        if (!data.isEmpty()) {
-            DataResult<Tag> encoded = TermitehiveBlockEntity.TermiteData.LIST_CODEC.encodeStart(NbtOps.INSTANCE, data);
-            encoded.error().ifPresent(error -> LOGGER.error("nekomasfixed: could not save the termites in the hive at {}: {}", this.worldPosition, error.message()));
-            encoded.result().ifPresent(value -> tag.put("termites", value));
-        }
+    protected void writeData(WriteView view) {
+        super.writeData(view);
+        view.put("termites", TermitehiveBlockEntity.TermiteData.LIST_CODEC, this.createTermitesData());
     }
 
-    public List<TermitehiveBlockEntity.TermiteData> createTermitesData() {
+    @Override
+    protected void readComponents(ComponentsAccess components) {
+        super.readComponents(components);
+        this.termites.clear();
+        List<TermitehiveBlockEntity.TermiteData> list = components.getOrDefault(ComponentRegistry.TERMITES, TermitesComponent.DEFAULT).termites();
+        list.forEach(this::addTermite);
+    }
+
+    @Override
+    protected void addComponents(ComponentMap.Builder builder) {
+        super.addComponents(builder);
+        builder.add(ComponentRegistry.TERMITES, new TermitesComponent(this.createTermitesData()));
+    }
+
+    @Override
+    public void removeFromCopiedStackData(WriteView view) {
+        super.removeFromCopiedStackData(view);
+        view.remove("termites");
+    }
+
+    private List<TermitehiveBlockEntity.TermiteData> createTermitesData() {
         return this.termites.stream().map(TermitehiveBlockEntity.Termite::createData).toList();
     }
+
+   /* @Override
+    public void registerTracking(ServerWorld world, DebugTrackable.Tracker tracker) {
+        tracker.track(DebugSubscriptionTypes.TERMITE_HIVES, () -> TermiteHiveDebugData.fromTermitehive(this));
+    }*/
 
     static class Termite {
         private final TermitehiveBlockEntity.TermiteData data;
@@ -269,34 +255,50 @@ public class TermitehiveBlockEntity extends BlockEntity {
 
     }
 
-    // kept as a plain CompoundTag with its own "id" key, via EntityNbtHelper - same shape AnimalComponent.StoredEntityData uses
-    public record TermiteData(CompoundTag entityData, int ticksInHive, int minTicksInHive) {
+    public record TermiteData(TypedEntityData<EntityType<?>> entityData, int ticksInHive, int minTicksInHive) {
         public static final Codec<TermitehiveBlockEntity.TermiteData> CODEC = RecordCodecBuilder.create(
                  instance -> instance.group(
-                                CompoundTag.CODEC.fieldOf("entity_data").forGetter(TermitehiveBlockEntity.TermiteData::entityData),
+                                TypedEntityData.createCodec(EntityType.CODEC).fieldOf("entity_data").forGetter(TermitehiveBlockEntity.TermiteData::entityData),
                                 Codec.INT.fieldOf("ticks_in_hive").forGetter(TermitehiveBlockEntity.TermiteData::ticksInHive),
                                 Codec.INT.fieldOf("min_ticks_in_hive").forGetter(TermitehiveBlockEntity.TermiteData::minTicksInHive)
                         )
                         .apply(instance, TermitehiveBlockEntity.TermiteData::new)
         );
         public static final Codec<List<TermitehiveBlockEntity.TermiteData>> LIST_CODEC = CODEC.listOf();
+        public static final PacketCodec<RegistryByteBuf, TermitehiveBlockEntity.TermiteData> PACKET_CODEC = PacketCodec.tuple(
+                TypedEntityData.createPacketCodec(EntityType.PACKET_CODEC),
+                TermitehiveBlockEntity.TermiteData::entityData,
+                PacketCodecs.VAR_INT,
+                TermitehiveBlockEntity.TermiteData::ticksInHive,
+                PacketCodecs.VAR_INT,
+                TermitehiveBlockEntity.TermiteData::minTicksInHive,
+                TermitehiveBlockEntity.TermiteData::new
+        );
 
         public static TermitehiveBlockEntity.TermiteData of(Entity entity) {
-            CompoundTag tag = EntityNbtHelper.store(entity, Set.copyOf(TermitehiveBlockEntity.IRRELEVANT_TERMITE_NBT_KEYS));
-            boolean hasNectar = tag.getBoolean("HasNectar");
-            return new TermitehiveBlockEntity.TermiteData(tag, 0, hasNectar ? 2400 : 600);
+            TermitehiveBlockEntity.TermiteData var5;
+            try (ErrorReporter.Logging logging = new ErrorReporter.Logging(entity.getErrorReporterContext(), TermitehiveBlockEntity.LOGGER)) {
+                NbtWriteView nbtWriteView = NbtWriteView.create(logging, entity.getRegistryManager());
+                entity.saveData(nbtWriteView);
+                TermitehiveBlockEntity.IRRELEVANT_TERMITE_NBT_KEYS.forEach(nbtWriteView::remove);
+                NbtCompound nbtCompound = nbtWriteView.getNbt();
+                boolean bl = nbtCompound.getBoolean("HasNectar", false);
+                var5 = new TermitehiveBlockEntity.TermiteData(TypedEntityData.create(entity.getType(), nbtCompound), 0, bl ? 2400 : 600);
+            }
+
+            return var5;
         }
 
         public static TermitehiveBlockEntity.TermiteData create(int ticksInHive) {
-            CompoundTag tag = new CompoundTag();
-            tag.putString("id", EntityType.getKey(EntityTypeRegistry.TERMITE.get()).toString());
-            return new TermitehiveBlockEntity.TermiteData(tag, ticksInHive, 600);
+            return new TermitehiveBlockEntity.TermiteData(TypedEntityData.create(EntityTypeRegistry.TERMITE, new NbtCompound()), ticksInHive, 600);
         }
 
         @Nullable
-        public Entity loadEntity(Level level) {
-            Entity entity = EntityNbtHelper.load(this.entityData.copy(), level);
-            if (entity != null && entity.getType() == EntityTypeRegistry.TERMITE.get()) {
+        public Entity loadEntity(World world) {
+            NbtCompound nbtCompound = this.entityData.copyNbtWithoutId();
+            TermitehiveBlockEntity.IRRELEVANT_TERMITE_NBT_KEYS.forEach(nbtCompound::remove);
+            Entity entity = EntityType.loadEntityWithPassengers(this.entityData.getType(), nbtCompound, world, SpawnReason.LOAD, LoadedEntityProcessor.NOOP);
+            if (entity != null && entity.getType()==EntityTypeRegistry.TERMITE) {
                 return entity;
             } else {
                 return null;

@@ -1,31 +1,37 @@
 package net.greenjab.nekomasfixed.mixin;
 
-import net.greenjab.nekomasfixed.network.ServerFlags;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.FarmBlock;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.FarmlandBlock;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(FarmBlock.class)
+@Mixin(FarmlandBlock.class)
 public class FarmlandBlockMixin {
 
-    @Inject(method = "fallOn", at = @At("HEAD"), cancellable = true)
-    private void preventTrample(Level level, BlockState state, BlockPos pos, Entity entity, float fallDistance, CallbackInfo ci) {
-        if (!ServerFlags.featherFallingSavesCrops()) return;
+    @Inject(method = "onLandedUpon", at = @At("HEAD"), cancellable = true)
+    private void preventTrample(World world, BlockState state, BlockPos pos, Entity entity, double fallDistance, CallbackInfo ci) {
         if (entity instanceof LivingEntity livingEntity) {
-            ItemStack boots = livingEntity.getItemBySlot(EquipmentSlot.FEET);
-            int eLevel = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FALL_PROTECTION, boots);
-            if (eLevel > 0) ci.cancel();
+            ItemStack boots = livingEntity.getEquippedStack(EquipmentSlot.FEET);
+
+            Registry<Enchantment> enchantmentLookup = world.getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT);
+            RegistryEntry.Reference<Enchantment> featherFallingEntry = enchantmentLookup.getOrThrow(Enchantments.FEATHER_FALLING);
+            int level = EnchantmentHelper.getLevel(featherFallingEntry, boots);
+
+            if (level > 0) ci.cancel();
         }
     }
 }

@@ -1,21 +1,14 @@
 package net.greenjab.nekomasfixed.render.entity.model;
 
-import net.greenjab.nekomasfixed.registry.entity.Termite;
 import net.greenjab.nekomasfixed.render.entity.animation.TermiteAnimations;
-import net.minecraft.client.model.HierarchicalModel;
-import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.model.geom.PartPose;
-import net.minecraft.client.model.geom.builders.CubeDeformation;
-import net.minecraft.client.model.geom.builders.CubeListBuilder;
-import net.minecraft.client.model.geom.builders.LayerDefinition;
-import net.minecraft.client.model.geom.builders.MeshDefinition;
-import net.minecraft.client.model.geom.builders.PartDefinition;
-import net.minecraft.util.Mth;
+import net.greenjab.nekomasfixed.render.entity.state.TermiteRenderState;
+import net.minecraft.client.model.*;
+import net.minecraft.client.render.entity.animation.Animation;
+import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.util.math.MathHelper;
 
-public class TermiteModel extends HierarchicalModel<Termite> {
-    private final ModelPart root;
+public class TermiteModel extends EntityModel<TermiteRenderState> {
     private final ModelPart head;
-    private final ModelPart sack;
     private final ModelPart front_right_leg;
     private final ModelPart front_left_leg;
     private final ModelPart middle_right_leg;
@@ -23,19 +16,12 @@ public class TermiteModel extends HierarchicalModel<Termite> {
     private final ModelPart back_right_leg;
     private final ModelPart back_left_leg;
 
-    private static final float LADEN_SACK_X_SCALE = 1.30F;
-    private static final float LADEN_SACK_Y_SCALE = 1.25F;
-    private static final float LADEN_SACK_Z_SCALE = 1.30F;
-    // keeps the swollen sack's underside off the legs, growing it backwards instead of into the body
-    private static final float LADEN_SACK_Y_SHIFT = 0.35F;
-    private static final float LADEN_SACK_Z_SHIFT = 0.15F;
-
+    private final Animation swipingAnimation;
     public TermiteModel(ModelPart root) {
-        this.root = root;
+        super(root);
         ModelPart bone = root.getChild("bone");
         ModelPart body = bone.getChild("body");
         this.head = body.getChild("head");
-        this.sack = body.getChild("sack");
         ModelPart legs = body.getChild("legs");
         this.front_right_leg = legs.getChild("front_right_leg");
         this.front_left_leg = legs.getChild("front_left_leg");
@@ -43,88 +29,77 @@ public class TermiteModel extends HierarchicalModel<Termite> {
         this.middle_left_leg = legs.getChild("middle_left_leg");
         this.back_right_leg = legs.getChild("back_right_leg");
         this.back_left_leg = legs.getChild("back_left_leg");
+
+        this.swipingAnimation = TermiteAnimations.ANIM_TERMITE_SWIPE.createAnimation(root);
     }
+    public static TexturedModelData getTexturedModelData() {
+        ModelData modelData = new ModelData();
+        ModelPartData modelPartData = modelData.getRoot();
+        ModelPartData bone = modelPartData.addChild("bone", ModelPartBuilder.create(), ModelTransform.origin(0.0F, 24.0F, 0.0F));
+
+        ModelPartData body = bone.addChild("body", ModelPartBuilder.create().uv(17, 0).cuboid(-2.0F, -2.75F, -1.0F, 3.0F, 3.0F, 3.0F, new Dilation(0.0F)), ModelTransform.origin(0.5F, -1.0F, 0.0F));
+
+        body.addChild("sack", ModelPartBuilder.create().uv(4, 19).cuboid(-2.5F, -1.5F, -0.5F, 5.0F, 3.0F, 5.0F, new Dilation(0.0F)), ModelTransform.origin(-0.5F, -1.5F, 2.5F));
+
+        ModelPartData head = body.addChild("head", ModelPartBuilder.create().uv(1, 0).cuboid(-2.0F, -1.5F, -4.0F, 4.0F, 3.0F, 4.0F, new Dilation(0.0F)), ModelTransform.origin(-0.5F, -1.5F, -1.0F));
+
+        ModelPartData antler = head.addChild("antler", ModelPartBuilder.create(), ModelTransform.origin(1.5F, -1.5F, -4.0F));
+
+        antler.addChild("cube_r1", ModelPartBuilder.create().uv(1, 7).cuboid(-0.5F, -2.0F, 0.0F, 1.0F, 2.0F, 0.0F, new Dilation(0.0F))
+                .uv(1, 7).cuboid(2.5F, -2.0F, 0.0F, 1.0F, 2.0F, 0.0F, new Dilation(0.0F)), ModelTransform.of(-3.0F, 0.0F, 0.0F, 0.4363F, 0.0F, 0.0F));
+
+        head.addChild("pincher", ModelPartBuilder.create().uv(1, 6).cuboid(-2.0F, -1.3333F, -0.9167F, 0.0F, 2.0F, 1.0F, new Dilation(0.0F))
+                .uv(1, 7).cuboid(-2.0F, -0.3333F, -1.9167F, 0.0F, 1.0F, 1.0F, new Dilation(0.0F))
+                .uv(1, 8).cuboid(-2.0F, -0.3333F, -1.9167F, 1.0F, 1.0F, 0.0F, new Dilation(0.0F))
+                .uv(1, 8).cuboid(1.0F, -0.3333F, -1.9167F, 1.0F, 1.0F, 0.0F, new Dilation(0.0F))
+                .uv(1, 7).cuboid(2.0F, -0.3333F, -1.9167F, 0.0F, 1.0F, 1.0F, new Dilation(0.0F))
+                .uv(1, 6).cuboid(2.0F, -1.3333F, -0.9167F, 0.0F, 2.0F, 1.0F, new Dilation(0.0F)), ModelTransform.origin(0.0F, 0.8333F, -4.0833F));
+
+        ModelPartData legs = body.addChild("legs", ModelPartBuilder.create(), ModelTransform.origin(1.43F, -0.6F, -0.5F));
+
+        ModelPartData front_right_leg = legs.addChild("front_right_leg", ModelPartBuilder.create().uv(14, 11).cuboid(-1.68F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.1F)), ModelTransform.origin(0.0F, 0.0F, -1.0F));
+        front_right_leg.addChild("cube_r2", ModelPartBuilder.create().uv(13, 17).cuboid(0.02F, -0.5F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.11F)), ModelTransform.of(-0.1F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
+
+        ModelPartData front_left_leg = legs.addChild("front_left_leg", ModelPartBuilder.create().uv(13, 17).cuboid(-1.68F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.1F)), ModelTransform.of(-4.0F, 0.0F, -1.0F, 0.0F, 3.1416F, 0.0F));
+        front_left_leg.addChild("cube_r3", ModelPartBuilder.create().uv(13, 17).cuboid(0.02F, -0.5F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.11F)), ModelTransform.of(-0.1F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
+
+        ModelPartData middle_right_leg = legs.addChild("middle_right_leg", ModelPartBuilder.create().uv(13, 17).cuboid(-1.68F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.1F)), ModelTransform.origin(0.0F, 0.0F, 1.0F));
+        middle_right_leg.addChild("cube_r4", ModelPartBuilder.create().uv(13, 17).cuboid(0.2248F, -0.6434F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.11F)), ModelTransform.of(-0.35F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
+
+        ModelPartData middle_left_leg = legs.addChild("middle_left_leg", ModelPartBuilder.create().uv(13, 17).cuboid(-1.18F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.1F)), ModelTransform.of(-3.5F, 0.0F, 1.0F, 0.0F, 3.1416F, 0.0F));
+        middle_left_leg.addChild("cube_r5", ModelPartBuilder.create().uv(13, 17).cuboid(0.4296F, -0.7868F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.11F)), ModelTransform.of(-0.1F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
+
+        ModelPartData back_right_leg = legs.addChild("back_right_leg", ModelPartBuilder.create().uv(4, 11).cuboid(-1.68F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.1F)), ModelTransform.origin(0.0F, 0.0F, 3.0F));
+        back_right_leg.addChild("cube_r6", ModelPartBuilder.create().uv(13, 17).cuboid(0.02F, -0.5F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.11F)), ModelTransform.of(-0.1F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
+
+        ModelPartData back_left_leg = legs.addChild("back_left_leg", ModelPartBuilder.create().uv(6, 18).cuboid(-1.68F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.1F)), ModelTransform.of(-4.0F, 0.0F, 3.0F, 0.0F, 3.1416F, 0.0F));
+        back_left_leg.addChild("cube_r7", ModelPartBuilder.create().uv(13, 17).cuboid(0.02F, -0.5F, -0.5F, 2.0F, 1.0F, 1.0F, new Dilation(-0.11F)), ModelTransform.of(-0.1F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
+        return TexturedModelData.of(modelData, 32, 32);
+    }
+
 
     @Override
-    public ModelPart root() {
-        return this.root;
-    }
+    public void setAngles(TermiteRenderState state) {
+        super.setAngles(state);
 
-    public static LayerDefinition getTexturedModelData() {
-        MeshDefinition modelData = new MeshDefinition();
-        PartDefinition modelPartData = modelData.getRoot();
-        PartDefinition bone = modelPartData.addOrReplaceChild("bone", CubeListBuilder.create(), PartPose.offset(0.0F, 24.0F, 0.0F));
-
-        PartDefinition body = bone.addOrReplaceChild("body", CubeListBuilder.create().texOffs(17, 0).addBox(-2.0F, -2.75F, -1.0F, 3.0F, 3.0F, 3.0F, new CubeDeformation(0.0F)), PartPose.offset(0.5F, -1.0F, 0.0F));
-
-        body.addOrReplaceChild("sack", CubeListBuilder.create().texOffs(4, 19).addBox(-2.5F, -1.5F, -0.5F, 5.0F, 3.0F, 5.0F, new CubeDeformation(0.0F)), PartPose.offset(-0.5F, -1.5F, 2.5F));
-
-        PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create().texOffs(1, 0).addBox(-2.0F, -1.5F, -4.0F, 4.0F, 3.0F, 4.0F, new CubeDeformation(0.0F)), PartPose.offset(-0.5F, -1.5F, -1.0F));
-
-        PartDefinition antler = head.addOrReplaceChild("antler", CubeListBuilder.create(), PartPose.offset(1.5F, -1.5F, -4.0F));
-
-        antler.addOrReplaceChild("cube_r1", CubeListBuilder.create().texOffs(1, 7).addBox(-0.5F, -2.0F, 0.0F, 1.0F, 2.0F, 0.0F, new CubeDeformation(0.0F))
-                .texOffs(1, 7).addBox(2.5F, -2.0F, 0.0F, 1.0F, 2.0F, 0.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-3.0F, 0.0F, 0.0F, 0.4363F, 0.0F, 0.0F));
-
-        head.addOrReplaceChild("pincher", CubeListBuilder.create().texOffs(1, 6).addBox(-2.0F, -1.3333F, -0.9167F, 0.0F, 2.0F, 1.0F, new CubeDeformation(0.0F))
-                .texOffs(1, 7).addBox(-2.0F, -0.3333F, -1.9167F, 0.0F, 1.0F, 1.0F, new CubeDeformation(0.0F))
-                .texOffs(1, 8).addBox(-2.0F, -0.3333F, -1.9167F, 1.0F, 1.0F, 0.0F, new CubeDeformation(0.0F))
-                .texOffs(1, 8).addBox(1.0F, -0.3333F, -1.9167F, 1.0F, 1.0F, 0.0F, new CubeDeformation(0.0F))
-                .texOffs(1, 7).addBox(2.0F, -0.3333F, -1.9167F, 0.0F, 1.0F, 1.0F, new CubeDeformation(0.0F))
-                .texOffs(1, 6).addBox(2.0F, -1.3333F, -0.9167F, 0.0F, 2.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offset(0.0F, 0.8333F, -4.0833F));
-
-        PartDefinition legs = body.addOrReplaceChild("legs", CubeListBuilder.create(), PartPose.offset(1.43F, -0.6F, -0.5F));
-
-        PartDefinition front_right_leg = legs.addOrReplaceChild("front_right_leg", CubeListBuilder.create().texOffs(14, 11).addBox(-1.68F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.1F)), PartPose.offset(0.0F, 0.0F, -1.0F));
-        front_right_leg.addOrReplaceChild("cube_r2", CubeListBuilder.create().texOffs(13, 17).addBox(0.02F, -0.5F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.11F)), PartPose.offsetAndRotation(-0.1F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
-
-        PartDefinition front_left_leg = legs.addOrReplaceChild("front_left_leg", CubeListBuilder.create().texOffs(13, 17).addBox(-1.68F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.1F)), PartPose.offsetAndRotation(-4.0F, 0.0F, -1.0F, 0.0F, 3.1416F, 0.0F));
-        front_left_leg.addOrReplaceChild("cube_r3", CubeListBuilder.create().texOffs(13, 17).addBox(0.02F, -0.5F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.11F)), PartPose.offsetAndRotation(-0.1F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
-
-        PartDefinition middle_right_leg = legs.addOrReplaceChild("middle_right_leg", CubeListBuilder.create().texOffs(13, 17).addBox(-1.68F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.1F)), PartPose.offset(0.0F, 0.0F, 1.0F));
-        middle_right_leg.addOrReplaceChild("cube_r4", CubeListBuilder.create().texOffs(13, 17).addBox(0.2248F, -0.6434F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.11F)), PartPose.offsetAndRotation(-0.35F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
-
-        PartDefinition middle_left_leg = legs.addOrReplaceChild("middle_left_leg", CubeListBuilder.create().texOffs(13, 17).addBox(-1.18F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.1F)), PartPose.offsetAndRotation(-3.5F, 0.0F, 1.0F, 0.0F, 3.1416F, 0.0F));
-        middle_left_leg.addOrReplaceChild("cube_r5", CubeListBuilder.create().texOffs(13, 17).addBox(0.4296F, -0.7868F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.11F)), PartPose.offsetAndRotation(-0.1F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
-
-        PartDefinition back_right_leg = legs.addOrReplaceChild("back_right_leg", CubeListBuilder.create().texOffs(4, 11).addBox(-1.68F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.1F)), PartPose.offset(0.0F, 0.0F, 3.0F));
-        back_right_leg.addOrReplaceChild("cube_r6", CubeListBuilder.create().texOffs(13, 17).addBox(0.02F, -0.5F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.11F)), PartPose.offsetAndRotation(-0.1F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
-
-        PartDefinition back_left_leg = legs.addOrReplaceChild("back_left_leg", CubeListBuilder.create().texOffs(6, 18).addBox(-1.68F, -0.4F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.1F)), PartPose.offsetAndRotation(-4.0F, 0.0F, 3.0F, 0.0F, 3.1416F, 0.0F));
-        back_left_leg.addOrReplaceChild("cube_r7", CubeListBuilder.create().texOffs(13, 17).addBox(0.02F, -0.5F, -0.5F, 2.0F, 1.0F, 1.0F, new CubeDeformation(-0.11F)), PartPose.offsetAndRotation(-0.1F, -0.05F, 0.0F, 0.0F, 0.0F, 0.6109F));
-        return LayerDefinition.create(modelData, 32, 32);
-    }
-
-    @Override
-    public void setupAnim(Termite entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
-        // Keyframe channels add to whatever a part already holds, so every frame starts from the baked pose.
-        this.root().getAllParts().forEach(ModelPart::resetPose);
+        float swing = state.limbSwingAnimationProgress;
+        float amount = state.limbSwingAmplitude;
 
         float speed = 4.0F;
         float degree = 1F;
-        this.front_right_leg.xRot = Mth.cos(limbSwing * speed) * degree * limbSwingAmount;
-        this.middle_right_leg.xRot = Mth.cos(limbSwing * speed + (float) Math.PI) * degree * limbSwingAmount;
-        this.back_right_leg.xRot = Mth.cos(limbSwing * speed) * degree * limbSwingAmount;
-        this.front_left_leg.xRot = Mth.cos(limbSwing * speed + (float) Math.PI) * degree * limbSwingAmount;
-        this.middle_left_leg.xRot = Mth.cos(limbSwing * speed) * degree * limbSwingAmount;
-        this.back_left_leg.xRot = Mth.cos(limbSwing * speed + (float) Math.PI) * degree * limbSwingAmount;
+        this.front_right_leg.pitch = MathHelper.cos(swing * speed) * degree * amount;
+        this.middle_right_leg.pitch = MathHelper.cos(swing * speed + (float)Math.PI) * degree * amount;
+        this.back_right_leg.pitch = MathHelper.cos(swing * speed) * degree * amount;
+        this.front_left_leg.pitch = MathHelper.cos(swing * speed + (float)Math.PI) * degree * amount;
+        this.middle_left_leg.pitch = MathHelper.cos(swing * speed) * degree * amount;
+        this.back_left_leg.pitch = MathHelper.cos(swing * speed + (float)Math.PI) * degree * amount;
 
-        float headYaw = Mth.clamp(netHeadYaw, -30.0F, 30.0F);
-        float headPitchClamped = Mth.clamp(headPitch, -25.0F, 45.0F);
-        this.head.yRot = headYaw * 0.017453292F;
-        this.head.xRot = headPitchClamped * 0.017453292F;
+        float headYaw = MathHelper.clamp(state.relativeHeadYaw, -30.0F, 30.0F);
+        float headPitch = MathHelper.clamp(state.pitch, -25.0F, 45.0F);
+        this.head.yaw = headYaw * 0.017453292F;
+        this.head.pitch = headPitch * 0.017453292F;
 
-        // The swell is a base size the chew channel then pulses around, so it is applied before the animations run.
-        if (entity.isLaden()) {
-            this.sack.xScale = LADEN_SACK_X_SCALE;
-            this.sack.yScale = LADEN_SACK_Y_SCALE;
-            this.sack.zScale = LADEN_SACK_Z_SCALE;
-            this.sack.y -= LADEN_SACK_Y_SHIFT;
-            this.sack.z += LADEN_SACK_Z_SHIFT;
-        }
-
-        // animate() writes nothing while its state is stopped, so gating these on the entity's own state would be redundant.
-        this.animate(entity.swipeAnimationState, TermiteAnimations.ANIM_TERMITE_SWIPE, ageInTicks);
-        this.animate(entity.chewAnimationState, TermiteAnimations.ANIM_TERMITE_CHEW, ageInTicks);
+        this.swipingAnimation.apply(state.swipeAnimationState, state.age);
     }
+
 }

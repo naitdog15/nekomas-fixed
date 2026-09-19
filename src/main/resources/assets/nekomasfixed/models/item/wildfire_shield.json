@@ -1,5 +1,4 @@
 {
-    "parent": "builtin/entity",
     "gui_light": "front",
     "textures": {
         "particle": "block/dark_oak_planks"
@@ -45,13 +44,5 @@
             "translation": [ 2, 4, 2],
             "scale":[ 0.25, 0.25, 0.25]
         }
-    },
-    "overrides": [
-        {
-            "predicate": {
-                "nekomasfixed:blocking": 1
-            },
-            "model": "nekomasfixed:item/wildfire_shield_blocking"
-        }
-    ]
+    }
 }

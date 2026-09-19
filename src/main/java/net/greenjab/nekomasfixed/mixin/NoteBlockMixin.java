@@ -1,11 +1,11 @@
 package net.greenjab.nekomasfixed.mixin;
 
 import net.greenjab.nekomasfixed.registry.block.entity.EndermanHeadBlockEntity;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.NoteBlock;
+import net.minecraft.block.NoteBlock;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,8 +14,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(NoteBlock.class)
 public abstract class NoteBlockMixin {
 
-	@Inject(method="getCustomSoundId", at = @At(value = "HEAD"), cancellable = true)
-	private void endermanHeadSound(Level level, BlockPos pos, CallbackInfoReturnable<ResourceLocation> cir) {
-		if (level.getBlockEntity(pos.above()) instanceof EndermanHeadBlockEntity) cir.setReturnValue(SoundEvents.ENDERMAN_AMBIENT.getLocation());
+	@Inject(method="getCustomSound", at = @At(value = "HEAD"), cancellable = true)
+	private void endermanHeadSound(World world, BlockPos pos, CallbackInfoReturnable<Identifier> cir) {
+		if (world.getBlockEntity(pos.up()) instanceof EndermanHeadBlockEntity) cir.setReturnValue(SoundEvents.ENTITY_ENDERMAN_AMBIENT.id());
 	}
 }

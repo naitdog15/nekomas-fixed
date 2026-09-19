@@ -1,122 +1,183 @@
 package net.greenjab.nekomasfixed.render.block.entity;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
+import it.unimi.dsi.fastutil.HashCommon;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.greenjab.nekomasfixed.registry.block.FloorClockBlock;
 import net.greenjab.nekomasfixed.registry.block.WallClockBlock;
 import net.greenjab.nekomasfixed.registry.block.entity.ClockBlockEntity;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.network.chat.Component;
-import net.minecraft.util.FastColor;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.RotationSegment;
+import net.greenjab.nekomasfixed.render.block.entity.state.ClockBlockEntityRenderState;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.item.ItemModelManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
+import net.minecraft.client.render.command.ModelCommandRenderer;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.item.ItemRenderState;
+import net.minecraft.client.render.state.CameraRenderState;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemDisplayContext;
+import net.minecraft.item.Items;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.*;
+import org.jetbrains.annotations.Nullable;
 
-public class ClockBlockEntityRenderer implements BlockEntityRenderer<ClockBlockEntity> {
-	private final ItemRenderer itemRenderer;
-	private final Font font;
+@Environment(EnvType.CLIENT)
+public class ClockBlockEntityRenderer<T extends BlockEntity> implements BlockEntityRenderer<T, ClockBlockEntityRenderState> {
+	private final ItemModelManager itemModelManager;
 
-	public ClockBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
-		this.itemRenderer = context.getItemRenderer();
-		this.font = context.getFont();
+	public ClockBlockEntityRenderer(BlockEntityRendererFactory.Context context) {
+		this.itemModelManager = context.itemModelManager();
 	}
 
-	@Override
-	public void render(ClockBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
-		BlockState blockState = blockEntity.getBlockState();
-		boolean wall = blockState.getBlock() instanceof WallClockBlock;
-		net.minecraft.core.Direction facing = wall ? blockState.getValue(WallClockBlock.FACING) : null;
-		int segment = wall ? RotationSegment.convertToSegment(facing.getOpposite()) : blockState.getValue(FloorClockBlock.ROTATION);
-		float yaw = RotationSegment.convertToDegrees(segment);
 
-		boolean bell = blockEntity.hasBell();
-		int timer = blockEntity.getTimer();
-		int dayTime = blockEntity.getShowsTime() && !bell
-				? (int) ((blockEntity.getLevel().getDayTime() + 6000) % 24000)
-				: -1;
+	public ClockBlockEntityRenderState createRenderState() {
+		return new ClockBlockEntityRenderState();
+	}
 
-		int color = FastColor.ARGB32.color(255, 255, 255, 255);
-		if (dayTime != -1) {
-			int hour = dayTime / 1000;
-			int min = ((dayTime % 1000) * 60) / 1000;
-			String text = (hour < 10 ? "0" : "") + hour + ":" + (min < 10 ? "0" : "") + min;
-			drawFloatingText(text, poseStack, buffer, packedLight, wall, yaw, color);
+	public void updateRenderState(
+		T clockBlockEntity,
+		ClockBlockEntityRenderState clockBlockEntityRenderState,
+		float f,
+		Vec3d vec3d,
+		@Nullable ModelCommandRenderer.CrumblingOverlayCommand crumblingOverlayCommand
+	) {
+		BlockEntityRenderer.super.updateRenderState(clockBlockEntity, clockBlockEntityRenderState, f, vec3d, crumblingOverlayCommand);
+		clockBlockEntityRenderState.poweredTicks = 0;
+		BlockState blockState = clockBlockEntity.getCachedState();
+
+		boolean bl = blockState.getBlock() instanceof WallClockBlock;
+		clockBlockEntityRenderState.facing = bl ? blockState.get(WallClockBlock.FACING) : null;
+		int i = bl ? RotationPropertyHelper.fromDirection(clockBlockEntityRenderState.facing.getOpposite()) : blockState.get(FloorClockBlock.ROTATION);
+		clockBlockEntityRenderState.yaw = RotationPropertyHelper.toDegrees(i);
+		clockBlockEntityRenderState.wall = bl;
+
+		if (clockBlockEntity instanceof ClockBlockEntity clockBlockEntity2) {
+			clockBlockEntityRenderState.bell = clockBlockEntity2.hasBell();
+			clockBlockEntityRenderState.timer = clockBlockEntity2.getTimer();
+			clockBlockEntityRenderState.dayTime = clockBlockEntity2.getShowsTime() && !clockBlockEntity2.hasBell() ? (int) (int) ((clockBlockEntity2.getEntityWorld().getTimeOfDay() + 6000) % 24000) :-1;
+
+			ItemRenderState clockRenderState = new ItemRenderState();
+			this.itemModelManager.clearAndUpdate(clockRenderState, Items.CLOCK.getDefaultStack(), ItemDisplayContext.FIXED, clockBlockEntity2.getEntityWorld(), clockBlockEntity2, HashCommon.long2int(clockBlockEntity.getPos().asLong()));
+			clockBlockEntityRenderState.clockRenderState = clockRenderState;
+			ItemRenderState standRenderState = new ItemRenderState();
+			this.itemModelManager.clearAndUpdate(standRenderState, Items.SPRUCE_FENCE_GATE.getDefaultStack(), ItemDisplayContext.FIXED, clockBlockEntity2.getEntityWorld(), clockBlockEntity2, HashCommon.long2int(clockBlockEntity.getPos().asLong())+1 );
+			clockBlockEntityRenderState.standRenderState = standRenderState;
+			ItemRenderState bellRenderState = new ItemRenderState();
+			this.itemModelManager.clearAndUpdate(bellRenderState, Items.BELL.getDefaultStack(), ItemDisplayContext.FIXED, clockBlockEntity2.getEntityWorld(), clockBlockEntity2, HashCommon.long2int(clockBlockEntity.getPos().asLong())+1 );
+			clockBlockEntityRenderState.bellRenderState = bellRenderState;
+
+		}
+	}
+
+	public void render(
+		ClockBlockEntityRenderState clockBlockEntityRenderState,
+		MatrixStack matrixStack,
+		OrderedRenderCommandQueue orderedRenderCommandQueue,
+		CameraRenderState cameraRenderState
+	) {
+		/*matrixStack.push();
+		matrixStack.translate(0.5F, 0.5F, 0.5F);
+		matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-clockBlockEntityRenderState.yaw));
+		matrixStack.translate(-0.5F, -0.5F, -0.5F);
+		float f = clockBlockEntityRenderState.lidAnimationProgress;
+		f = 1.0F - f;
+		f = 1.0F - f * f * f;
+		SpriteIdentifier spriteIdentifier = TextureRegistry.getClockTextureId(clockBlockEntityRenderState.variant);
+		RenderLayer renderLayer = spriteIdentifier.getRenderLayer(RenderLayers::entityCutout);
+		Sprite sprite = this.materials.getSprite(spriteIdentifier);
+		orderedRenderCommandQueue.submitModel(
+				this.clockModel,
+				f,
+				matrixStack,
+				renderLayer,
+				clockBlockEntityRenderState.lightmapCoordinates,
+				OverlayTexture.DEFAULT_UV,
+				-1,
+				sprite,
+				0,
+				clockBlockEntityRenderState.crumblingOverlay
+			);
+
+		matrixStack.pop();*/
+		int ii = ColorHelper.fromFloats(1, 1.0F, 1.0F, 1.0F);
+		if (clockBlockEntityRenderState.dayTime !=-1) {
+			int hour = clockBlockEntityRenderState.dayTime/1000;
+			int min = ((clockBlockEntityRenderState.dayTime%1000)*60)/1000;
+			String string = (hour<10?"0":"") + hour + ":" + (min<10?"0":"") + min;
+				orderedRenderCommandQueue.submitLabel(matrixStack, clockBlockEntityRenderState.wall ? new Vec3d(-0.4 * Math.sin(clockBlockEntityRenderState.yaw * Math.PI / 180.0) + 0.5, 0.75, 0.4 * Math.cos(clockBlockEntityRenderState.yaw * Math.PI / 180.0) + 0.5) : new Vec3d(0.5, 0.5, 0.5), 0,
+						Text.of(string), true, ii, 100, cameraRenderState);
+
 		} else {
-			int time = timer + 20;
+			int time = clockBlockEntityRenderState.timer + 20;
 			int min = time / 1200;
 			int sec = (time - min * 1200) / 20;
 			if (time > 20) {
-				String text = (min != 0 ? min + " Minute" + (min != 1 ? "s" : "") + ", " : "") + sec + " Second" + (sec != 1 ? "s" : "");
-				drawFloatingText(text, poseStack, buffer, packedLight, wall, yaw, color);
+				orderedRenderCommandQueue.submitLabel(matrixStack, clockBlockEntityRenderState.wall ? new Vec3d(-0.4 * Math.sin(clockBlockEntityRenderState.yaw * Math.PI / 180.0) + 0.5, 0.75, 0.4 * Math.cos(clockBlockEntityRenderState.yaw * Math.PI / 180.0) + 0.5) : new Vec3d(0.5, 0.5, 0.5), 0,
+						Text.of((min != 0 ? min + " Minute" + (min != 1 ? "s" : "") + ", " : "") + sec + " Second" + (sec != 1 ? "s" : "")), true, ii, 100, cameraRenderState);
+
 			}
 		}
-
-		poseStack.pushPose();
-		poseStack.translate(0.5F, 0.5F, 0.5F);
-		if (!wall && timer > -ClockBlockEntity.timerDuration && timer < 0) {
-			poseStack.mulPose(Axis.YP.rotationDegrees(10 * (timer % 2 == 0 ? 1 : -1)));
+		matrixStack.translate(0.5F, 0.5F, 0.5F);
+		ItemRenderState clockRenderState = clockBlockEntityRenderState.clockRenderState;
+		if (!clockBlockEntityRenderState.wall && clockBlockEntityRenderState.timer>-ClockBlockEntity.timerDuration&& clockBlockEntityRenderState.timer<0) {
+			matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(10*(clockBlockEntityRenderState.timer%2==0?1:-1)));
 		}
-		renderClock(blockEntity, poseStack, buffer, packedLight, yaw, wall);
-		if (!wall) {
-			renderStand(blockEntity, poseStack, buffer, packedLight, yaw);
-			if (bell) renderBell(blockEntity, poseStack, buffer, packedLight, yaw);
+		if (clockRenderState != null) {
+			this.renderClock(clockBlockEntityRenderState, clockRenderState, matrixStack, orderedRenderCommandQueue, clockBlockEntityRenderState.yaw, clockBlockEntityRenderState.wall);
 		}
-		poseStack.popPose();
-	}
-
-	private void drawFloatingText(String text, PoseStack poseStack, MultiBufferSource buffer, int packedLight, boolean wall, float yaw, int color) {
-		poseStack.pushPose();
-		if (wall) {
-			poseStack.translate(-0.4 * Math.sin(yaw * Math.PI / 180.0) + 0.5, 0.75, 0.4 * Math.cos(yaw * Math.PI / 180.0) + 0.5);
-		} else {
-			poseStack.translate(0.5, 0.5, 0.5);
+		ItemRenderState standRenderState = clockBlockEntityRenderState.standRenderState;
+		if (!clockBlockEntityRenderState.wall && standRenderState != null) {
+			this.renderStand(clockBlockEntityRenderState, standRenderState, matrixStack, orderedRenderCommandQueue, clockBlockEntityRenderState.yaw);
 		}
-		poseStack.mulPose(net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().rotation());
-		poseStack.scale(-0.025F, -0.025F, 0.025F);
-		Component component = Component.literal(text);
-		float x = -this.font.width(component) / 2.0F;
-		poseStack.translate(0, 0, 0);
-		this.font.drawInBatch(component, x, 0, color, false, poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0, packedLight);
-		poseStack.popPose();
+		ItemRenderState bellRenderState = clockBlockEntityRenderState.bellRenderState;
+		if (!clockBlockEntityRenderState.wall && clockBlockEntityRenderState.bell && bellRenderState != null) {
+			this.renderBell(clockBlockEntityRenderState, bellRenderState, matrixStack, orderedRenderCommandQueue, clockBlockEntityRenderState.yaw);
+		}
 	}
 
-	private void renderClock(ClockBlockEntity blockEntity, PoseStack matrices, MultiBufferSource queue, int light, float rotationDegrees, boolean wall) {
-		matrices.pushPose();
-		matrices.mulPose(Axis.YP.rotationDegrees(-rotationDegrees));
-		matrices.translate(0, wall ? 0 : -0.15, wall ? 0.46875 : -0.1);
-		if (!wall) matrices.mulPose(Axis.XP.rotationDegrees(30));
-		float scale = wall ? 1 : 0.8f;
-		matrices.scale(scale, scale, scale);
-		this.itemRenderer.renderStatic(Items.CLOCK.getDefaultInstance(), ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, matrices, queue,
-				blockEntity.getLevel(), (int) blockEntity.getBlockPos().asLong());
-		matrices.popPose();
+	private void renderClock(
+			ClockBlockEntityRenderState state, ItemRenderState itemRenderState, MatrixStack matrices, OrderedRenderCommandQueue queue, float rotationDegrees, boolean wall
+	) {
+		Vec3d vec3d = new Vec3d(0,  wall?0:-0.15, wall?0.46875:-0.1);
+		matrices.push();
+		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-rotationDegrees));
+		matrices.translate(vec3d);
+		if (!wall) matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(30));
+		float scale = wall?1:0.8f;
+		matrices.scale(scale,scale,scale);
+		itemRenderState.render(matrices, queue, state.lightmapCoordinates, OverlayTexture.DEFAULT_UV, 0);
+		matrices.pop();
 	}
 
-	private void renderStand(ClockBlockEntity blockEntity, PoseStack matrices, MultiBufferSource queue, int light, float rotationDegrees) {
-		matrices.pushPose();
-		matrices.mulPose(Axis.YP.rotationDegrees(-rotationDegrees));
-		matrices.translate(0, -0.35, 0.2);
-		matrices.mulPose(Axis.XP.rotationDegrees(-30));
-		matrices.scale(1f, 1.6f, 1f);
-		this.itemRenderer.renderStatic(Items.SPRUCE_FENCE_GATE.getDefaultInstance(), ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, matrices, queue,
-				blockEntity.getLevel(), (int) blockEntity.getBlockPos().asLong() + 1);
-		matrices.popPose();
+	private void renderStand(
+			ClockBlockEntityRenderState state, ItemRenderState itemRenderState, MatrixStack matrices, OrderedRenderCommandQueue queue, float rotationDegrees
+	) {
+		Vec3d vec3d = new Vec3d(0, -0.35, 0.2);
+		matrices.push();
+		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-rotationDegrees));
+		matrices.translate(vec3d);
+		matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-30));
+		float scale = 1f;
+		matrices.scale(scale,1.6f*scale,scale);
+		itemRenderState.render(matrices, queue, state.lightmapCoordinates, OverlayTexture.DEFAULT_UV, 0);
+		matrices.pop();
 	}
 
-	private void renderBell(ClockBlockEntity blockEntity, PoseStack matrices, MultiBufferSource queue, int light, float rotationDegrees) {
-		matrices.pushPose();
-		matrices.mulPose(Axis.YP.rotationDegrees(-rotationDegrees));
-		matrices.translate(0, 0.35, 0.1);
-		matrices.mulPose(Axis.ZP.rotationDegrees(180));
-		matrices.scale(0.5f, 0.5f, 0.5f);
-		this.itemRenderer.renderStatic(Items.BELL.getDefaultInstance(), ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, matrices, queue,
-				blockEntity.getLevel(), (int) blockEntity.getBlockPos().asLong() + 1);
-		matrices.popPose();
+	private void renderBell(
+			ClockBlockEntityRenderState state, ItemRenderState itemRenderState, MatrixStack matrices, OrderedRenderCommandQueue queue, float rotationDegrees
+	) {
+		Vec3d vec3d = new Vec3d(0, 0.35, 0.1);
+		matrices.push();
+		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-rotationDegrees));
+		matrices.translate(vec3d);
+		matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(180));
+		float scale = 0.5f;
+		matrices.scale(scale,scale,scale);
+		itemRenderState.render(matrices, queue, state.lightmapCoordinates, OverlayTexture.DEFAULT_UV, 0);
+		matrices.pop();
 	}
+
 }

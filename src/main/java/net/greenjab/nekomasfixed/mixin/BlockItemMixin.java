@@ -2,16 +2,16 @@ package net.greenjab.nekomasfixed.mixin;
 
 import net.greenjab.nekomasfixed.registry.block.ClamBlock;
 import net.greenjab.nekomasfixed.registry.other.AnimalComponent;
+import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
 import net.greenjab.nekomasfixed.util.ModTags;
-import net.greenjab.nekomasfixed.util.StackData;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -21,32 +21,31 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(BlockItem.class)
 public class BlockItemMixin {
 
-    @Inject(method="onDestroyed", at = @At( value = "HEAD"), cancellable = true)
-    private void releaseAnimalOnNautilusDestroyed(ItemEntity entity, CallbackInfo ci) {
-        AnimalComponent animalComponent = StackData.readAnimal(entity.getItem());
-        if (!animalComponent.animal().isEmpty()) {
+    @Inject(method="onItemEntityDestroyed", at = @At( value = "HEAD"), cancellable = true)
+    private void releaseAnimalOnNautilusDestroyed(ItemEntity itemEntity, CallbackInfo ci) {
+        AnimalComponent animalComponent = itemEntity.getStack().get(ComponentRegistry.ANIMAL);
+        if (animalComponent != null && !animalComponent.animal().isEmpty()) {
             AnimalComponent.StoredEntityData animal = animalComponent.animal().get(0);
-            Level level = entity.level();
-            BlockPos pos = entity.blockPosition();
-            Entity releasedEntity = animal.loadEntity(level);
-            if (releasedEntity != null) {
+            World world = itemEntity.getEntityWorld();
+            BlockPos pos = itemEntity.getBlockPos();
+            Entity entity = animal.loadEntity(world, pos);
+            if (entity != null) {
                 double e = pos.getX() + 0.5;
-                double g = pos.getY() + 0.5 - releasedEntity.getBbHeight() / 2.0F;
-                double h = pos.getZ() + 0.5;
-                releasedEntity.moveTo(e, g, h, releasedEntity.getYRot(), releasedEntity.getXRot());
-                level.addFreshEntity(releasedEntity);
+                double g = pos.getY() + 0.5 - entity.getHeight() / 2.0F;
+                double h = pos.getZ() + 0.5;entity.refreshPositionAndAngles(e, g, h, entity.getYaw(), entity.getPitch());
+                world.spawnEntity(entity);
             }
             ci.cancel();
         }
     }
 
-    @Inject(method="updateBlockStateFromTag", at = @At( value = "HEAD"))
-    private void placeOpenClam(BlockPos pos, Level level, ItemStack itemStack, BlockState placedState, CallbackInfoReturnable<BlockState> cir) {
-        if (itemStack.is(ModTags.CLAMTAG)) {
-            int i = StackData.readClamState(itemStack);
+    @Inject(method="placeFromNbt", at = @At( value = "HEAD"))
+    private void placeOpenClam(BlockPos pos, World world, ItemStack stack, BlockState state, CallbackInfoReturnable<BlockState> cir) {
+        if (stack.isIn(ModTags.CLAMTAG)) {
+            Integer i = stack.getOrDefault(ComponentRegistry.CLAM_STATE, 0);
             if (i > 0) {
-                placedState = placedState.setValue(ClamBlock.OPEN, true);
-                level.setBlock(pos, placedState, Block.UPDATE_CLIENTS);
+                state = state.with(ClamBlock.OPEN, true);
+                world.setBlockState(pos, state, Block.NOTIFY_LISTENERS);
             }
         }
     }

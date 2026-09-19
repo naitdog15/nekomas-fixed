@@ -1,66 +1,101 @@
 package net.greenjab.nekomasfixed.render.block.entity;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
-import net.greenjab.nekomasfixed.registries.ModModelLayerRegistry;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.greenjab.nekomasfixed.registries.ModEntityLayerRegistry;
 import net.greenjab.nekomasfixed.registry.block.AbstractEndermanHeadBlock;
 import net.greenjab.nekomasfixed.registry.block.FloorEndermanHeadHead;
 import net.greenjab.nekomasfixed.registry.block.WallEndermanHeadHead;
 import net.greenjab.nekomasfixed.render.block.entity.model.EndermanEyesBlockModel;
 import net.greenjab.nekomasfixed.render.block.entity.model.EndermanHeadBlockModel;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.RotationSegment;
+import net.greenjab.nekomasfixed.render.block.entity.state.EndermanHeadBlockEntityRenderState;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
+import net.minecraft.client.render.command.ModelCommandRenderer;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.state.CameraRenderState;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.*;
+import net.minecraft.util.math.random.Random;
+import org.jetbrains.annotations.Nullable;
 
-public class EndermanHeadBlockEntityRenderer implements BlockEntityRenderer<BlockEntity> {
+@Environment(EnvType.CLIENT)
+public class EndermanHeadBlockEntityRenderer<T extends BlockEntity> implements BlockEntityRenderer<T, EndermanHeadBlockEntityRenderState> {
 
-	private final EndermanHeadBlockModel endermanHeadModel;
-	private final EndermanEyesBlockModel endermanEyesModel;
+	private final EndermanHeadBlockModel<EndermanHeadBlockEntityRenderState> endermanHeadModel;
+	private final EndermanEyesBlockModel<EndermanHeadBlockEntityRenderState> endermanEyesModel;
 
-	private final RandomSource random = RandomSource.create();
-	private static final ResourceLocation TEXTURE = new ResourceLocation("minecraft", "textures/entity/enderman/enderman.png");
-	private static final ResourceLocation TEXTURE_EYES = new ResourceLocation("minecraft", "textures/entity/enderman/enderman_eyes.png");
+	private final Random random = Random.create();
+	private static final Identifier TEXTURE = Identifier.ofVanilla("textures/entity/enderman/enderman.png");
+	private static final Identifier TEXTURE_EYES = Identifier.ofVanilla("textures/entity/enderman/enderman_eyes.png");
 
-	public EndermanHeadBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
-		this.endermanHeadModel = new EndermanHeadBlockModel(context.bakeLayer(ModModelLayerRegistry.ENDERMAN_HEAD));
-		this.endermanEyesModel = new EndermanEyesBlockModel(context.bakeLayer(ModModelLayerRegistry.ENDERMAN_HEAD));
+	public EndermanHeadBlockEntityRenderer(BlockEntityRendererFactory.Context context) {
+		this.endermanHeadModel = new EndermanHeadBlockModel<>(context.getLayerModelPart(ModEntityLayerRegistry.ENDERMAN_HEAD));
+		this.endermanEyesModel = new EndermanEyesBlockModel<>(context.getLayerModelPart(ModEntityLayerRegistry.ENDERMAN_HEAD));
 	}
 
-	@Override
-	public void render(BlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
-		BlockState blockState = blockEntity.getBlockState();
-		boolean wall = blockState.getBlock() instanceof WallEndermanHeadHead;
-		Direction facing = wall ? blockState.getValue(WallEndermanHeadHead.FACING) : null;
-		int segment = wall ? RotationSegment.convertToSegment(facing.getOpposite()) : blockState.getValue(FloorEndermanHeadHead.ROTATION);
-		float yaw = RotationSegment.convertToDegrees(segment);
-		boolean powered = blockState.getValue(AbstractEndermanHeadBlock.POWER) > 0;
 
-		poseStack.pushPose();
-		if (facing == null) poseStack.translate(0.5F, 0.0F, 0.5F);
-		else poseStack.translate(0.5F - facing.getStepX() * 0.2499F, 0.25F, 0.5F - facing.getStepZ() * 0.2499F);
+	public EndermanHeadBlockEntityRenderState createRenderState() {
+		return new EndermanHeadBlockEntityRenderState();
+	}
 
-		poseStack.scale(-1.0F, -1.0F, 1.0F);
-		poseStack.mulPose(Axis.YP.rotationDegrees(yaw));
-		poseStack.translate(-0.5F, -0.5f, -0.5F);
-		if (powered) {
-			if (wall) poseStack.translate(this.random.nextGaussian() * 0.02, this.random.nextGaussian() * 0.02, 0.0F);
-			else poseStack.translate(this.random.nextGaussian() * 0.02, 0.0F, this.random.nextGaussian() * 0.02);
+	public void updateRenderState(
+		T endermanSkullBlockEntity,
+		EndermanHeadBlockEntityRenderState endermanHeadBlockEntityRenderState,
+		float f,
+		Vec3d vec3d,
+		@Nullable ModelCommandRenderer.CrumblingOverlayCommand crumblingOverlayCommand
+	) {
+		BlockEntityRenderer.super.updateRenderState(endermanSkullBlockEntity, endermanHeadBlockEntityRenderState, f, vec3d, crumblingOverlayCommand);
+		BlockState blockState = endermanSkullBlockEntity.getCachedState();
+
+		boolean bl = blockState.getBlock() instanceof WallEndermanHeadHead;
+		endermanHeadBlockEntityRenderState.facing = bl ? blockState.get(WallEndermanHeadHead.FACING) : null;
+		int i = bl ? RotationPropertyHelper.fromDirection(endermanHeadBlockEntityRenderState.facing.getOpposite()) : blockState.get(FloorEndermanHeadHead.ROTATION);
+		endermanHeadBlockEntityRenderState.yaw = RotationPropertyHelper.toDegrees(i);
+		endermanHeadBlockEntityRenderState.wall = bl;
+		endermanHeadBlockEntityRenderState.powered = blockState.get(AbstractEndermanHeadBlock.POWER)>0;
+
+	}
+
+	public void render(
+		EndermanHeadBlockEntityRenderState endermanHeadBlockEntityRenderState,
+		MatrixStack matrixStack,
+		OrderedRenderCommandQueue orderedRenderCommandQueue,
+		CameraRenderState cameraRenderState
+	) {
+		matrixStack.push();
+		Direction dir = endermanHeadBlockEntityRenderState.facing;
+		if (dir == null) {
+			matrixStack.translate(0.5F, 0.0F, 0.5F);
+		} else {
+			matrixStack.translate(0.5F - dir.getOffsetX() * 0.2499F, 0.25F, 0.5F - dir.getOffsetZ() * 0.2499F);
 		}
 
-		this.endermanHeadModel.setupAnim(powered, wall);
-		this.endermanEyesModel.setupAnim(powered, wall);
-		RenderType renderType = RenderType.entityCutout(TEXTURE);
-		RenderType renderTypeEyes = RenderType.eyes(TEXTURE_EYES);
-		this.endermanHeadModel.renderToBuffer(poseStack, buffer.getBuffer(renderType), packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-		this.endermanEyesModel.renderToBuffer(poseStack, buffer.getBuffer(renderTypeEyes), packedLight, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
-		poseStack.popPose();
+		matrixStack.scale(-1.0F, -1.0F, 1.0F);
+		matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(endermanHeadBlockEntityRenderState.yaw));
+		matrixStack.translate(-0.5F, -0.5f, -0.5F);
+		if (endermanHeadBlockEntityRenderState.powered) {
+			if (endermanHeadBlockEntityRenderState.wall) {
+				matrixStack.translate(this.random.nextGaussian() * 0.02, this.random.nextGaussian() * 0.02, 0.0F);
+				} else {
+				matrixStack.translate(this.random.nextGaussian() * 0.02, 0.0F, this.random.nextGaussian() * 0.02);
+			}
+		}
+
+		RenderLayer renderLayer = RenderLayers.entityCutoutNoCull(TEXTURE);
+		RenderLayer renderLayerEyes = RenderLayers.eyes(TEXTURE_EYES);
+		orderedRenderCommandQueue.submitModel(this.endermanHeadModel, endermanHeadBlockEntityRenderState, matrixStack,
+				renderLayer, endermanHeadBlockEntityRenderState.lightmapCoordinates, OverlayTexture.DEFAULT_UV, 0, endermanHeadBlockEntityRenderState.crumblingOverlay);
+		orderedRenderCommandQueue.submitModel(this.endermanEyesModel, endermanHeadBlockEntityRenderState, matrixStack,
+				renderLayerEyes, endermanHeadBlockEntityRenderState.lightmapCoordinates, OverlayTexture.DEFAULT_UV, 0, endermanHeadBlockEntityRenderState.crumblingOverlay);
+		matrixStack.pop();
 	}
+
 }

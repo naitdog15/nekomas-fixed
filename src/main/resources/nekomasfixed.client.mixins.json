@@ -1,27 +1,37 @@
 {
   "required": true,
   "package": "net.greenjab.nekomasfixed.mixin.client",
-  "compatibilityLevel": "JAVA_17",
-  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_21",
   "client": [
     "AbstractMinecartEntityRendererMixin",
-    "BedRendererMixin",
-    "EquipmentLayerRendererMixin",
-    "FlameFeatureRendererMixin",
-    "HumanoidMobRendererMixin",
-    "HumanoidModelMixin",
-    "IllagerModelMixin",
-    "ItemInHandRendererMixin",
-    "MinecartModelMixin",
-    "MinecraftMixin",
-    "MultiPlayerGameModeMixin",
-    "ParticleEngineMixin",
-    "SheepWoolLayerMixin",
-    "ShulkerBoxRendererMixin"
+    "BedBlockEntityRendererMixin",
+    "BedBlockEntityRenderStateMixin",
+    "BipedEntityModelMixin",
+    "BipedEntityRendererMixin",
+    "ClientPlayerInteractionManagerMixin",
+    "ClientRecipeBookMixin",
+    "EquipmentAssetProviderMixin",
+    "EquipmentRendererMixin",
+    "FireCommandRendererMixin",
+    "HeldItemRendererMixin",
+    "IllagerEntityModelMixin",
+    "LabelCommandRendererCommandMixin",
+    "LabelCommandRendererMixin",
+    "MinecartEntityModelMixin",
+    "MinecraftClientMixin",
+    "ParticleManagerMixin",
+    "ParticleSpriteManagerMixin",
+    "SheepEntityRendererMixin",
+    "SheepEntityRenderStateMixin",
+    "SheepWoolFeatureRendererMixin",
+    "ShulkerBoxBlockEntityRendererMixin",
+    "ShulkerBoxBlockEntityRenderStateMixin",
+    "SpecialModelTypesMixin",
+    "TooltipComponentMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
-  "mixins": [],
-  "refmap": "nekomasfixed.refmap.json"
+  "mixins": [
+  ]
 }

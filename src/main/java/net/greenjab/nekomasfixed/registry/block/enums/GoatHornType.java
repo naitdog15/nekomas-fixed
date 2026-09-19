@@ -1,41 +1,41 @@
 package net.greenjab.nekomasfixed.registry.block.enums;
 
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.util.StringRepresentable;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.item.Instrument;
-import net.minecraft.world.item.Instruments;
+import net.minecraft.component.type.InstrumentComponent;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.item.Instrument;
+import net.minecraft.item.Instruments;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.util.StringIdentifiable;
 
-public enum GoatHornType implements StringRepresentable {
-    CALL(Instruments.CALL_GOAT_HORN, new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20*60, 0)),
-    PONDER(Instruments.PONDER_GOAT_HORN, new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 20*60, 0)),
-    SING(Instruments.SING_GOAT_HORN, new MobEffectInstance(MobEffects.HEAL, 20*60, 0)),
-    SEEK(Instruments.SEEK_GOAT_HORN, new MobEffectInstance(MobEffects.DAMAGE_BOOST, 20*60, 0)),
-    FEEL(Instruments.FEEL_GOAT_HORN, new MobEffectInstance(MobEffects.ABSORPTION, 20*60, 0)),
-    ADMIRE(Instruments.ADMIRE_GOAT_HORN, new MobEffectInstance(MobEffects.REGENERATION, 20*60, 0)),
-    YEARN(Instruments.YEARN_GOAT_HORN, new MobEffectInstance(MobEffects.DAMAGE_BOOST, 20*60, 0)),
-    DREAM(Instruments.DREAM_GOAT_HORN, new MobEffectInstance(MobEffects.INVISIBILITY, 20*60, 0));
+public enum GoatHornType implements StringIdentifiable {
+    CALL(Instruments.CALL_GOAT_HORN, new StatusEffectInstance(StatusEffects.SPEED, 20*60, 0)),
+    PONDER(Instruments.PONDER_GOAT_HORN, new StatusEffectInstance(StatusEffects.RESISTANCE, 20*60, 0)),
+    SING(Instruments.SING_GOAT_HORN, new StatusEffectInstance(StatusEffects.INSTANT_HEALTH, 20*60, 0)),
+    SEEK(Instruments.SEEK_GOAT_HORN, new StatusEffectInstance(StatusEffects.STRENGTH, 20*60, 0)),
+    FEEL(Instruments.FEEL_GOAT_HORN, new StatusEffectInstance(StatusEffects.ABSORPTION, 20*60, 0)),
+    ADMIRE(Instruments.ADMIRE_GOAT_HORN, new StatusEffectInstance(StatusEffects.REGENERATION, 20*60, 0)),
+    YEARN(Instruments.YEARN_GOAT_HORN, new StatusEffectInstance(StatusEffects.STRENGTH, 20*60, 0)),
+    DREAM(Instruments.DREAM_GOAT_HORN, new StatusEffectInstance(StatusEffects.INVISIBILITY, 20*60, 0));
 
-    private final ResourceKey<Instrument> instrument;
-    private final MobEffectInstance effect;
+    private final RegistryKey<Instrument> instrument;
+    private final StatusEffectInstance effect;
 
-    GoatHornType(ResourceKey<Instrument> instrument, MobEffectInstance effect) {
+    GoatHornType(RegistryKey<Instrument> instrument, StatusEffectInstance effect) {
         this.instrument = instrument;
         this.effect = effect;
     }
 
-    public ResourceKey<Instrument> getInstrument() {
+    public RegistryKey<Instrument> getInstrument() {
         return this.instrument;
     }
 
-    public MobEffectInstance getStatusEffect(){
+    public StatusEffectInstance getStatusEffect(){
         return this.effect;
     }
 
-    /** Takes the instrument's registry key directly — the horn's instrument lives in stack NBT here. */
-    public static GoatHornType fromInstrument(ResourceKey<Instrument> key) {
-        if (key == null) return CALL;
+    public static GoatHornType fromInstrument(InstrumentComponent instrument) {
+        RegistryKey<Instrument> key = instrument.instrument().getKey().orElse(Instruments.CALL_GOAT_HORN);
         if (key == Instruments.CALL_GOAT_HORN) return CALL;
         if (key == Instruments.SING_GOAT_HORN) return SING;
         if (key == Instruments.SEEK_GOAT_HORN) return SEEK;
@@ -48,7 +48,7 @@ public enum GoatHornType implements StringRepresentable {
     }
 
     @Override
-    public String getSerializedName() {
+    public String asString() {
         return name().toLowerCase();
     }
 }

@@ -1,90 +1,147 @@
 package net.greenjab.nekomasfixed.render.block.entity;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Axis;
-import net.greenjab.nekomasfixed.registries.ModModelLayerRegistry;
+import it.unimi.dsi.fastutil.HashCommon;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.greenjab.nekomasfixed.registries.ModEntityLayerRegistry;
 import net.greenjab.nekomasfixed.registries.TextureRegistry;
 import net.greenjab.nekomasfixed.registry.block.ClamBlock;
 import net.greenjab.nekomasfixed.registry.block.entity.ClamBlockEntity;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.greenjab.nekomasfixed.render.block.entity.model.ClamBlockModel;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.model.Material;
-import net.minecraft.core.Direction;
-import net.minecraft.core.NonNullList;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
+import net.greenjab.nekomasfixed.render.block.entity.state.ClamBlockEntityRenderState;
+import net.minecraft.block.*;
+import net.minecraft.block.entity.*;
+import net.minecraft.client.item.ItemModelManager;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
+import net.minecraft.client.render.command.ModelCommandRenderer;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.item.ItemRenderState;
+import net.minecraft.client.render.state.CameraRenderState;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.texture.SpriteHolder;
+import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemDisplayContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.Nullable;
 
-public class ClamBlockEntityRenderer implements BlockEntityRenderer<ClamBlockEntity> {
+@Environment(EnvType.CLIENT)
+public class ClamBlockEntityRenderer<T extends BlockEntity & LidOpenable> implements BlockEntityRenderer<T, ClamBlockEntityRenderState> {
+	private final SpriteHolder materials;
 	private final ClamBlockModel clamModel;
-	private final ItemRenderer itemRenderer;
+	private final ItemModelManager itemModelManager;
 
-	public ClamBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
-		this.clamModel = new ClamBlockModel(context.bakeLayer(ModModelLayerRegistry.CLAM));
-		this.itemRenderer = context.getItemRenderer();
+	public ClamBlockEntityRenderer(BlockEntityRendererFactory.Context context) {
+		this.materials = context.spriteHolder();
+		this.clamModel = new ClamBlockModel(context.getLayerModelPart(ModEntityLayerRegistry.CLAM));
+		this.itemModelManager = context.itemModelManager();
 	}
 
-	@Override
-	public void render(ClamBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
-		boolean hasLevel = blockEntity.getLevel() != null;
-		BlockState blockState = hasLevel ? blockEntity.getBlockState() : BlockRegistry.CLAM.get().defaultBlockState().setValue(ClamBlock.FACING, Direction.SOUTH);
-		float yaw = blockState.getValue(ClamBlock.FACING).toYRot();
-		TextureRegistry.Variant variant = getVariant(blockEntity);
-		float lidAnimationProgress = ClamBlock.getAnimationProgressRetriever(blockEntity).getFallback().get(partialTick);
 
-		poseStack.pushPose();
-		poseStack.translate(0.5F, 0.5F, 0.5F);
-		poseStack.mulPose(Axis.YP.rotationDegrees(-yaw));
-		poseStack.translate(-0.5F, -0.5F, -0.5F);
-		float f = lidAnimationProgress;
-		f = 1.0F - f;
-		f = 1.0F - f * f * f;
-		// atlas sheet: wrap the buffer so the sprite remaps local UVs into its region
-		Material material = TextureRegistry.getClamMaterial(variant);
-		RenderType renderType = this.clamModel.renderType(material.atlasLocation());
-		VertexConsumer vertexConsumer = material.sprite().wrap(buffer.getBuffer(renderType));
-		this.clamModel.setupAnim(f);
-		this.clamModel.renderToBuffer(poseStack, vertexConsumer, packedLight, packedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
-		poseStack.popPose();
+	public ClamBlockEntityRenderState createRenderState() {
+		return new ClamBlockEntityRenderState();
+	}
 
-		if (lidAnimationProgress > 0) {
-			NonNullList<ItemStack> items = blockEntity.getItems();
-			ItemStack itemStack = items.get(0);
+	public void updateRenderState(
+		T blockEntity,
+		ClamBlockEntityRenderState clamBlockEntityRenderState,
+		float f,
+		Vec3d vec3d,
+		@Nullable ModelCommandRenderer.CrumblingOverlayCommand crumblingOverlayCommand
+	) {
+		BlockEntityRenderer.super.updateRenderState(blockEntity, clamBlockEntityRenderState, f, vec3d, crumblingOverlayCommand);
+		boolean bl = blockEntity.getWorld() != null;
+		BlockState blockState = bl ? blockEntity.getCachedState() : BlockRegistry.CLAM.getDefaultState().with(ClamBlock.FACING, Direction.SOUTH);
+		clamBlockEntityRenderState.yaw = (blockState.get(ClamBlock.FACING)).getPositiveHorizontalDegrees();
+		clamBlockEntityRenderState.variant = this.getVariant(blockEntity);
+
+		clamBlockEntityRenderState.lidAnimationProgress = ClamBlock.getAnimationProgressRetriever(blockEntity).getFallback().get(f);
+
+		if (clamBlockEntityRenderState.lidAnimationProgress > 0 && blockEntity instanceof ClamBlockEntity clamBlockEntity) {
+			DefaultedList<ItemStack> defaultedList = clamBlockEntity.getHeldStacks();
+			ItemStack itemStack = defaultedList.get(0);
 			if (!itemStack.isEmpty()) {
-				renderItem(itemStack, poseStack, buffer, packedLight, -yaw, blockEntity);
+				ItemRenderState itemRenderState = new ItemRenderState();
+				this.itemModelManager.clearAndUpdate(itemRenderState, itemStack, ItemDisplayContext.FIXED, clamBlockEntity.getEntityWorld(), clamBlockEntity, HashCommon.long2int(clamBlockEntity.getPos().asLong()));
+				clamBlockEntityRenderState.itemRenderState = itemRenderState;
 			}
 		}
 	}
 
-	private void renderItem(ItemStack stack, PoseStack matrices, MultiBufferSource queue, int packedLight, float rotationDegrees, BlockEntity blockEntity) {
-		matrices.pushPose();
-		matrices.translate(0.5F, 0.5F, 0.5F);
-		matrices.mulPose(Axis.YP.rotationDegrees(rotationDegrees + 180));
-		matrices.translate(0, -0.37, -0.11);
-		matrices.mulPose(Axis.XP.rotationDegrees(90));
-		matrices.scale(0.5F, 0.5F, 0.5F);
-		this.itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, packedLight, OverlayTexture.NO_OVERLAY, matrices, queue,
-				blockEntity.getLevel(), (int) blockEntity.getBlockPos().asLong());
-		matrices.popPose();
+	public void render(
+		ClamBlockEntityRenderState clamBlockEntityRenderState,
+		MatrixStack matrixStack,
+		OrderedRenderCommandQueue orderedRenderCommandQueue,
+		CameraRenderState cameraRenderState
+	) {
+		matrixStack.push();
+		matrixStack.translate(0.5F, 0.5F, 0.5F);
+		matrixStack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-clamBlockEntityRenderState.yaw));
+		matrixStack.translate(-0.5F, -0.5F, -0.5F);
+		float f = clamBlockEntityRenderState.lidAnimationProgress;
+		f = 1.0F - f;
+		f = 1.0F - f * f * f;
+		SpriteIdentifier spriteIdentifier = TextureRegistry.getClamTextureId(clamBlockEntityRenderState.variant);
+		RenderLayer renderLayer = spriteIdentifier.getRenderLayer(RenderLayers::entityCutout);
+		Sprite sprite = this.materials.getSprite(spriteIdentifier);
+		orderedRenderCommandQueue.submitModel(
+				this.clamModel,
+				f,
+				matrixStack,
+				renderLayer,
+				clamBlockEntityRenderState.lightmapCoordinates,
+				OverlayTexture.DEFAULT_UV,
+				-1,
+				sprite,
+				0,
+				clamBlockEntityRenderState.crumblingOverlay
+			);
+
+		matrixStack.pop();
+
+		if (clamBlockEntityRenderState.lidAnimationProgress>0) {
+			Direction direction = clamBlockEntityRenderState.blockState.get(ClamBlock.FACING);
+			float d = direction.getAxis().isHorizontal() ? -direction.getPositiveHorizontalDegrees() : 180.0F;
+
+			ItemRenderState itemRenderState = clamBlockEntityRenderState.itemRenderState;
+			if (itemRenderState != null) {
+				this.renderItem(clamBlockEntityRenderState, itemRenderState, matrixStack, orderedRenderCommandQueue, d);
+			}
+		}
 	}
 
-	private TextureRegistry.Variant getVariant(BlockEntity blockEntity) {
-		if (blockEntity.getBlockState().getBlock() instanceof ClamBlock clamBlock) {
+	private void renderItem(
+			ClamBlockEntityRenderState state, ItemRenderState itemRenderState, MatrixStack matrices, OrderedRenderCommandQueue queue, float rotationDegrees
+	) {
+		Vec3d vec3d = new Vec3d(0, -0.37, -0.11);
+		matrices.push();
+		matrices.translate(0.5F, 0.5F, 0.5F);
+		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(rotationDegrees+180));
+		matrices.translate(vec3d);
+		matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(90));
+		matrices.scale(0.5F, 0.5F, 0.5F);
+		itemRenderState.render(matrices, queue, state.lightmapCoordinates, OverlayTexture.DEFAULT_UV, 0);
+		matrices.pop();
+	}
+
+	private ClamBlockEntityRenderState.Variant getVariant(BlockEntity blockEntity) {
+		if (blockEntity.getCachedState().getBlock() instanceof ClamBlock clamBlock) {
 			return switch (clamBlock.getClamType()) {
-				case REGULAR -> TextureRegistry.Variant.REGULAR;
-				case BLUE -> TextureRegistry.Variant.BLUE;
-				case PINK -> TextureRegistry.Variant.PINK;
-				case PURPLE -> TextureRegistry.Variant.PURPLE;
-			};
+				case REGULAR -> ClamBlockEntityRenderState.Variant.REGULAR;
+				case BLUE -> ClamBlockEntityRenderState.Variant.BLUE;
+				case PINK -> ClamBlockEntityRenderState.Variant.PINK;
+				case PURPLE -> ClamBlockEntityRenderState.Variant.PURPLE;
+            };
 		}
-		return TextureRegistry.Variant.REGULAR;
+		return ClamBlockEntityRenderState.Variant.REGULAR;
 	}
 }

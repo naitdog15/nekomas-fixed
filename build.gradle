@@ -1,82 +1,50 @@
-// ForgeGradle 6 does not wire up a refmap on its own, so MixinGradle is applied here: Mixin's
-// annotation processor turns the string-based injector references into SRG names, which is what
-// keeps them resolving in a reobfuscated jar. Refmap name and configs are set in `mixin {}` below.
-buildscript {
-    repositories {
-        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'org.spongepowered:mixingradle:0.7.+'
-    }
-}
 plugins {
-    id 'eclipse'; id 'idea'
-    id 'net.minecraftforge.gradle' version '6.0.54'
+    id 'java'
+    id 'idea'
+    id 'eclipse'
+    id 'net.minecraftforge.gradle' version '[7.0.3,8)'
 }
-apply plugin: 'org.spongepowered.mixin'
+
 version = mod_version
 group   = mod_group_id
 base { archivesName = mod_id }
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-jarJar.enable()
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+// the generated data was Fabric's datagen output, so it keeps its own root next to the hand-written resources
+sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 minecraft {
-    mappings channel: mapping_channel, version: mapping_version
-    copyIdeResources = true
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+    mappings channel: 'official', version: minecraft_version
     runs {
         configureEach {
-            workingDirectory project.file('run')
-            property 'forge.logging.console.level', 'info'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', file('build/createSrgToMcp/output.srg').absolutePath
-            arg '-mixin.config=nekomasfixed.mixins.json'
-            arg '-mixin.config=nekomasfixed.client.mixins.json'
-            mods { "${mod_id}" { source sourceSets.main } }
+            workingDir = layout.projectDirectory.dir('run/1.21.11')
+            systemProperty 'eventbus.api.strictRuntimeChecks', 'true'
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
         }
-        client { jvmArgs '-Xms2G','-Xmx4G','-XX:+UseG1GC','-XX:MaxGCPauseMillis=50' }
-        server { args '--nogui' }
-        gameTestServer { property 'forge.enabledGameTestNamespaces', mod_id }
-        data {
-            workingDirectory project.file('run-data')
+        register('client')
+        register('server') {
+            args '--nogui'
+        }
+        register('gameTestServer')
+        register('data') {
+            workingDir = layout.projectDirectory.dir('run-data/1.21.11')
             args '--mod', mod_id, '--all',
-                 '--output',   file('src/generated/resources/'),
-                 '--existing', file('src/main/resources/')
+                 '--output', layout.projectDirectory.dir('src/generated/resources'),
+                 '--existing', layout.projectDirectory.dir('src/main/resources')
         }
     }
 }
-sourceSets {
-    main { resources { srcDir 'src/generated/resources' } }
-    test { java.setSrcDirs([]); resources.setSrcDirs([]) }
-}
-// One explicitly named refmap for sourceSets.main; both configs point at it (see the
-// "refmap" key in nekomasfixed.mixins.json / nekomasfixed.client.mixins.json). MixinGradle also
-// hands the AP the SRG file so the emitted refmap carries production names.
-mixin {
-    add sourceSets.main, 'nekomasfixed.refmap.json'
-    config 'nekomasfixed.mixins.json'
-    config 'nekomasfixed.client.mixins.json'
-}
+
 repositories {
-    maven { url 'https://maven.shedaniel.me/' }
-    maven { url 'https://maven.blamejared.com/' }
-    maven { url 'https://repo.spongepowered.org/repository/maven-public/' }
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
     mavenCentral()
 }
+
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.3.5"))
-    // MixinExtras must also be on the runtime classpath and shipped inside the jar —
-    // Forge provides Mixin itself but not MixinExtras, and the @WrapOperation/@Local
-    // mixins fail to apply without it.
-    implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.3.5")) {
-        jarJar.ranged(it, "[0.3.5,)")
-    }
-    implementation fg.deobf("me.shedaniel.cloth:cloth-config-forge:11.1.136")
-    // JEI in the dev runtime only; not shipped or required.
-    runtimeOnly fg.deobf("mezz.jei:jei-1.20.1-forge:15.20.0.112")
+    implementation minecraft.dependency("net.minecraftforge:forge:${minecraft_version}-${forge_version}")
+    annotationProcessor 'net.minecraftforge:eventbus-validator:7.0.5'
 }
 
 def sharedReplaceProperties = [
@@ -86,22 +54,23 @@ def sharedReplaceProperties = [
     forge_version_range    : forge_version_range,
     loader_version_range   : loader_version_range,
     mod_id                 : mod_id,
-    mod_name                : mod_name,
-    mod_license              : mod_license,
-    mod_version              : mod_version,
-    mod_authors              : mod_authors,
-    mod_description          : mod_description,
+    mod_name               : mod_name,
+    mod_license            : mod_license,
+    mod_version            : mod_version,
+    mod_authors            : mod_authors,
+    mod_description        : mod_description,
 ]
 
 tasks.named('processResources', ProcessResources).configure {
     inputs.properties sharedReplaceProperties
-    filesMatching(['META-INF/mods.toml','pack.mcmeta']) { expand sharedReplaceProperties + [project: project] }
+    filesMatching(['META-INF/mods.toml']) { expand sharedReplaceProperties + [project: project] }
 }
-// The MIT text has to travel with every copy that goes out, so it rides along in the plain
-// jar and in the jarJar 'all' jar that is the one people actually download.
+
+// the MIT text has to travel with every copy that goes out
 tasks.withType(Jar).configureEach {
     from(rootProject.file('LICENSE'))
 }
+
 tasks.named('jar', Jar).configure {
     manifest { attributes([
         'Specification-Title'     : mod_id,
@@ -111,10 +80,10 @@ tasks.named('jar', Jar).configure {
         'Implementation-Version'  : project.version,
         'Implementation-Vendor'   : mod_authors,
         'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-        'MixinConfigs'             : 'nekomasfixed.mixins.json,nekomasfixed.client.mixins.json'
+        'MixinConfigs'            : 'nekomasfixed.mixins.json,nekomasfixed.client.mixins.json'
     ])}
 }
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.compilerArgs << '-Xlint:-removal' << '-Xlint:-deprecation' << '-Xlint:-unchecked'
 }

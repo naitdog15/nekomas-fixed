@@ -1,9 +1,0 @@
-{
-  "sources": [
-    {
-      "type": "minecraft:directory",
-      "source": "gui/sprites/container/slot",
-      "prefix": "container/slot/"
-    }
-  ]
-}

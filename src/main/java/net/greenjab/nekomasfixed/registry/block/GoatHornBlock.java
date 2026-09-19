@@ -1,123 +1,112 @@
 package net.greenjab.nekomasfixed.registry.block;
 
+import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.registry.block.enums.GoatHornTorchType;
 import net.greenjab.nekomasfixed.registry.block.enums.GoatHornType;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Instrument;
-import net.minecraft.world.item.InstrumentItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.HorizontalDirectionalBlock;
-import net.minecraft.world.level.block.SimpleWaterloggedBlock;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Fluids;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.storage.loot.BuiltInLootTables;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.LootTable;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
-import javax.annotation.Nullable;
+import net.minecraft.block.*;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.*;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootContextTypes;
+import net.minecraft.loot.context.LootWorldContext;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.*;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
+import net.minecraft.world.WorldView;
+import net.minecraft.world.block.WireOrientation;
+import net.minecraft.world.tick.ScheduledTickView;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static net.minecraft.core.Direction.*;
+import static net.minecraft.util.math.Direction.*;
 
-public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleWaterloggedBlock {
-    public static final Property<Boolean> WATERLOGGED = BlockStateProperties.WATERLOGGED;
-    public static final EnumProperty<GoatHornTorchType> TORCH = EnumProperty.create("torch", GoatHornTorchType.class);
-    public static final EnumProperty<GoatHornType> HORN = EnumProperty.create("horn", GoatHornType.class);
-    public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
-    Map<Direction, VoxelShape> SHAPE = RotatedShapes.horizontal(Shapes.or(
-            Block.box(7, 3, 0, 9, 5, 7),
-            Block.box(6.5, 4, 4, 9.5, 6, 8),
-            Block.box(6, 5, 5, 10, 10, 9)
+public class GoatHornBlock extends HorizontalFacingBlock implements Waterloggable {
+    public static final MapCodec<GoatHornBlock> CODEC = createCodec(GoatHornBlock::new);
+    public static final Property<Boolean> WATERLOGGED = Properties.WATERLOGGED;
+    public static final EnumProperty<GoatHornTorchType> TORCH = EnumProperty.of("torch", GoatHornTorchType.class);
+    public static final EnumProperty<GoatHornType> HORN = EnumProperty.of("horn", GoatHornType.class);
+    public static final BooleanProperty POWERED = Properties.POWERED;
+    Map<Direction, VoxelShape> SHAPE = VoxelShapes.createHorizontalFacingShapeMap(VoxelShapes.union(
+            Block.createCuboidShape(7, 3, 0, 9, 5, 7),
+            Block.createCuboidShape(6.5, 4, 4, 9.5, 6, 8),
+            Block.createCuboidShape(6, 5, 5, 10, 10, 9)
     ));
 
-    public GoatHornBlock(Properties settings) {
+    public GoatHornBlock(Settings settings) {
         super(settings);
-        this.registerDefaultState(this.stateDefinition.any()
-                .setValue(FACING, NORTH)
-                .setValue(WATERLOGGED, false)
-                .setValue(HORN, GoatHornType.CALL)
-                .setValue(TORCH, GoatHornTorchType.NONE)
-                .setValue(POWERED, false)
+        this.setDefaultState(this.stateManager.getDefaultState()
+                .with(FACING, NORTH)
+                .with(WATERLOGGED, false)
+                .with(HORN, GoatHornType.CALL)
+                .with(TORCH, GoatHornTorchType.NONE)
+                .with(POWERED, false)
         );
     }
 
     @Override
-    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPE.get(state.getValue(FACING));
+    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return SHAPE.get(state.get(FACING));
     }
 
     @Override
-    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return getShape(state, level, pos, context);
+    public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return getOutlineShape(state, world, pos, context);
     }
 
     @Override
-    public VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos pos) {
-        return getShape(state, level, pos, CollisionContext.empty());
+    public VoxelShape getRaycastShape(BlockState state, BlockView world, BlockPos pos) {
+        return getOutlineShape(state, world, pos, ShapeContext.absent());
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        ItemStack stack = player.getItemInHand(hand);
-        if (state.getValue(TORCH) != GoatHornTorchType.NONE) {
-            if (stack.is(Items.SHEARS)) {
-                level.addFreshEntity(new ItemEntity(level, pos.getX(), pos.getY(), pos.getZ(), state.getValue(TORCH).toItem().getDefaultInstance()));
-                level.setBlockAndUpdate(pos, state.setValue(TORCH, GoatHornTorchType.NONE));
-                level.playSound(null, player, SoundEvents.SHEEP_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
-                stack.hurtAndBreak(1, player, holder -> holder.broadcastBreakEvent(hand));
-                return InteractionResult.SUCCESS;
+    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (state.get(TORCH) != GoatHornTorchType.NONE) {
+            if (stack.isOf(Items.SHEARS)) {
+                world.spawnEntity(new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), state.get(TORCH).toItem().getDefaultStack()));
+                world.setBlockState(pos, state.with(TORCH, GoatHornTorchType.NONE));
+                world.playSound(null, pos, SoundEvents.ENTITY_SHEEP_SHEAR, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                stack.damage(1, player, hand);
+                return ActionResult.SUCCESS;
             }
         } else {
-            GoatHornTorchType type = GoatHornTorchType.fromItem(stack.getItem(), state.getValue(WATERLOGGED));
+            GoatHornTorchType type = GoatHornTorchType.fromItem(stack.getItem(), state.get(WATERLOGGED));
             if (type != GoatHornTorchType.NONE) {
-                level.setBlockAndUpdate(pos, state.setValue(TORCH, type));
-                level.playSound(null, player, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 1.0F, 1.0F);
-                if (!player.getAbilities().instabuild) stack.shrink(1);
-                return InteractionResult.SUCCESS;
+                world.setBlockState(pos, state.with(TORCH, type));
+                world.playSound(null, pos, SoundEvents.ENTITY_ITEM_FRAME_ADD_ITEM, SoundCategory.BLOCKS, 1.0F, 1.0F);
+                stack.decrementUnlessCreative(1, player);
+                return ActionResult.SUCCESS;
             }
         }
-        return InteractionResult.PASS;
+        return ActionResult.PASS;
     }
 
     @Override
-    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-        Direction facing = state.getValue(FACING);
+    public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+        Direction facing = state.get(FACING);
         double d = pos.getX() + 0.5;
         double e = pos.getY() + 1;
         double f = pos.getZ() + 0.5;
@@ -129,54 +118,53 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
             case WEST -> d = (d-0.1) + 0.03;
         }
 
-        GoatHornTorchType type = state.getValue(TORCH);
+        GoatHornTorchType type = state.get(TORCH);
         if (type == GoatHornTorchType.NONE || type == GoatHornTorchType.GLOW_TORCH_OFF) {return;}
-        level.addParticle(ParticleTypes.SMOKE, d, e, f, 0, 0, 0);
-        level.addParticle(type.getParticle(), d, e, f, 0, 0, 0);
+        world.addParticleClient(ParticleTypes.SMOKE, d, e, f, 0, 0, 0);
+        world.addParticleClient(type.getParticle(), d, e, f, 0, 0, 0);
     }
 
     @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-        ResourceLocation lootTableId = this.getLootTable();
-        if (lootTableId == BuiltInLootTables.EMPTY) {
+    protected List<ItemStack> getDroppedStacks(BlockState state, LootWorldContext.Builder builder) {
+        if (this.lootTableKey.isEmpty()) {
             return Collections.emptyList();
         } else {
-            LootParams lootContext = builder.withParameter(LootContextParams.BLOCK_STATE, state).create(LootContextParamSets.BLOCK);
-            ServerLevel level = lootContext.getLevel();
-            LootTable lootTable = level.getServer().getLootData().getLootTable(lootTableId);
-            List<ItemStack> drops = lootTable.getRandomItems(lootContext);
+            LootWorldContext lootWorldContext = builder.add(LootContextParameters.BLOCK_STATE, state).build(LootContextTypes.BLOCK);
+            ServerWorld serverWorld = lootWorldContext.getWorld();
+            assert serverWorld.getServer() != null;
+            LootTable lootTable = serverWorld.getServer().getReloadableRegistries().getLootTable(this.lootTableKey.get());
+            List<ItemStack> drops = lootTable.generateLoot(lootWorldContext);
 
-            if (state.getValue(TORCH) != GoatHornTorchType.NONE) {
-                drops.add(state.getValue(TORCH).toItem().getDefaultInstance());
+            if (state.get(TORCH) != GoatHornTorchType.NONE) {
+                drops.add(state.get(TORCH).toItem().getDefaultStack());
             }
 
-            drops.add(InstrumentItem.create(Items.GOAT_HORN, instrumentOf(level, state)));
+            RegistryEntry<Instrument> entry = serverWorld.getRegistryManager().getOrThrow(RegistryKeys.INSTRUMENT).getOrThrow(state.get(HORN).getInstrument());
+            drops.add(GoatHornItem.getStackForInstrument(Items.GOAT_HORN, entry));
 
             return drops;
         }
     }
 
-    private static Holder<Instrument> instrumentOf(LevelReader level, BlockState state) {
-        return level.registryAccess().registryOrThrow(Registries.INSTRUMENT).getHolderOrThrow(state.getValue(HORN).getInstrument());
-    }
-
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         builder.add(FACING, WATERLOGGED, HORN, TORCH, POWERED);
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify) {
-        if (!level.isClientSide()) {
-            boolean bl = state.getValue(POWERED);
-            if (bl != level.hasNeighborSignal(pos)) {
-                if (bl) level.scheduleTick(pos, this, 20);
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
+        if (!world.isClient()) {
+            boolean bl = state.get(POWERED);
+            if (bl != world.isReceivingRedstonePower(pos)) {
+                if (bl) world.scheduleBlockTick(pos, this, 20);
                 else {
-                    Holder<Instrument> entry = instrumentOf(level, state);
-                    level.playSound(null, pos, entry.value().soundEvent().value(), SoundSource.RECORDS, 3.0F, 1.0F);
-                    level.setBlock(pos, state.cycle(POWERED), Block.UPDATE_CLIENTS);
-                    if (level instanceof ServerLevel serverLevel) {
-                        serverLevel.sendParticles(ParticleTypes.NOTE, pos.getX()+0.5,pos.getY() +0.85,pos.getZ()+0.5,
+                    RegistryEntry<Instrument> entry = world.getRegistryManager()
+                            .getOrThrow(net.minecraft.registry.RegistryKeys.INSTRUMENT)
+                            .getOrThrow(state.get(GoatHornBlock.HORN).getInstrument());
+                    world.playSound(null, pos, entry.value().soundEvent().value(), SoundCategory.RECORDS, 3.0F, 1.0F);
+                    world.setBlockState(pos, state.cycle(POWERED), Block.NOTIFY_LISTENERS);
+                    if (world instanceof ServerWorld serverWorld) {
+                        serverWorld.spawnParticles(ParticleTypes.NOTE, pos.getX()+0.5,pos.getY() +0.85,pos.getZ()+0.5,
                                 0,0.1, 0.1, 0.1,0);
                     }
                 }
@@ -186,68 +174,69 @@ public class GoatHornBlock extends HorizontalDirectionalBlock implements SimpleW
 
     @Override
     public FluidState getFluidState(BlockState state) {
-        return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
+        return state.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
     }
 
     @Override
-    public @Nullable BlockState getStateForPlacement(BlockPlaceContext ctx) {
-        FluidState fluidState = ctx.getLevel().getFluidState(ctx.getClickedPos());
-        if (ctx.getLevel().getBlockState(ctx.getClickedPos().below()).isAir() || ctx.getLevel().getBlockState(ctx.getClickedPos().above()).isAir()) return null;
-        return this.defaultBlockState().setValue(FACING, ctx.getHorizontalDirection().getOpposite()).setValue(WATERLOGGED, fluidState.getType() == Fluids.WATER);
+    public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
+        FluidState fluidState = ctx.getWorld().getFluidState(ctx.getBlockPos());
+        if (ctx.getWorld().getBlockState(ctx.getBlockPos().down()).isAir() || ctx.getWorld().getBlockState(ctx.getBlockPos().up()).isAir()) return null;
+        return this.getDefaultState().with(FACING, ctx.getHorizontalPlayerFacing().getOpposite()).with(WATERLOGGED, fluidState.getFluid() == Fluids.WATER);
     }
 
-    @Override
-    public BlockState updateShape(
-            BlockState state, Direction direction, BlockState neighborState,
-            LevelAccessor level, BlockPos pos, BlockPos neighborPos
-    ) {
-        if (state.getValue(WATERLOGGED)) level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
-        if (!state.canSurvive(level, pos)) level.scheduleTick(pos, this, 1);
+    protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
+        if (state.get(WATERLOGGED)) tickView.scheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+        if (!state.canPlaceAt(world, pos)) tickView.scheduleBlockTick(pos, this, 1);
         return state;
     }
 
     @Override
-    public boolean placeLiquid(LevelAccessor level, BlockPos pos, BlockState state, FluidState fluidState) {
-        if (!state.getValue(BlockStateProperties.WATERLOGGED) && fluidState.getType() == Fluids.WATER) {
-            if (!level.isClientSide()) {
-                if (state.getValue(TORCH)==GoatHornTorchType.GLOW_TORCH_OFF) state = state.setValue(TORCH, GoatHornTorchType.GLOW_TORCH);
-                level.setBlock(pos, state.setValue(BlockStateProperties.WATERLOGGED, true), Block.UPDATE_ALL);
-                level.scheduleTick(pos, fluidState.getType(), fluidState.getType().getTickDelay(level));
+    public boolean tryFillWithFluid(WorldAccess world, BlockPos pos, BlockState state, FluidState fluidState) {
+        if (!state.get(Properties.WATERLOGGED) && fluidState.getFluid() == Fluids.WATER) {
+            if (!world.isClient()) {
+                if (state.get(TORCH)==GoatHornTorchType.GLOW_TORCH_OFF) state = state.with(TORCH, GoatHornTorchType.GLOW_TORCH);
+                world.setBlockState(pos, state.with(Properties.WATERLOGGED, true), Block.NOTIFY_ALL);
+                world.scheduleFluidTick(pos, fluidState.getFluid(), fluidState.getFluid().getTickRate(world));
             }
             return true;
         } else return false;
     }
 
     @Override
-    public ItemStack pickupBlock(LevelAccessor level, BlockPos pos, BlockState state) {
-        if (state.getValue(BlockStateProperties.WATERLOGGED)) {
-            if (state.getValue(TORCH)==GoatHornTorchType.GLOW_TORCH) state = state.setValue(TORCH, GoatHornTorchType.GLOW_TORCH_OFF);
-            level.setBlock(pos, state.setValue(BlockStateProperties.WATERLOGGED, false), Block.UPDATE_ALL);
-            if (!state.canSurvive(level, pos)) level.destroyBlock(pos, true);
+    public ItemStack tryDrainFluid(@Nullable LivingEntity drainer, WorldAccess world, BlockPos pos, BlockState state) {
+        if (state.get(Properties.WATERLOGGED)) {
+            if (state.get(TORCH)==GoatHornTorchType.GLOW_TORCH) state = state.with(TORCH, GoatHornTorchType.GLOW_TORCH_OFF);
+            world.setBlockState(pos, state.with(Properties.WATERLOGGED, false), Block.NOTIFY_ALL);
+            if (!state.canPlaceAt(world, pos)) world.breakBlock(pos, true);
             return new ItemStack(Items.WATER_BUCKET);
         } else return ItemStack.EMPTY;
     }
 
     @Override
-    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
-        Direction facing = state.getValue(FACING);
-        BlockPos supportPos = pos.relative(facing);
-        return level.getBlockState(supportPos).isFaceSturdy(level, supportPos, facing.getOpposite());
+    protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+        Direction facing = state.get(FACING);
+        BlockPos supportPos = pos.offset(facing);
+        return world.getBlockState(supportPos).isSideSolidFullSquare(world, supportPos, facing.getOpposite());
     }
 
     @Override
-    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!state.canSurvive(level, pos)) {
-            level.destroyBlock(pos, true);
+    protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        if (!state.canPlaceAt(world, pos)) {
+            world.breakBlock(pos, true);
         } else {
-            if (state.getValue(POWERED) && !level.hasNeighborSignal(pos)) {
-                level.setBlock(pos, state.cycle(POWERED), Block.UPDATE_CLIENTS);
+            if (state.get(POWERED) && !world.isReceivingRedstonePower(pos)) {
+                world.setBlockState(pos, state.cycle(POWERED), Block.NOTIFY_LISTENERS);
             }
         }
     }
 
     @Override
-    public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player) {
-        return InstrumentItem.create(Items.GOAT_HORN, instrumentOf(player.level(), state));
+    protected MapCodec<? extends HorizontalFacingBlock> getCodec() {
+        return CODEC;
+    }
+
+    protected ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state, boolean includeData) {
+        RegistryEntry<Instrument> entry = world.getRegistryManager().getOrThrow(RegistryKeys.INSTRUMENT).getOrThrow(state.get(HORN).getInstrument());
+        return GoatHornItem.getStackForInstrument(Items.GOAT_HORN, entry);
     }
 }

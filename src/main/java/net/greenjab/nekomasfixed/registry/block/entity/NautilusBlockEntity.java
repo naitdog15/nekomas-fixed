@@ -1,137 +1,131 @@
 package net.greenjab.nekomasfixed.registry.block.entity;
 
 import com.google.common.collect.Lists;
-import com.mojang.logging.LogUtils;
-import com.mojang.serialization.DataResult;
 import net.greenjab.nekomasfixed.registry.block.NautilusBlock;
 import net.greenjab.nekomasfixed.registry.other.AnimalComponent;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.gameevent.GameEvent;
+import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.component.ComponentMap;
+import net.minecraft.component.ComponentsAccess;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.passive.AnimalEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
 
 import java.util.List;
 
 public class NautilusBlockEntity extends BlockEntity {
-	private static final Logger LOGGER = LogUtils.getLogger();
 	private final List<AnimalComponent.StoredEntityData> animal = Lists.newArrayList();
 
 	public NautilusBlockEntity(BlockPos pos, BlockState state) {
-		super(BlockEntityTypeRegistry.NAUTILUS_BLOCK_ENTITY.get(), pos, state);
+		super(BlockEntityTypeRegistry.NAUTILUS_BLOCK_ENTITY, pos, state);
 	}
 
 	public boolean hasAnimal() {
 		return !this.animal.isEmpty();
 	}
 
-	public void tryEnterNautilus(Animal animal) {
+	public void tryEnterNautilus(AnimalEntity animal) {
 		if (this.animal.isEmpty()) {
 			animal.stopRiding();
-			animal.ejectPassengers();
-			animal.dropLeash(true, true);
+			animal.removeAllPassengers();
+			animal.detachLeash();
 			this.animal.add(AnimalComponent.StoredEntityData.of(animal));
-			if (this.level != null) {
+			if (this.world != null) {
 
-				BlockPos blockPos = this.getBlockPos();
-				this.level
+				BlockPos blockPos = this.getPos();
+				this.world
 					.playSound(
-						null, blockPos.getX(), blockPos.getY(), blockPos.getZ(), SoundEvents.BEEHIVE_ENTER, SoundSource.BLOCKS, 1.0F, 1.0F
+						null, blockPos.getX(), blockPos.getY(), blockPos.getZ(), SoundEvents.BLOCK_BEEHIVE_ENTER, SoundCategory.BLOCKS, 1.0F, 1.0F
 					);
-				this.level.gameEvent(GameEvent.BLOCK_CHANGE, blockPos, GameEvent.Context.of(animal, this.getBlockState()));
+				this.world.emitGameEvent(GameEvent.BLOCK_CHANGE, blockPos, GameEvent.Emitter.of(animal, this.getCachedState()));
 			}
 
 			animal.discard();
-			super.setChanged();
+			super.markDirty();
 		}
 	}
 
 	public List<Entity> tryReleaseAnimal(BlockState state) {
 		List<Entity> list = Lists.newArrayList();
-		if (this.level!=null) {
-			this.animal.removeIf(data -> releaseAnimal(this.level, this.worldPosition, state, data, list));
+		if (this.world!=null) {
+			this.animal.removeIf(data -> releaseAnimal(this.world, this.pos, state, data, list));
 			if (!list.isEmpty()) {
-				super.setChanged();
+				super.markDirty();
 			}
 		}
 		return list;
 	}
 
 	public boolean releaseAnimal(
-		Level level,
+		World world,
 		BlockPos pos,
 		BlockState state,
 		AnimalComponent.StoredEntityData animal,
 		@Nullable List<Entity> entities
 	) {
-		Direction direction = state.getValue(NautilusBlock.FACING);
-		BlockPos blockPos = pos.relative(direction);
-		boolean bl = !level.getBlockState(blockPos).getCollisionShape(level, blockPos).isEmpty() ;
+		Direction direction = state.get(NautilusBlock.FACING);
+		BlockPos blockPos = pos.offset(direction);
+		boolean bl = !world.getBlockState(blockPos).getCollisionShape(world, blockPos).isEmpty() ;
 		if (bl) return false;
-		if (animal.tickEnteredHive() == level.getGameTime()) return false;
-		Entity entity = animal.loadEntity(level);
+		if (animal.tickEnteredHive() == world.getTime()) return false;
+		Entity entity = animal.loadEntity(world, pos);
 		if (entity != null) {
 			if (entities != null) entities.add(entity);
-			double d = 0.55 + entity.getBbWidth() / 2.0F;
-			double e = pos.getX() + 0.5 + d * direction.getStepX();
+			double d = 0.55 + entity.getWidth() / 2.0F;
+			double e = pos.getX() + 0.5 + d * direction.getOffsetX();
 			double g = pos.getY();
-			double h = pos.getZ() + 0.5 + d * direction.getStepZ();
-			entity.setYRot(direction.toYRot());
-			entity.setYBodyRot(direction.toYRot());
-			entity.setYHeadRot(direction.toYRot());
-			entity.yRotO =direction.toYRot();
-			entity.moveTo(e, g, h, direction.toYRot(), entity.getXRot());
-			level.playSound(null, pos, SoundEvents.BEEHIVE_EXIT, SoundSource.BLOCKS, 1.0F, 1.0F);
-			level.gameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Context.of(entity, level.getBlockState(pos)));
-			return level.addFreshEntity(entity);
+			double h = pos.getZ() + 0.5 + d * direction.getOffsetZ();
+			entity.setYaw(direction.getPositiveHorizontalDegrees());
+			entity.setBodyYaw(direction.getPositiveHorizontalDegrees());
+			entity.setHeadYaw(direction.getPositiveHorizontalDegrees());
+			entity.lastYaw =direction.getPositiveHorizontalDegrees();
+			entity.refreshPositionAndAngles(e, g, h, direction.getPositiveHorizontalDegrees(), entity.getPitch());
+			world.playSound(null, pos, SoundEvents.BLOCK_BEEHIVE_EXIT, SoundCategory.BLOCKS, 1.0F, 1.0F);
+			world.emitGameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Emitter.of(entity, world.getBlockState(pos)));
+			return world.spawnEntity(entity);
 		} else return false;
 	}
 
-	public AnimalComponent getAnimalComponent() {
-		return new AnimalComponent(List.copyOf(this.animal));
-	}
-
-	// shell holds exactly one animal, so an already-occupied shell keeps what it has rather than doubling up.
-	// the animal comes back as a new entity/UUID - capture drops the old one to avoid two entities claiming it.
-	public void restoreAnimal(AnimalComponent component) {
-		if (!this.animal.isEmpty() || component.animal().isEmpty()) {
-			return;
-		}
-		this.animal.addAll(component.animal());
-		super.setChanged();
-	}
-
 	@Override
-	public void load(CompoundTag tag) {
-		super.load(tag);
+	protected void readData(ReadView view) {
+		super.readData(view);
 		this.animal.clear();
-		if (tag.contains("animal", Tag.TAG_LIST)) {
-			AnimalComponent.StoredEntityData.LIST_CODEC.parse(NbtOps.INSTANCE, tag.get("animal"))
-					.resultOrPartial(error -> LOGGER.error("nekomasfixed: unreadable nautilus occupant at {}: {}", this.worldPosition, error))
-					.ifPresent(this.animal::addAll);
-		}
+        this.animal.addAll((view.read("animal", AnimalComponent.StoredEntityData.LIST_CODEC)
+                .orElse(List.of())));
 	}
 
-	// no key at all when empty, so copying this block entity onto a stack never stamps a leftover empty
-	// list; a failed encode also writes nothing rather than half an animal, loading back empty instead.
 	@Override
-	protected void saveAdditional(CompoundTag tag) {
-		super.saveAdditional(tag);
-		if (!this.animal.isEmpty()) {
-			DataResult<Tag> encoded = AnimalComponent.StoredEntityData.LIST_CODEC.encodeStart(NbtOps.INSTANCE, this.animal);
-			encoded.error().ifPresent(error -> LOGGER.error("nekomasfixed: could not save the nautilus occupant at {}: {}", this.worldPosition, error.message()));
-			encoded.result().ifPresent(value -> tag.put("animal", value));
-		}
+	protected void writeData(WriteView view) {
+		super.writeData(view);
+		view.put("animal", AnimalComponent.StoredEntityData.LIST_CODEC, this.animal);
+	}
+
+	@Override
+	protected void readComponents(ComponentsAccess components) {
+		super.readComponents(components);
+		this.animal.clear();
+		this.animal.addAll(components.getOrDefault(ComponentRegistry.ANIMAL, AnimalComponent.DEFAULT).animal());
+	}
+
+	@Override
+	protected void addComponents(ComponentMap.Builder builder) {
+		super.addComponents(builder);
+		builder.add(ComponentRegistry.ANIMAL, new AnimalComponent(Lists.newArrayList(this.animal)));
+	}
+
+	@Override
+	public void removeFromCopiedStackData(WriteView view) {
+		super.removeFromCopiedStackData(view);
+		view.remove("animal");
 	}
 }

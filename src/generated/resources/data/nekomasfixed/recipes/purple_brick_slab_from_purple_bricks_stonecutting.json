@@ -1,8 +1,0 @@
-{
-  "type": "minecraft:stonecutting",
-  "count": 2,
-  "ingredient": {
-    "item": "nekomasfixed:purple_bricks"
-  },
-  "result": "nekomasfixed:purple_brick_slab"
-}

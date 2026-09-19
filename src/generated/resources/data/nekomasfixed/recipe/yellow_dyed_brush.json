@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "dyed_brush",
+  "key": {
+    "#": "minecraft:yellow_dye",
+    "D": "minecraft:brush"
+  },
+  "pattern": [
+    "###",
+    "#D#",
+    "###"
+  ],
+  "result": {
+    "count": 1,
+    "id": "nekomasfixed:yellow_dyed_brush"
+  }
+}

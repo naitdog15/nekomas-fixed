@@ -1,29 +1,23 @@
 package net.greenjab.nekomasfixed.render.block.entity.model;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.model.Model;
-import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.model.geom.builders.LayerDefinition;
-import net.minecraft.client.model.geom.builders.MeshDefinition;
-import net.minecraft.client.renderer.RenderType;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.model.*;
+import net.minecraft.client.render.RenderLayers;
 
-/** Empty placeholder mesh — the clock face itself renders via three item-model insets in {@code ClockBlockEntityRenderer}. */
-public class ClockBlockModel extends Model {
-	private final ModelPart root;
+@Environment(EnvType.CLIENT)
+public class ClockBlockModel extends Model<Float> {
 
 	public ClockBlockModel(ModelPart root) {
-		super(RenderType::entitySolid);
-		this.root = root;
+		super(root, RenderLayers::entitySolid);
 	}
 
-	public static LayerDefinition getTexturedModelData() {
-		MeshDefinition modelData = new MeshDefinition();
-		return LayerDefinition.create(modelData, 64, 64);
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		return TexturedModelData.of(modelData, 64, 64);
 	}
 
-	@Override
-	public void renderToBuffer(PoseStack poseStack, VertexConsumer vertexConsumer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
-		this.root.render(poseStack, vertexConsumer, packedLight, packedOverlay, red, green, blue, alpha);
+	public void setAngles(Float float_) {
+		super.setAngles(float_);
 	}
 }

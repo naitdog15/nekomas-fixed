@@ -1,77 +1,100 @@
 package net.greenjab.nekomasfixed.render.other;
 
-import net.greenjab.nekomasfixed.registry.other.ContainerTooltipData;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
-import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.tooltip.TooltipComponent;
+import net.minecraft.component.type.ContainerComponent;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 
-// ItemContainerContents is replaced by a plain List<ItemStack>-based ContainerTooltipData;
-// extractImage(..., GuiGraphicsExtractor) becomes 1.20.1's real renderImage(Font, x, y, GuiGraphics)
-public class ContainerTooltipComponent implements ClientTooltipComponent {
-    /** 1.20.1 has no GUI sprite atlas: the bundle's slot background is a corner of this one sheet. */
-    private static final ResourceLocation BUNDLE_TEXTURE = new ResourceLocation("textures/gui/container/bundle.png");
-    private static final int BUNDLE_TEXTURE_SIZE = 128;
-    private static final int SLOT_SPRITE_SIZE = 18;
-    private final List<ItemStack> contents;
+@Environment(EnvType.CLIENT)
+public class ContainerTooltipComponent implements TooltipComponent {
+    private static final Identifier BUNDLE_SLOT_BACKGROUND_TEXTURE = Identifier.ofVanilla("container/bundle/slot_background");
+    private final ContainerComponent contents;
     private int numberOfSlots;
 
-    public ContainerTooltipComponent(ContainerTooltipData data) {
-        this.contents = data.contents();
-        this.numberOfSlots = Math.min(27, this.contents.size());
+    public ContainerTooltipComponent(ContainerComponent contents) {
+        this.contents = contents;
+        numberOfSlots = (int) Math.min(27, contents.streamNonEmpty().count());
     }
 
     @Override
-    public int getHeight() {
+    public int getHeight(TextRenderer textRenderer) {
+        return this.getHeightOfNonEmpty();
+    }
+
+    @Override
+    public int getWidth(TextRenderer textRenderer) {
+        return this.getColumnsHeight() ;
+    }
+
+    @Override
+    public boolean isSticky() {
+        return true;
+    }
+
+    private int getHeightOfNonEmpty() {
+        return this.getRowsHeight();
+    }
+
+    private int getRowsHeight() {
         return this.getRows() * 24;
     }
 
-    @Override
-    public int getWidth(Font font) {
+    private int getRows() {
+        if (numberOfSlots==0)return 0;
+        return Math.min((int)Math.ceil(numberOfSlots/ (getColumns()+0.0)),3);
+    }
+    private int getColumns() {
+        if (numberOfSlots == 0) return 0;
+        return MathHelper.ceil(Math.max(Math.sqrt(numberOfSlots), numberOfSlots / 3.0));
+    }
+
+    private int getColumnsHeight() {
         return this.getColumns() * 24;
     }
 
-    private int getRows() {
-        if (numberOfSlots == 0) return 0;
-        return Math.min((int) Math.ceil(numberOfSlots / (getColumns() + 0.0)), 3);
-    }
-
-    private int getColumns() {
-        if (numberOfSlots == 0) return 0;
-        return Mth.ceil(Math.max(Math.sqrt(numberOfSlots), numberOfSlots / 3.0));
-    }
 
     @Override
-    public void renderImage(Font font, int x, int y, GuiGraphics guiGraphics) {
-        List<ItemStack> list = firstStacksInContents();
-        this.numberOfSlots = list.size();
-        if (list.isEmpty()) return;
-        int k = 0;
-        for (int l = 0; l < this.getRows(); l++) {
-            for (int m = 0; m < this.getColumns(); m++) {
-                if (k >= numberOfSlots) break;
-                int n = x + m * 24;
-                int o = y + l * 24;
-                drawItem(n, o, list, k, font, guiGraphics);
-                k++;
+    public void drawItems(TextRenderer textRenderer, int x, int y, int width, int height, DrawContext context) {
+            this.drawNonEmptyTooltip(textRenderer, x, y, context);
+    }
+
+    private void drawNonEmptyTooltip(TextRenderer textRenderer, int x, int y, DrawContext context) {
+        List<ItemStack> list = this.firstStacksInContents();
+        numberOfSlots = list.size();
+        if (!list.isEmpty()) {
+            int k = 0;
+            for (int l = 0; l < this.getRows(); l++) {
+                for (int m = 0; m < this.getColumns(); m++) {
+                    int n = x + m * 24;
+                    int o = y + l * 24;
+                    if (k >= numberOfSlots) break;
+                    this.drawItem(k, n, o, list, k, textRenderer, context);
+                    k++;
+                }
             }
         }
+
     }
 
     private List<ItemStack> firstStacksInContents() {
-        int i = Math.min(this.contents.size(), 27);
-        return this.contents.subList(0, i);
+        int i = (int) Math.min(this.contents.streamNonEmpty().count(), 27);
+        return this.contents.streamNonEmpty().toList().subList(0, i);
     }
 
-    private void drawItem(int x, int y, List<ItemStack> stacks, int index, Font font, GuiGraphics guiGraphics) {
+    private void drawItem(int index, int x, int y, List<ItemStack> stacks, int seed, TextRenderer textRenderer, DrawContext drawContext) {
         ItemStack itemStack = stacks.get(index);
-        guiGraphics.blit(BUNDLE_TEXTURE, x, y, 24, 24, 0, 0, SLOT_SPRITE_SIZE, SLOT_SPRITE_SIZE,
-                BUNDLE_TEXTURE_SIZE, BUNDLE_TEXTURE_SIZE);
-        guiGraphics.renderItem(itemStack, x + 4, y + 4, index);
-        guiGraphics.renderItemDecorations(font, itemStack, x + 4, y + 4);
+        drawContext.drawGuiTexture(RenderPipelines.GUI_TEXTURED, BUNDLE_SLOT_BACKGROUND_TEXTURE, x, y, 24, 24);
+
+        drawContext.drawItem(itemStack, x + 4, y + 4, seed);
+        drawContext.drawStackOverlay(textRenderer, itemStack, x + 4, y + 4);
     }
+
 }

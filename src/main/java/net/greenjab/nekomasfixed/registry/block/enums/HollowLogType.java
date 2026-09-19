@@ -2,13 +2,13 @@ package net.greenjab.nekomasfixed.registry.block.enums;
 
 import net.greenjab.nekomasfixed.registry.block.HollowLogBlock;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.RotatedPillarBlock;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.PillarBlock;
+
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 
 public enum HollowLogType {
@@ -19,53 +19,39 @@ public enum HollowLogType {
     JUNGLE(Blocks.JUNGLE_LOG, BlockRegistry.HOLLOW_JUNGLE_LOG),
     ACACIA(Blocks.ACACIA_LOG, BlockRegistry.HOLLOW_ACACIA_LOG),
     DARK_OAK(Blocks.DARK_OAK_LOG, BlockRegistry.HOLLOW_DARK_OAK_LOG),
-    MANGROVE(Blocks.MANGROVE_LOG, BlockRegistry.HOLLOW_MANGROVE_LOG),
+    MANGROVE(Blocks.CHERRY_LOG, BlockRegistry.HOLLOW_MANGROVE_LOG),
     CHERRY(Blocks.CHERRY_LOG, BlockRegistry.HOLLOW_CHERRY_LOG),
-    BAMBOO(Blocks.BAMBOO_BLOCK, BlockRegistry.HOLLOW_BAMBOO_BLOCK),
+    PALE_OAK(Blocks.PALE_OAK_LOG, BlockRegistry.HOLLOW_PALE_OAK_LOG),
+    BAMBOO(Blocks.PALE_OAK_LOG, BlockRegistry.HOLLOW_BAMBOO_BLOCK),
     CRIMSON(Blocks.CRIMSON_HYPHAE, BlockRegistry.HOLLOW_CRIMSON_STEM),
-    WARPED(Blocks.WARPED_HYPHAE, BlockRegistry.HOLLOW_WARPED_STEM);
+    WARPED(Blocks.WARPED_HYPHAE, BlockRegistry.HOLLOW_WARPED_STEM),
+    BAOBAB(BlockRegistry.BAOBAB_LOG, BlockRegistry.HOLLOW_BAOBAB_LOG);
 
-    private final Supplier<Block> baseLog;
-    private final Supplier<Block> hollowLog;
+    private final Block baseLog;
+    private final Block hollowLog;
 
-    /** Built on first lookup — the mod's own blocks are not resolvable while this enum class-loads. */
-    private static Map<Block, Block> baseToHollow;
+    private static final Map<Block, Block> BASE_TO_HOLLOW = new HashMap<>();
 
-    HollowLogType(Block baseLog, Supplier<Block> hollowLog) {
-        this(() -> baseLog, hollowLog);
+    static {
+        for (HollowLogType type : values()) {
+            BASE_TO_HOLLOW.put(type.baseLog, type.hollowLog);
+        }
     }
 
-    HollowLogType(Supplier<Block> baseLog, Supplier<Block> hollowLog) {
+    HollowLogType(Block baseLog, Block hollowLog) {
         this.baseLog = baseLog;
         this.hollowLog = hollowLog;
     }
 
-    private static Map<Block, Block> baseToHollow() {
-        if (baseToHollow == null) {
-            Map<Block, Block> map = new HashMap<>();
-            for (HollowLogType type : values()) {
-                map.put(type.baseLog.get(), type.hollowLog.get());
-            }
-            baseToHollow = map;
-        }
-        return baseToHollow;
-    }
-
     public static Block getHollowBlock(Block baseLog) {
-        return baseToHollow().getOrDefault(baseLog, Blocks.AIR);
+        return BASE_TO_HOLLOW.getOrDefault(baseLog, Blocks.AIR);
     }
 
     public static BlockState getHollowState(BlockState baseLog) {
-        BlockState hollowState = getHollowBlock(baseLog.getBlock()).defaultBlockState();
-        // The axis value is read off the source state, so the source is the one that has to be asked -
-        // a future mapping from a block that is not a rotated pillar would otherwise throw here.
-        if (!hollowState.is(Blocks.AIR) && baseLog.hasProperty(RotatedPillarBlock.AXIS)) {
-            return hollowState.setValue(HollowLogBlock.AXIS, baseLog.getValue(RotatedPillarBlock.AXIS));
+        BlockState hollowState = getHollowBlock(baseLog.getBlock()).getDefaultState();
+        if (!hollowState.isOf(Blocks.AIR) && hollowState.contains(PillarBlock.AXIS)) {
+            return hollowState.with(HollowLogBlock.AXIS, baseLog.get(PillarBlock.AXIS));
         }
         return hollowState;
-    }
-
-    public static boolean hasHollowVariant(BlockState baseLog) {
-        return !getHollowState(baseLog).is(Blocks.AIR);
     }
 }

@@ -1,131 +1,134 @@
 package net.greenjab.nekomasfixed.registry.item;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
+import java.util.List;
 
-import net.greenjab.nekomasfixed.registry.entity.WildfireTrident;
-import net.greenjab.nekomasfixed.render.entity.NekomasFixedBEWLR;
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.stats.Stats;
-import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MoverType;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.UseAnim;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+import net.greenjab.nekomasfixed.registry.entity.WildfireTridentEntity;
+import net.minecraft.component.EnchantmentEffectComponentTypes;
+import net.minecraft.component.type.AttributeModifierSlot;
+import net.minecraft.component.type.AttributeModifiersComponent;
+import net.minecraft.component.type.ToolComponent;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MovementType;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.attribute.EntityAttributeModifier.Operation;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity.PickupPermission;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ProjectileItem;
+import net.minecraft.item.consume.UseAction;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Position;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
-import java.util.function.Consumer;
+public class WildfireTridentItem extends Item implements ProjectileItem {
 
-public class WildfireTridentItem extends Item {
-
-    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
-
-    public WildfireTridentItem(Item.Properties settings) {
+    public WildfireTridentItem(Item.Settings settings) {
         super(settings);
-        ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
-        builder.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(BASE_ATTACK_DAMAGE_UUID, "Tool modifier", 8.0D, AttributeModifier.Operation.ADDITION));
-        builder.put(Attributes.ATTACK_SPEED, new AttributeModifier(BASE_ATTACK_SPEED_UUID, "Tool modifier", -2.9D, AttributeModifier.Operation.ADDITION));
-        this.defaultModifiers = builder.build();
     }
 
-    @Override
-    public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
-        return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.getDefaultAttributeModifiers(slot);
+    public static AttributeModifiersComponent createAttributeModifiers() {
+        return AttributeModifiersComponent.builder().add(EntityAttributes.ATTACK_DAMAGE, new EntityAttributeModifier(BASE_ATTACK_DAMAGE_MODIFIER_ID, 8.0F, Operation.ADD_VALUE), AttributeModifierSlot.MAINHAND).add(EntityAttributes.ATTACK_SPEED, new EntityAttributeModifier(BASE_ATTACK_SPEED_MODIFIER_ID, -2.9F, Operation.ADD_VALUE), AttributeModifierSlot.MAINHAND).build();
     }
 
-    @Override
-    public UseAnim getUseAnimation(ItemStack stack) {
-        return UseAnim.SPEAR;
+    public static ToolComponent createToolComponent() {
+        return new ToolComponent(List.of(), 1.0F, 2, false);
     }
 
-    @Override
-    public int getUseDuration(ItemStack stack) {
+    public UseAction getUseAction(ItemStack stack) {
+        return UseAction.TRIDENT;
+    }
+
+    public int getMaxUseTime(ItemStack stack, LivingEntity user) {
         return 72000;
     }
 
-    @Override
-    public void releaseUsing(ItemStack stack, Level level, LivingEntity user, int remainingUseTicks) {
-        if (user instanceof Player playerEntity) {
-            int i = this.getUseDuration(stack) - remainingUseTicks;
-            if (i < 10) return;
-            int j = EnchantmentHelper.getRiptide(stack);
-            // riptide trigger treats being on fire as "wet" too - matches the item's theming
-            if (j > 0 && !playerEntity.isInWaterOrRain() && !playerEntity.isOnFire()) return;
-            if (stack.getDamageValue() >= stack.getMaxDamage() - 1) return;
+    public boolean onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
+        if (user instanceof PlayerEntity playerEntity) {
+            int i = this.getMaxUseTime(stack, user) - remainingUseTicks;
+            if (i < 10) {
+                return false;
+            } else {
+                float f = EnchantmentHelper.getTridentSpinAttackStrength(stack, playerEntity);
+                if (f > 0.0F && !playerEntity.isOnFire() && !user.isTouchingWaterOrRain()) {
+                    return false;
+                } else if (stack.willBreakNextUse()) {
+                    return false;
+                } else {
+                    RegistryEntry<SoundEvent> registryEntry = EnchantmentHelper.getEffect(stack, EnchantmentEffectComponentTypes.TRIDENT_SOUND).orElse(SoundEvents.ITEM_TRIDENT_THROW);
+                    playerEntity.incrementStat(Stats.USED.getOrCreateStat(this));
+                    if (world instanceof ServerWorld serverWorld) {
+                        stack.damage(1, playerEntity);
+                        if (f == 0.0F) {
+                            ItemStack itemStack = stack.splitUnlessCreative(1, playerEntity);
+                            WildfireTridentEntity tridentEntity = ProjectileEntity.spawnWithVelocity(WildfireTridentEntity::new, serverWorld, itemStack, playerEntity, 0.0F, 2.5F, 1.0F);
+                            if (playerEntity.isInCreativeMode()) {
+                                tridentEntity.pickupType = PickupPermission.CREATIVE_ONLY;
+                            }
 
-            if (!level.isClientSide) {
-                stack.hurtAndBreak(1, playerEntity, entity -> entity.broadcastBreakEvent(playerEntity.getUsedItemHand()));
-                if (j == 0) {
-                    WildfireTrident tridentEntity = new WildfireTrident(level, playerEntity, stack);
-                    tridentEntity.shootFromRotation(playerEntity, playerEntity.getXRot(), playerEntity.getYRot(), 0.0F, 2.5F + (float) j * 0.5F, 1.0F);
-                    if (playerEntity.getAbilities().instabuild) tridentEntity.pickup = AbstractArrow.Pickup.CREATIVE_ONLY;
-                    level.addFreshEntity(tridentEntity);
-                    level.playSound(null, tridentEntity, SoundEvents.TRIDENT_THROW, SoundSource.PLAYERS, 1.0F, 1.0F);
-                    if (!playerEntity.getAbilities().instabuild) playerEntity.getInventory().removeItem(stack);
+                            world.playSoundFromEntity(null, tridentEntity, registryEntry.value(), SoundCategory.PLAYERS, 1.0F, 1.0F);
+                            return true;
+                        }
+                    }
+
+                    if (f > 0.0F) {
+                        float g = playerEntity.getYaw();
+                        float h = playerEntity.getPitch();
+                        float j = -MathHelper.sin((g * ((float)Math.PI / 180F))) * MathHelper.cos((h * ((float)Math.PI / 180F)));
+                        float k = -MathHelper.sin((h * ((float)Math.PI / 180F)));
+                        float l = MathHelper.cos((g * ((float)Math.PI / 180F))) * MathHelper.cos((h * ((float)Math.PI / 180F)));
+                        float m = MathHelper.sqrt(j * j + k * k + l * l);
+                        j *= f / m;
+                        k *= f / m;
+                        l *= f / m;
+                        playerEntity.addVelocity(j, k, l);
+                        playerEntity.useRiptide(20, 8.0F, stack);
+                        if (playerEntity.isOnGround()) {
+                            playerEntity.move(MovementType.SELF, new Vec3d(0.0F, 1.1999999F, 0.0F));
+                        }
+
+                        world.playSoundFromEntity(null, playerEntity, registryEntry.value(), SoundCategory.PLAYERS, 1.0F, 1.0F);
+                        return true;
+                    } else {
+                        return false;
+                    }
                 }
             }
-
-            playerEntity.awardStat(Stats.ITEM_USED.get(this));
-            if (j > 0) {
-                float g = playerEntity.getYRot();
-                float h = playerEntity.getXRot();
-                float jx = -Mth.sin(g * ((float) Math.PI / 180F)) * Mth.cos(h * ((float) Math.PI / 180F));
-                float kx = -Mth.sin(h * ((float) Math.PI / 180F));
-                float lx = Mth.cos(g * ((float) Math.PI / 180F)) * Mth.cos(h * ((float) Math.PI / 180F));
-                float m = Mth.sqrt(jx * jx + kx * kx + lx * lx);
-                float thrust = 3.0F * ((1.0F + (float) j) / 4.0F);
-                float fx = jx * thrust / m;
-                float fy = kx * thrust / m;
-                float fz = lx * thrust / m;
-                playerEntity.push(fx, fy, fz);
-                playerEntity.startAutoSpinAttack(20);
-                if (playerEntity.onGround()) playerEntity.move(MoverType.SELF, new Vec3(0.0D, 1.1999999D, 0.0D));
-
-                SoundEvent soundEvent;
-                if (j >= 3) soundEvent = SoundEvents.TRIDENT_RIPTIDE_3;
-                else if (j == 2) soundEvent = SoundEvents.TRIDENT_RIPTIDE_2;
-                else soundEvent = SoundEvents.TRIDENT_RIPTIDE_1;
-                level.playSound(null, playerEntity, soundEvent, SoundSource.PLAYERS, 1.0F, 1.0F);
-            }
-        }
-    }
-
-    @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {
-        ItemStack itemStack = user.getItemInHand(hand);
-        if (itemStack.getDamageValue() >= itemStack.getMaxDamage() - 1) {
-            return InteractionResultHolder.fail(itemStack);
-        } else if (EnchantmentHelper.getRiptide(itemStack) > 0 && !user.isInWaterOrRain() && !user.isOnFire()) {
-            return InteractionResultHolder.fail(itemStack);
         } else {
-            user.startUsingItem(hand);
-            return InteractionResultHolder.consume(itemStack);
+            return false;
         }
     }
 
-    // custom renderer only kicks in for a model that asks for it; sprite models ignore this
-    @Override
-    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
-        consumer.accept(new IClientItemExtensions() {
-            @Override
-            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                return NekomasFixedBEWLR.instance();
-            }
-        });
+    public ActionResult use(World world, PlayerEntity user, Hand hand) {
+        ItemStack itemStack = user.getStackInHand(hand);
+        if (itemStack.willBreakNextUse()) {
+            return ActionResult.FAIL;
+        } else if (EnchantmentHelper.getTridentSpinAttackStrength(itemStack, user) > 0.0F && !user.isOnFire() && !user.isTouchingWaterOrRain()) {
+            return ActionResult.FAIL;
+        } else {
+            user.setCurrentHand(hand);
+            return ActionResult.CONSUME;
+        }
     }
+
+    public ProjectileEntity createEntity(World world, Position pos, ItemStack stack, Direction direction) {
+        WildfireTridentEntity tridentEntity = new WildfireTridentEntity(world, pos.getX(), pos.getY(), pos.getZ(), stack.copyWithCount(1));
+        tridentEntity.pickupType = PickupPermission.ALLOWED;
+        return tridentEntity;
+    }
+
+
 }

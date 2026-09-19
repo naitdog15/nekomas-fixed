@@ -1,82 +1,64 @@
 package net.greenjab.nekomasfixed.mixin;
 
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
-import net.greenjab.nekomasfixed.util.ModDyeItems;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.DyeColor;
-import net.minecraft.world.item.DyeItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.SignBlockEntity;
-import net.minecraft.world.level.block.entity.SignText;
+import net.minecraft.block.Block;
+import net.minecraft.block.entity.SignBlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.DyeItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import java.util.Map;
 
 import static net.greenjab.nekomasfixed.util.ModColors.*;
 
-// On 1.20.1, DyeItem#tryApplyToSign(Level, SignBlockEntity, boolean, Player) has no ItemStack
-// parameter — the dye identity comes from `this` (the mixin's own target instance) instead, since
-// it is an instance method on the dye item itself.
 @Mixin(DyeItem.class)
 public class DyeItemMixin {
-
-    // the four extra dyes borrow a vanilla DyeColor, and every DyeItem files itself into byColor on
-    // construction - letting them would leave DyeItem.byColor(YELLOW) answering "amber", which a bred
-    // sheep's colour lookup and the shepherd's dye trade both read. mod dyes skip the map instead.
-    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", remap = false))
-    private Object keepVanillaDyeForBorrowedColor(Map<DyeColor, DyeItem> itemByColor, Object color, Object dye) {
-        if (dye instanceof ModDyeItems) return null;
-        return itemByColor.put((DyeColor) color, (DyeItem) dye);
-    }
-
-    @Inject(method = "tryApplyToSign", at = @At("RETURN"), cancellable = true)
-    private void changeDye(Level level, SignBlockEntity sign, boolean isFrontText, Player player, CallbackInfoReturnable<Boolean> cir) {
-        DyeItem self = (DyeItem)(Object)this;
-        if (self == ItemRegistry.AMBER_DYE.get()) {
-            applyDye(sign, isFrontText, AMBER.getColor());
+    @Inject(method = "useOnSign", at = @At("RETURN"), cancellable = true)
+    private void changeDye(World world, SignBlockEntity signBlockEntity, boolean front, PlayerEntity player, CallbackInfoReturnable<Boolean> cir) {
+        ItemStack stack = player.getStackInHand(player.getActiveHand());
+        if (stack.isOf(ItemRegistry.AMBER_DYE)) {
+            applyDye(signBlockEntity, front, AMBER.getColor());
             cir.setReturnValue(true);
         }
-        if (self == ItemRegistry.AQUA_DYE.get()) {
-            applyDye(sign, isFrontText, AQUA.getColor());
+        if (stack.isOf(ItemRegistry.AQUA_DYE)) {
+            applyDye(signBlockEntity, front, AQUA.getColor());
             cir.setReturnValue(true);
         }
-        if (self == ItemRegistry.INDIGO_DYE.get()) {
-            applyDye(sign, isFrontText, INDIGO.getColor());
+        if (stack.isOf(ItemRegistry.INDIGO_DYE)) {
+            applyDye(signBlockEntity, front, INDIGO.getColor());
             cir.setReturnValue(true);
         }
 
-        if (self == ItemRegistry.MAROON_DYE.get()) {
-            applyDye(sign, isFrontText, MAROON.getColor());
+        if (stack.isOf(ItemRegistry.MAROON_DYE)) {
+            applyDye(signBlockEntity, front, MAROON.getColor());
             cir.setReturnValue(true);
         }
+
     }
 
     @Unique
     private void applyDye(SignBlockEntity sign, boolean front, int color) {
-        SignText signText = sign.getText(front);
+        var signText = sign.getText(front);
         for (int i = 0; i < 4; i++) {
-            Component line = signText.getMessage(i, false);
-            MutableComponent newLine = line.plainCopy();
+            Text line = signText.getMessage(i, false);
+            MutableText newLine = line.copyContentOnly();
             newLine.setStyle(line.getStyle().withColor(color));
-            signText = signText.setMessage(i, newLine, newLine);
+            signText = signText.withMessage(i, newLine, newLine);
         }
         sign.setText(signText, front);
-        sign.setChanged();
-        assert sign.getLevel() != null;
-        sign.getLevel().sendBlockUpdated(
-                sign.getBlockPos(),
-                sign.getBlockState(),
-                sign.getBlockState(),
-                Block.UPDATE_ALL
+        sign.markDirty();
+        assert sign.getWorld() != null;
+        sign.getWorld().updateListeners(
+                sign.getPos(),
+                sign.getCachedState(),
+                sign.getCachedState(),
+                Block.NOTIFY_ALL
         );
     }
 

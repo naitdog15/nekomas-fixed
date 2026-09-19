@@ -1,11 +1,7 @@
 package net.greenjab.nekomasfixed.util;
 
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.state.property.BooleanProperty;
 
-/**
- * bed covers are drawn by BedRenderer off the bed sheet, not selected via the blockstate file, so
- * BedRendererMixin reads this property to swap in the messy texture instead.
- */
 public interface MessyBedAccessor {
-    BooleanProperty MESSY = BooleanProperty.create("messy");
+    BooleanProperty IS_MESSY = BooleanProperty.of("is_messy");
 }

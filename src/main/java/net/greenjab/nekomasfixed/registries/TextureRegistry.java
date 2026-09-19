@@ -1,35 +1,28 @@
 package net.greenjab.nekomasfixed.registries;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
-import net.minecraft.client.renderer.Sheets;
-import net.minecraft.client.resources.model.Material;
+import net.greenjab.nekomasfixed.render.block.entity.state.ClamBlockEntityRenderState;
+import net.minecraft.client.util.SpriteIdentifier;
 
-/** vanilla's chests.json atlas definition lists the whole textures/entity/chest directory of every
- * namespace, so these PNGs join the chest sheet just by being there - nothing to stitch by hand. */
+import static net.minecraft.client.render.TexturedRenderLayers.CHEST_SPRITE_MAPPER;
+
 public class TextureRegistry {
 
-    public static final Material CLAM_MATERIAL = chestMaterial("clam");
-    public static final Material CLAM_BLUE_MATERIAL = chestMaterial("clam_blue");
-    public static final Material CLAM_PINK_MATERIAL = chestMaterial("clam_pink");
-    public static final Material CLAM_PURPLE_MATERIAL = chestMaterial("clam_purple");
+    public static final SpriteIdentifier CLAM_SPRITE = new SpriteIdentifier(CHEST_SPRITE_MAPPER.sheet(), NekomasFixed.id("clam").withPrefixedPath(CHEST_SPRITE_MAPPER.prefix() + "/"));
+    public static final SpriteIdentifier CLAM_BLUE_SPRITE = new SpriteIdentifier(CHEST_SPRITE_MAPPER.sheet(), NekomasFixed.id("clam_blue").withPrefixedPath(CHEST_SPRITE_MAPPER.prefix() + "/"));
+    public static final SpriteIdentifier CLAM_PINK_SPRITE = new SpriteIdentifier(CHEST_SPRITE_MAPPER.sheet(), NekomasFixed.id("clam_pink").withPrefixedPath(CHEST_SPRITE_MAPPER.prefix() + "/"));
+    public static final SpriteIdentifier CLAM_PURPLE_SPRITE = new SpriteIdentifier(CHEST_SPRITE_MAPPER.sheet(), NekomasFixed.id("clam_purple").withPrefixedPath(CHEST_SPRITE_MAPPER.prefix() + "/"));
 
-    private static Material chestMaterial(String name) {
-        return new Material(Sheets.CHEST_SHEET, NekomasFixed.id("entity/chest/" + name));
-    }
-
-    public enum Variant {
-        BLUE,
-        PINK,
-        PURPLE,
-        REGULAR
-    }
-
-    public static Material getClamMaterial(Variant variant) {
+    public static SpriteIdentifier getClamTextureId(ClamBlockEntityRenderState.Variant variant) {
         return switch (variant) {
-            case BLUE -> CLAM_BLUE_MATERIAL;
-            case PINK -> CLAM_PINK_MATERIAL;
-            case PURPLE -> CLAM_PURPLE_MATERIAL;
-            default -> CLAM_MATERIAL;
+            case BLUE -> CLAM_BLUE_SPRITE;
+            case PINK -> CLAM_PINK_SPRITE;
+            case PURPLE -> CLAM_PURPLE_SPRITE;
+            default -> CLAM_SPRITE;
         };
+    }
+
+    public static void registerTextureRegistry() {
+        System.out.println("register TextureRegistry");
     }
 }

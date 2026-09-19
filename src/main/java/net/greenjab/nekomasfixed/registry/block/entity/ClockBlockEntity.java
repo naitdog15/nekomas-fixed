@@ -1,32 +1,38 @@
 package net.greenjab.nekomasfixed.registry.block.entity;
 
-import net.greenjab.nekomasfixed.network.SyncHandler;
+import com.mojang.serialization.Codec;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.greenjab.nekomasfixed.network.UpdateClockPayload;
 import net.greenjab.nekomasfixed.registry.block.AbstractClockBlock;
 import net.greenjab.nekomasfixed.registry.block.FloorClockBlock;
+import net.greenjab.nekomasfixed.registry.other.StoredTimeComponent;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
-import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
-import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.players.PlayerList;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.Containers;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraftforge.network.PacketDistributor;
-import javax.annotation.Nullable;
+import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.*;
+import net.minecraft.component.ComponentMap;
+import net.minecraft.component.ComponentsAccess;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Items;
+import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.server.PlayerManager;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
+import net.minecraft.util.HeldItemContext;
+import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
+import org.jspecify.annotations.Nullable;
 
-public class ClockBlockEntity extends BlockEntity {
+public class ClockBlockEntity extends BlockEntity implements HeldItemContext {
 	private int storedTime =-1;
 	public static int timerDuration = 60;
 	private int timer = -timerDuration;
@@ -38,42 +44,53 @@ public class ClockBlockEntity extends BlockEntity {
 	}
 
 	public ClockBlockEntity(BlockPos pos, BlockState state) {
-		this(BlockEntityTypeRegistry.CLOCK_BLOCK_ENTITY.get(), pos, state);
-	}
-
-	// guarded on key presence: this also runs against the empty tag of a block-entity update packet
-	// (client is fed by UpdateClockPayload instead), and an unguarded getInt would reset the alarm every time
-	@Override
-	public void load(CompoundTag tag) {
-		super.load(tag);
-		if (tag.contains("storedTime", Tag.TAG_INT)) this.setStoredTime(tag.getInt("storedTime"));
-		if (tag.contains("timer", Tag.TAG_INT)) this.setTimer(tag.getInt("timer"));
-		if (tag.contains("bell", Tag.TAG_BYTE)) this.setBell(tag.getBoolean("bell"));
-		if (tag.contains("showsTime", Tag.TAG_BYTE)) this.setShowsTime(tag.getBoolean("showsTime"));
+		this(BlockEntityTypeRegistry.CLOCK_BLOCK_ENTITY, pos, state);
 	}
 
 	@Override
-	protected void saveAdditional(CompoundTag tag) {
-		super.saveAdditional(tag);
-		tag.putInt("storedTime", this.getStoredTime());
-		tag.putInt("timer", this.getTimer());
-		tag.putBoolean("bell", this.hasBell());
-		tag.putBoolean("showsTime", this.getShowsTime());
+	protected void readData(ReadView view) {
+		super.readData(view);
+		view.read("storedTime", Codec.INT).ifPresent(this::setStoredTime);
+		view.read("timer", Codec.INT).ifPresent(this::setTimer);
+		view.read("bell", Codec.BOOL).ifPresent(this::setBell);
+		view.read("showsTime", Codec.BOOL).ifPresent(this::setShowsTime);
 	}
 
-	public ClientboundBlockEntityDataPacket getUpdatePacket() {
-		return ClientboundBlockEntityDataPacket.create(this);
+	@Override
+	protected void writeData(WriteView view) {
+		super.writeData(view);
+		view.putNullable("storedTime", Codec.INT, getStoredTime());
+		view.putNullable("timer", Codec.INT, getTimer());
+		view.putNullable("bell", Codec.BOOL, hasBell());
+		view.putNullable("showsTime", Codec.BOOL, getShowsTime());
 	}
 
-	public void dropBell() {
-		if (this.level != null && bell) {
-			Containers.dropItemStack(this.level, this.worldPosition.getX(), this.worldPosition.getY(), this.worldPosition.getZ(), Items.BELL.getDefaultInstance());
+	public BlockEntityUpdateS2CPacket toUpdatePacket() {
+		return BlockEntityUpdateS2CPacket.create(this);
+	}
+
+	@Override
+	public void onBlockReplaced(BlockPos pos, BlockState oldState) {
+		if (this.world != null && bell) {
+			ItemScatterer.spawn(this.world, pos.getX(), pos.getY(), pos.getZ(), Items.BELL.getDefaultStack());
 		}
 	}
 
 	@Override
-	public boolean triggerEvent(int type, int data) {
-		return super.triggerEvent(type, data);
+	public boolean onSyncedBlockEvent(int type, int data) {
+		return super.onSyncedBlockEvent(type, data);
+	}
+
+	@Override
+	protected void readComponents(ComponentsAccess components) {
+		super.readComponents(components);
+		this.storedTime = components.getOrDefault(ComponentRegistry.STORED_TIME, new StoredTimeComponent(-1)).time();
+	}
+
+	@Override
+	protected void addComponents(ComponentMap.Builder builder) {
+		super.addComponents(builder);
+		if (this.storedTime>0) builder.add(ComponentRegistry.STORED_TIME, new StoredTimeComponent(this.storedTime));
 	}
 
 	public void setStoredTime(int time) {
@@ -101,10 +118,25 @@ public class ClockBlockEntity extends BlockEntity {
 		return showsTime;
 	}
 
-	public static void tick(Level level, BlockPos pos, BlockState state, ClockBlockEntity blockEntity) {
-		boolean powered = state.getValue(AbstractClockBlock.POWERED);
+	@Override
+	public World getEntityWorld() {
+		return this.world;
+	}
+
+	@Override
+	public Vec3d getEntityPos() {
+		return this.getPos().toCenterPos();
+	}
+
+	@Override
+	public float getBodyYaw() {
+		return this.getCachedState().get(FloorClockBlock.ROTATION);
+	}
+
+	public static void tick(World world, BlockPos pos, BlockState state, ClockBlockEntity blockEntity) {
+		boolean powered = state.get(AbstractClockBlock.POWERED);
 		boolean shouldBePowered = false;
-		if ((int) ((level.getDayTime() + 6000) % 24000)==blockEntity.storedTime) {
+		if ((int) ((world.getTimeOfDay() + 6000) % 24000)==blockEntity.storedTime) {
 			blockEntity.timer=0;
 		}
 		if (blockEntity.timer>-timerDuration) {
@@ -113,46 +145,47 @@ public class ClockBlockEntity extends BlockEntity {
 				shouldBePowered = true;
 			}
 		}
-		if (level.getGameTime() % 20L == 0L) {
-			if (level instanceof ServerLevel serverLevel) {
-				level.updateNeighbourForOutputSignal(pos, state.getBlock());
+		if (world.getTime() % 20L == 0L) {
+			if (world instanceof ServerWorld serverWorld) {
+				world.updateComparators(pos, state.getBlock());
 				UpdateClockPayload payload = new UpdateClockPayload(pos.getX(), pos.getY(), pos.getZ(), blockEntity.getTimer(), blockEntity.hasBell(), blockEntity.getShowsTime());
-                sendToAround(serverLevel.getServer()
-								.getPlayerList(),
+                assert serverWorld.getServer() != null;
+                sendToAround(serverWorld.getServer()
+								.getPlayerManager(),
 						null,
 						pos.getX(),
 						pos.getY(),
 						pos.getZ(),
 						100,
-						level.dimension(),
+						world.getRegistryKey(),
 						payload
 				);
 			}
 		}
 		if (powered!=shouldBePowered) {
-			((AbstractClockBlock)state.getBlock()).setPower(level, pos, state, shouldBePowered);
+			((AbstractClockBlock)state.getBlock()).setPower(world, pos, state, shouldBePowered);
 		}
-		if (blockEntity.hasBell() && state.getBlock() instanceof FloorClockBlock && shouldBePowered && level.getGameTime() % 5L == 0L){
-			level.gameEvent(null, GameEvent.NOTE_BLOCK_PLAY, pos);
-			level.playSound(null, pos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 0.3F, 2f);
+		if (blockEntity.hasBell() && state.getBlock() instanceof FloorClockBlock && shouldBePowered && world.getTime() % 5L == 0L){
+			world.emitGameEvent(null, GameEvent.NOTE_BLOCK_PLAY, pos);
+			world.playSound(null, pos, SoundEvents.BLOCK_BELL_USE, SoundCategory.BLOCKS, 0.3F, 2f);
 		}
 	}
 
-	public static void sendToAround(PlayerList playerManager, @Nullable Player player, double x, double y, double z, double distance, ResourceKey<Level> worldKey, UpdateClockPayload payload) {
-		for (int i = 0; i < playerManager.getPlayers().size(); i++) {
-			ServerPlayer serverPlayerEntity = playerManager.getPlayers().get(i);
-			if (serverPlayerEntity != player && serverPlayerEntity.level().dimension() == worldKey) {
+	public static void sendToAround(PlayerManager playerManager, @Nullable PlayerEntity player, double x, double y, double z, double distance, RegistryKey<World> worldKey, CustomPayload payload) {
+		for (int i = 0; i < playerManager.getPlayerList().size(); i++) {
+			ServerPlayerEntity serverPlayerEntity = playerManager.getPlayerList().get(i);
+			if (serverPlayerEntity != player && serverPlayerEntity.getEntityWorld().getRegistryKey() == worldKey) {
 				double d = x - serverPlayerEntity.getX();
 				double e = y - serverPlayerEntity.getY();
 				double f = z - serverPlayerEntity.getZ();
 				if (d * d + e * e + f * f < distance * distance) {
-					SyncHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayerEntity), payload);
+					ServerPlayNetworking.send(serverPlayerEntity, payload);
 				}
 			}
 		}
 	}
 
-	public static void clientTick(Level level, BlockPos pos, BlockState state, ClockBlockEntity blockEntity) {
+	public static void clientTick(World world, BlockPos pos, BlockState state, ClockBlockEntity blockEntity) {
 		if (blockEntity.timer>-timerDuration) {
 			blockEntity.timer--;
 		}

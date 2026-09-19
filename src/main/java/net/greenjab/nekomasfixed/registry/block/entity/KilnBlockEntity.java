@@ -2,34 +2,35 @@ package net.greenjab.nekomasfixed.registry.block.entity;
 
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.greenjab.nekomasfixed.registry.registries.RecipeRegistry;
-import net.greenjab.nekomasfixed.screen.KilnMenu;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
+import net.greenjab.nekomasfixed.screen.KilnScreenHandler;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.FuelRegistry;
+import net.minecraft.item.ItemStack;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 
 public class KilnBlockEntity extends AbstractFurnaceBlockEntity {
-    private static final Component CONTAINER_NAME_TEXT = Component.translatable("container.nekomasfixed.kiln");
+    private static final Text CONTAINER_NAME_TEXT = Text.translatable("container.nekomasfixed.kiln");
 
     public KilnBlockEntity(BlockPos pos, BlockState state) {
-        super( BlockEntityTypeRegistry.KILN_BLOCK_ENTITY.get(), pos, state, RecipeRegistry.KILN.get());
+        super( BlockEntityTypeRegistry.KILN_BLOCK_ENTITY, pos, state, RecipeRegistry.KILN);
     }
 
     @Override
-    protected Component getDefaultName() {
+    protected Text getContainerName() {
         return CONTAINER_NAME_TEXT;
     }
 
     @Override
-    protected int getBurnDuration(ItemStack stack) {
-        return super.getBurnDuration(stack) / 2;
+    protected int getFuelTime(FuelRegistry fuelRegistry, ItemStack stack) {
+        return super.getFuelTime(fuelRegistry, stack) / 2;
     }
 
     @Override
-    protected AbstractContainerMenu createMenu(int syncId, Inventory playerInventory) {
-        return new KilnMenu(syncId, playerInventory, this, this.dataAccess);
+    protected ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory) {
+        return new KilnScreenHandler(syncId, playerInventory, this, this.propertyDelegate);
     }
 }

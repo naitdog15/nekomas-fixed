@@ -1,22 +1,18 @@
 package net.greenjab.nekomasfixed.util;
 
-import net.minecraft.world.inventory.RecipeBookType;
+import net.minecraft.recipe.book.RecipeBookCategory;
+import net.minecraft.recipe.book.RecipeBookGroup;
 
-/**
- * needs its own type rather than reusing RecipeBookType.FURNACE: RecipeBookCategories.getCategories
- * switches over the four built-in types and only falls through to custom ones by default, so
- * borrowing FURNACE would take the built-in case and the furnace/smoker/blast-furnace screens would
- * inherit the kiln's tabs.
- * kept apart from screen/KilnRecipeBookClient (client-only) since KilnMenu names it on both sides.
- */
-public final class ModRecipeBookType {
-    private ModRecipeBookType() {
+import java.util.List;
+
+public class ModRecipeBookType extends RecipeBookCategory implements RecipeBookGroup {
+    private final List<RecipeBookCategory> categories;
+
+    public ModRecipeBookType(final RecipeBookCategory... categories) {
+        this.categories = List.of(categories);
     }
 
-    public static final RecipeBookType KILN = RecipeBookType.create("KILN");
-
-    /** call once during mod loading - a player's recipe-book settings are sized from the type list
-     * at player creation, so KILN must exist before the first player does. */
-    public static void init() {
+    public List<RecipeBookCategory> getCategories() {
+        return this.categories;
     }
 }

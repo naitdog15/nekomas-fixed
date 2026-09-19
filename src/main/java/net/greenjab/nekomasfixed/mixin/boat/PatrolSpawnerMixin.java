@@ -2,153 +2,144 @@ package net.greenjab.nekomasfixed.mixin.boat;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import net.greenjab.nekomasfixed.NekomasFixed;
-import net.greenjab.nekomasfixed.registry.entity.BigBoat;
+import net.greenjab.nekomasfixed.registry.entity.BigBoatEntity;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.BiomeTags;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.EntitySelector;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.monster.PatrollingMonster;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.raid.Raid;
-import net.minecraft.world.entity.raid.Raider;
-import net.minecraft.world.entity.vehicle.Boat;
-import net.minecraft.world.level.NaturalSpawner;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.PatrolSpawner;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.mob.PatrolEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.raid.RaiderEntity;
+import net.minecraft.entity.vehicle.AbstractBoatEntity;
+import net.minecraft.predicate.entity.EntityPredicates;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.BiomeTags;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.village.raid.Raid;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.SpawnHelper;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.spawner.PatrolSpawner;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// injects at the Math.ceil call since the player and spawn pos are already resolved there;
-// cancels with 0 because these boats are spawned directly, outside vanilla's counted budget.
 @Mixin(PatrolSpawner.class)
 public class PatrolSpawnerMixin {
 
-    @ModifyConstant(method = "tick", constant = @Constant(intValue = 5, ordinal = 0))
+    @ModifyConstant(method = "spawn", constant = @Constant(intValue = 5, ordinal = 0))
     private int moreCommon(int constant) {
         return 1;
     }
 
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Ljava/lang/Math;ceil(D)D"), cancellable = true)
-    private void addMeleeGoalForSpear(ServerLevel level, boolean spawnFriendlies, boolean spawnEnemies, CallbackInfoReturnable<Integer> cir, @Local Player player, @Local BlockPos.MutableBlockPos spawnPos) {
-        RandomSource random = level.getRandom();
-        Holder<Biome> registryEntry = level.getBiome(spawnPos);
-        if (registryEntry.is(BiomeTags.IS_OCEAN)) {
+    @Inject(method = "spawn", at = @At(value = "INVOKE", target = "Ljava/lang/Math;ceil(D)D"), cancellable = true)
+    private void addMeleeGoalForSpear(CallbackInfo ci, @Local(argsOnly = true)ServerWorld world, @Local PlayerEntity playerEntity, @Local BlockPos.Mutable mutable) {
+        RegistryEntry<Biome> registryEntry = world.getBiome(mutable);
+        Random random = world.random;
+        if (registryEntry.isIn(BiomeTags.IS_OCEAN)) {
             if (random.nextInt(3) == 0) {
-                if (notNearOtherPatrols(level, player.blockPosition())) {
-                    spawnPos.setY(level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, spawnPos).getY());
-                    if (level.getBlockState(spawnPos).is(Blocks.AIR) && level.getBlockState(spawnPos.below()).is(Blocks.WATER)) {
-                        for (int bx = spawnPos.getX() - 8; bx < spawnPos.getX() + 8; bx++) {
-                            for (int by = spawnPos.getY() - 2; by < spawnPos.getY() + 4; by++) {
-                                for (int bz = spawnPos.getZ() - 8; bz < spawnPos.getZ() + 8; bz++) {
-                                    BlockState blockState = level.getBlockState(new BlockPos(bx, by, bz));
-                                    if (!(blockState.is(Blocks.AIR) || blockState.is(Blocks.WATER))) {
-                                        cir.setReturnValue(0);
+                if (notNearOtherPatrols(world, playerEntity.getBlockPos())) {
+                    mutable.setY(world.getTopPosition(Heightmap.Type.MOTION_BLOCKING, mutable).getY());
+                    if (world.getBlockState(mutable).isOf(Blocks.AIR) && world.getBlockState(mutable.down()).isOf(Blocks.WATER)) {
+                        for (int bx = mutable.getX() - 8; bx < mutable.getX() + 8; bx++) {
+                            for (int by = mutable.getY() - 2; by < mutable.getY() + 4; by++) {
+                                for (int bz = mutable.getZ() - 8; bz < mutable.getZ() + 8; bz++) {
+                                    BlockState blockState = world.getBlockState(new BlockPos(bx, by, bz));
+                                    if (!(blockState.isOf(Blocks.AIR) || blockState.isOf(Blocks.WATER))) {
+                                        ci.cancel();
                                         return;
                                     }
                                 }
                             }
                         }
-                        spawnPos.offset(0, 2, 0);
-                        int n = (int) Math.ceil(level.getCurrentDifficultyAt(spawnPos).getEffectiveDifficulty()) + 1;
-                        int boatType = random.nextInt(EntityTypeRegistry.bigBoats().size());
+                        mutable.add(0, 2, 0);
+                        int n = (int) Math.ceil(world.getLocalDifficulty(mutable).getLocalDifficulty()) + 1;
+
+                        int boatType = random.nextInt(EntityTypeRegistry.bigBoats.size());
                         for (int o = 0; o < n; o++) {
                             if (o == 0) {
-                                if (!this.spawnBoat(level, spawnPos, random, boatType, true))  break;
+                                if (!this.spawnBoat(world, mutable, random, boatType, true)) {
+                                    break;
+                                }
                             } else {
-                                this.spawnBoat(level, spawnPos, random, boatType, false);
+                                this.spawnBoat(world, mutable, random, boatType, false);
                             }
-                            spawnPos.setX(spawnPos.getX() + (3 + random.nextInt(3)) * (int) Math.signum(random.nextInt(2) - 0.5));
-                            spawnPos.setY(spawnPos.getY() + 2);
-                            spawnPos.setZ(spawnPos.getZ() + (3 + random.nextInt(3)) * (int) Math.signum(random.nextInt(2) - 0.5));
+
+                            mutable.setX(mutable.getX() + (3 + random.nextInt(3)) * (int) Math.signum(random.nextInt(2) - 0.5));
+                            mutable.setY(mutable.getY() + 2);
+                            mutable.setZ(mutable.getZ() + (3 + random.nextInt(3)) * (int) Math.signum(random.nextInt(2) - 0.5));
                         }
                     }
                 }
+                ci.cancel();
             }
-            cir.setReturnValue(0);
-        } else if (random.nextInt(5) != 0) cir.setReturnValue(0);
+        } else if (random.nextInt(5) != 0) ci.cancel();
     }
 
-    @Unique private boolean notNearOtherPatrols(ServerLevel level, BlockPos blockPos) {
-        return level.getEntitiesOfClass(Raider.class, AABB.unitCubeFromLowerCorner(Vec3.atLowerCornerOf(blockPos)).inflate(100), EntitySelector.LIVING_ENTITY_STILL_ALIVE).isEmpty();
+    @Unique private boolean notNearOtherPatrols(ServerWorld world, BlockPos blockPos) {
+        return world.getEntitiesByClass(RaiderEntity.class, Box.from(Vec3d.of(blockPos)).expand(100), EntityPredicates.VALID_LIVING_ENTITY).isEmpty();
     }
 
-    @Unique private boolean spawnBoat(ServerLevel level, BlockPos pos, RandomSource random, int boatType, boolean captain) {
-        BlockState blockState = level.getBlockState(pos);
-        if (!NaturalSpawner.isValidEmptySpawnBlock(level, pos, blockState, blockState.getFluidState(), EntityType.PILLAGER)) {
+    @Unique private boolean spawnBoat(ServerWorld world, BlockPos pos, Random random, int boatType, boolean captain) {
+        BlockState blockState = world.getBlockState(pos);
+        if (!SpawnHelper.isClearForSpawn(world, pos, blockState, blockState.getFluidState(), EntityType.PILLAGER)) {
             return false;
-        } else if (!PatrollingMonster.checkPatrollingMonsterSpawnRules(EntityType.PILLAGER, level, MobSpawnType.PATROL, pos, random)) {
+        } else if (!PatrolEntity.canSpawn(EntityType.PILLAGER, world, SpawnReason.PATROL, pos, random)) {
             return false;
         } else {
-            if (captain) return spawnCaptainBoat(level, pos, random, boatType);
-            else return spawnSmallBoat(level, pos, random, boatType);
+            if (captain) {
+                return spawnCaptainBoat(world, pos, random, boatType);
+            } else {
+                return spawnSmallBoat(world, pos, random, boatType);
+            }
         }
     }
 
-    @Unique boolean spawnCaptainBoat(ServerLevel level, BlockPos pos, RandomSource random, int boatType){
-        BigBoat bigBoat = level.getDifficulty().getId()>2?
-                EntityTypeRegistry.hugeBoats().get(boatType).get().create(level):
-                EntityTypeRegistry.bigBoats().get(boatType).get().create(level);
-        if (bigBoat == null) return false;
-        bigBoat.setBanner(Raid.getLeaderBannerInstance());
-        bigBoat.setHasChest(true);
-        bigBoat.setLootTable(NekomasFixed.id("chests/patrol_boat"));
-        bigBoat.setLootTableSeed(random.nextLong());
-        bigBoat.setPos(Vec3.atCenterOf(pos));
-        for (int i = 0; i < level.getDifficulty().getId(); i++) {
-            PatrollingMonster patrolEntity = (PatrollingMonster) EntityType.PILLAGER.create(level);
-            patrolEntity.setPos(pos.getX(), pos.getY(), pos.getZ());
-            patrolEntity.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.PATROL, null, null);
-            patrolEntity.startRiding(bigBoat);
-        }
-         level.addFreshEntityWithPassengers(bigBoat);
+    @Unique boolean spawnCaptainBoat(ServerWorld world, BlockPos pos, Random random, int boatType){
+        BigBoatEntity bigBoatEntity = world.getDifficulty().getId()>2?
+                EntityTypeRegistry.hugeBoats.get(boatType).create(world, SpawnReason.PATROL):
+                EntityTypeRegistry.bigBoats.get(boatType).create(world, SpawnReason.PATROL);
 
-        return true;
-    }
+        if (bigBoatEntity != null) {
+            bigBoatEntity.setBanner(Raid.createOminousBanner(world.getRegistryManager().getOrThrow(RegistryKeys.BANNER_PATTERN)));
+            bigBoatEntity.setHasChest(true);
+            bigBoatEntity.setLootTable(RegistryKey.of(RegistryKeys.LOOT_TABLE, NekomasFixed.id("chests/patrol_boat")));
+            bigBoatEntity.setLootTableSeed(random.nextLong());
+            bigBoatEntity.refreshPositionAfterTeleport(pos.toCenterPos());
+            for (int i = 0; i < world.getDifficulty().getId();i++) {
+                PatrolEntity patrolEntity = EntityType.PILLAGER.create(world, SpawnReason.PATROL);
+                patrolEntity.setPosition(pos.getX(), pos.getY(), pos.getZ());
+                patrolEntity.initialize(world, world.getLocalDifficulty(pos), SpawnReason.PATROL, null);
+                patrolEntity.startRiding(bigBoatEntity);
+            }
 
-    // index also picks the escorts' wood variant; pale oak has no case and falls through to dark oak.
-    @Unique private Boat createSmallBoat(ServerLevel level, int boatType) {
-        Boat boat = EntityType.BOAT.create(level);
-        if (boat != null) {
-            boat.setVariant(switch (boatType) {
-                case 0 -> Boat.Type.ACACIA;
-                case 1 -> Boat.Type.BAMBOO;
-                case 2 -> Boat.Type.BIRCH;
-                case 3 -> Boat.Type.CHERRY;
-                case 5 -> Boat.Type.JUNGLE;
-                case 6 -> Boat.Type.MANGROVE;
-                case 7 -> Boat.Type.OAK;
-                case 9 -> Boat.Type.SPRUCE;
-                default -> Boat.Type.DARK_OAK;
-            });
-        }
-        return boat;
-    }
-
-    @Unique boolean spawnSmallBoat(ServerLevel level, BlockPos pos, RandomSource random, int boatType){
-        Boat boatEntity = createSmallBoat(level, boatType);
-        if (boatEntity != null) {
-            boatEntity.setPos(Vec3.atCenterOf(pos));
-            PatrollingMonster patrolEntity = (PatrollingMonster) EntityType.PILLAGER.create(level);
-            patrolEntity.setPos(pos.getX(), pos.getY(), pos.getZ());
-            patrolEntity.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.PATROL, null, null);
-            patrolEntity.startRiding(boatEntity);
-            level.addFreshEntityWithPassengers(boatEntity);
+            world.spawnEntityAndPassengers(bigBoatEntity);
             return true;
-        } else return false;
+        } else {
+            return false;
+        }
+    }
+
+    @Unique boolean spawnSmallBoat(ServerWorld world, BlockPos pos, Random random, int boatType){
+        AbstractBoatEntity boatEntity = EntityTypeRegistry.boats.get(boatType).create(world, SpawnReason.PATROL);
+        if (boatEntity != null) {
+            boatEntity.refreshPositionAfterTeleport(pos.toCenterPos());
+            PatrolEntity patrolEntity = EntityType.PILLAGER.create(world, SpawnReason.PATROL);
+            patrolEntity.setPosition(pos.getX(), pos.getY(), pos.getZ());
+            patrolEntity.initialize(world, world.getLocalDifficulty(pos), SpawnReason.PATROL, null);
+            patrolEntity.startRiding(boatEntity);
+            world.spawnEntityAndPassengers(boatEntity);
+            return true;
+        } else {
+            return false;
+        }
     }
 }

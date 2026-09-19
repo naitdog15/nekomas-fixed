@@ -1,27 +1,47 @@
 package net.greenjab.nekomasfixed.registry.worldgen;
 
-import net.greenjab.nekomasfixed.registry.entity.Drenched;
-import net.greenjab.nekomasfixed.registry.entity.SuspiciousSpider;
+import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
+import net.greenjab.nekomasfixed.registry.entity.DrenchedEntity;
+import net.greenjab.nekomasfixed.registry.entity.SuspiciousSpiderEntity;
 import net.greenjab.nekomasfixed.registry.entity.WildFire.WildfireEntity;
 import net.greenjab.nekomasfixed.registry.registries.EntityTypeRegistry;
-import net.minecraft.world.entity.SpawnPlacements;
-import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.level.levelgen.Heightmap;
+import net.greenjab.nekomasfixed.util.ModTags;
+import net.minecraft.entity.SpawnGroup;
+import net.minecraft.entity.SpawnLocationTypes;
+import net.minecraft.entity.SpawnRestriction;
+import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.registry.tag.BiomeTags;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.biome.BiomeKeys;
 
-/**
- * SpawnPlacements.register calls must run from FMLCommonSetupEvent#enqueueWork, in Java - which
- * biomes/features these mobs actually show up in is separate data, under
- * {@code data/nekomasfixed/forge/biome_modifier/}.
- * <p>
- * The feature/spawn config switches are read inside Feature#place and the spawn placement check
- * instead of here: a biome modifier is plain data and can't be conditioned on a config value.
- */
 public class BiomeAdditions {
     public static void addSpawns(){
-        SpawnPlacements.register(EntityTypeRegistry.WILDFIRE.get(), SpawnPlacements.Type.IN_LAVA, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, WildfireEntity::canSpawn);
-        SpawnPlacements.register(EntityTypeRegistry.SUSPICIOUS_SPIDER.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, SuspiciousSpider::canSpawn);
-        SpawnPlacements.register(EntityTypeRegistry.RIME.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules);
-        SpawnPlacements.register(EntityTypeRegistry.DERELICT.get(), SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules);
-        SpawnPlacements.register(EntityTypeRegistry.DRENCHED.get(), SpawnPlacements.Type.IN_WATER, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Drenched::canSpawn);
+
+        SpawnRestriction.register(EntityTypeRegistry.WILDFIRE, SpawnLocationTypes.IN_LAVA, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, WildfireEntity::canSpawn);
+        SpawnRestriction.register(EntityTypeRegistry.SUSPICIOUS_SPIDER, SpawnLocationTypes.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, SuspiciousSpiderEntity::canSpawn);
+        SpawnRestriction.register(EntityTypeRegistry.RIME, SpawnLocationTypes.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, HostileEntity::canSpawnInDarkUnderSky);
+        SpawnRestriction.register(EntityTypeRegistry.DERELICT, SpawnLocationTypes.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, HostileEntity::canSpawnInDarkUnderSky);
+        SpawnRestriction.register(EntityTypeRegistry.DRENCHED, SpawnLocationTypes.IN_WATER, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, DrenchedEntity::canSpawn);
+
+        BiomeModifications.addSpawn(BiomeSelectors.includeByKey(BiomeKeys.DRIPSTONE_CAVES, BiomeKeys.PLAINS), SpawnGroup.MONSTER,
+                EntityTypeRegistry.SUSPICIOUS_SPIDER,  30, 1, 2);
+
+        BiomeModifications.addSpawn(BiomeSelectors.tag(ModTags.SPAWNS_RIME), SpawnGroup.MONSTER,
+                EntityTypeRegistry.RIME,  100, 4, 4);
+
+        BiomeModifications.addSpawn(BiomeSelectors.tag(BiomeTags.IS_JUNGLE), SpawnGroup.MONSTER,
+                EntityTypeRegistry.DERELICT,  100, 4, 4);
+
+        BiomeModifications.addSpawn(BiomeSelectors.tag(BiomeTags.IS_OCEAN), SpawnGroup.MONSTER,
+                EntityTypeRegistry.DRENCHED,  5, 1, 2);
+
+        BiomeModifications.addSpawn(BiomeSelectors.tag(BiomeTags.MORE_FREQUENT_DROWNED_SPAWNS), SpawnGroup.MONSTER,
+                EntityTypeRegistry.DRENCHED,  5, 1, 2);
+
+
+        BiomeModifications.addSpawn(BiomeSelectors.includeByKey(BiomeKeys.FLOWER_FOREST, BiomeKeys.SUNFLOWER_PLAINS, BiomeKeys.MEADOW), SpawnGroup.CREATURE,
+                EntityTypeRegistry.MOOBLOOM, 30, 1, 2);
+
     }
 }

@@ -1,29 +1,26 @@
 package net.greenjab.nekomasfixed.render.entity;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.greenjab.nekomasfixed.NekomasFixed;
-import net.greenjab.nekomasfixed.registries.ModModelLayerRegistry;
-import net.greenjab.nekomasfixed.registry.entity.Derelict;
-import net.greenjab.nekomasfixed.render.entity.feature.DerelictOuterLayer;
-import net.greenjab.nekomasfixed.render.entity.model.DerelictModel;
-import net.minecraft.client.model.geom.ModelLayers;
-import net.minecraft.client.renderer.entity.AbstractZombieRenderer;
-import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.render.entity.EntityRendererFactory;
+import net.minecraft.client.render.entity.ZombieEntityRenderer;
+import net.minecraft.client.render.entity.state.ZombieEntityRenderState;
+import net.minecraft.util.Identifier;
 
-public class DerelictRenderer extends AbstractZombieRenderer<Derelict, DerelictModel> {
-    private static final ResourceLocation DERELICT_LOCATION = NekomasFixed.id("textures/entity/zombie/derelict.png");
-    private static final ResourceLocation BABY_DERELICT_LOCATION = NekomasFixed.id("textures/entity/zombie/derelict_baby.png");
+@Environment(EnvType.CLIENT)
+public class DerelictRenderer extends ZombieEntityRenderer {
 
-    public DerelictRenderer(final EntityRendererProvider.Context context) {
-        super(context,
-                new DerelictModel(context.bakeLayer(ModModelLayerRegistry.DERELICT)),
-                new DerelictModel(context.bakeLayer(ModelLayers.ZOMBIE_INNER_ARMOR)),
-                new DerelictModel(context.bakeLayer(ModelLayers.ZOMBIE_OUTER_ARMOR)));
-        this.addLayer(new DerelictOuterLayer(this, context.getModelSet()));
+
+    private static final Identifier TEXTURE = NekomasFixed.id( "textures/entity/zombie/derelict.png");
+
+    public DerelictRenderer(EntityRendererFactory.Context context) {
+        super(context);
     }
 
     @Override
-    public ResourceLocation getTextureLocation(final Derelict entity) {
-        return entity.isBaby() ? BABY_DERELICT_LOCATION : DERELICT_LOCATION;
+    public Identifier getTexture(ZombieEntityRenderState state) {
+        return TEXTURE;
     }
 }
+

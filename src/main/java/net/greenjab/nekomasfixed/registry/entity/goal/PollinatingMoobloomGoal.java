@@ -1,28 +1,21 @@
 package net.greenjab.nekomasfixed.registry.entity.goal;
 
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
-import net.greenjab.nekomasfixed.registry.entity.Moobloom.Moobloom;
-import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.animal.Bee;
+import net.greenjab.nekomasfixed.registry.entity.Moobloom.MoobloomEntity;
+import net.minecraft.entity.ai.goal.Goal;
+import net.minecraft.entity.passive.BeeEntity;
+
 import java.util.List;
 
 public class PollinatingMoobloomGoal extends Goal {
-    private final Bee bee;
-    private Moobloom target;
-    // canUse() runs every tick for every bee, and the scan below is not cheap, so only look
-    // about once a second. The offset keeps a hive's worth of bees off the same tick.
-    private int nextScanTick;
-    private int runTicks;
+    private final BeeEntity bee;
+    private MoobloomEntity target;
 
-    public PollinatingMoobloomGoal(Bee bee) {this.bee = bee;}
+    public PollinatingMoobloomGoal(BeeEntity bee) {this.bee = bee;}
 
     @Override
-    public boolean canUse() {
-        if (!NekomasFixedConfig.BEES_POLLINATE_MOOBLOOMS.get()) {return false;}
+    public boolean canStart() {
         if (bee.hasNectar()) {return false;}
-        if (bee.tickCount < this.nextScanTick) {return false;}
-        this.nextScanTick = bee.tickCount + 20;
-        List<Moobloom> list = bee.level().getEntitiesOfClass(Moobloom.class, bee.getBoundingBox().inflate(8), entity -> !entity.getEntityData().get(Moobloom.SHEARED));
+        List<MoobloomEntity> list = bee.getEntityWorld().getEntitiesByClass(MoobloomEntity.class, bee.getBoundingBox().expand(8), entity -> !entity.getDataTracker().get(MoobloomEntity.SHEARED));
         if (list.isEmpty()) {return false;}
 
         this.target = list.get(0);
@@ -31,33 +24,29 @@ public class PollinatingMoobloomGoal extends Goal {
 
     @Override
     public void start() {
-        this.runTicks = 0;
-        bee.getNavigation().moveTo(target, 1.2D);
+        bee.getNavigation().startMovingTo(target, 1.2D);
     }
 
     @Override
     public void tick() {
-        this.runTicks++;
         if (target == null) return;
-        bee.getLookControl().setLookAt(target);
+        bee.getLookControl().lookAt(target);
 
-        if (bee.distanceToSqr(target) < 2.0D) {
+        if (bee.squaredDistanceTo(target) < 2.0D) {
             bee.setHasNectar(true);
 
         } else {
-            bee.getNavigation().moveTo(target, 1.2D);
+            bee.getNavigation().startMovingTo(target, 1.2D);
         }
     }
 
     @Override
-    public boolean canContinueToUse() {
-        // the 200 stops a bee locking onto a moobloom it can never path to and never pollinating again
-        return NekomasFixedConfig.BEES_POLLINATE_MOOBLOOMS.get() && this.runTicks < 200
-                && target != null && target.isAlive() && !bee.hasNectar() && !target.getEntityData().get(Moobloom.SHEARED);
+    public boolean shouldContinue() {
+        return target != null && target.isAlive() && !bee.hasNectar() && !target.getDataTracker().get(MoobloomEntity.SHEARED);
     }
 
     @Override
-    public boolean isInterruptable(){
+    public boolean canStop(){
         return bee.hasNectar();
     }
 }

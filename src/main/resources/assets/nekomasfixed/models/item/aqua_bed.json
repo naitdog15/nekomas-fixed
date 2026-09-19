@@ -1,3 +1,6 @@
 {
-  "parent": "minecraft:item/template_bed"
+  "parent": "minecraft:item/template_bed",
+  "textures": {
+    "particle": "nekomasfixed:block/aqua_wool"
+  }
 }

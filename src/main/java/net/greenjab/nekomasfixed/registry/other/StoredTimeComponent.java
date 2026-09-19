@@ -1,23 +1,27 @@
 package net.greenjab.nekomasfixed.registry.other;
 
 import com.mojang.serialization.Codec;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.component.ComponentsAccess;
+import net.minecraft.item.Item;
+import net.minecraft.item.tooltip.TooltipAppender;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
-// presence of the "stored_time" key is what means a clock has a recorded time, not this value -
-// 0 is a valid reading, so callers must check StackData.contains, not just read the int
-public record StoredTimeComponent(int time) {
-    public static final Codec<StoredTimeComponent> CODEC =
-            Codec.INT.xmap(StoredTimeComponent::new, StoredTimeComponent::time);
+import java.util.function.Consumer;
 
-    public String formatted() {
-        int hour = time / 1000;
-        int min = ((time % 1000) * 60) / 1000;
-        return (hour < 10 ? "0" : "") + hour + ":" + (min < 10 ? "0" : "") + min;
-    }
+public record StoredTimeComponent(int time) implements TooltipAppender {
+	public static final Codec<StoredTimeComponent> CODEC = Codec.INT.xmap(StoredTimeComponent::new, StoredTimeComponent::time);
+	public static final PacketCodec<ByteBuf, StoredTimeComponent> PACKET_CODEC = PacketCodecs.VAR_INT.xmap(StoredTimeComponent::new, StoredTimeComponent::time);
 
-    public Component tooltipLine() {
-        return Component.translatable("component.nekomasfixed.storedtime", this.formatted())
-                .withStyle(ChatFormatting.GRAY);
-    }
+	@Override
+	public void appendTooltip(Item.TooltipContext context, Consumer<Text> textConsumer, TooltipType type, ComponentsAccess components) {
+		int hour = time/1000;
+		int min = ((time%1000)*60)/1000;
+		String string = (hour<10?"0":"") + hour + ":" + (min<10?"0":"") + min;
+		textConsumer.accept(Text.translatable("component.nekomasfixed.storedtime", string).formatted(Formatting.GRAY));
+	}
 }

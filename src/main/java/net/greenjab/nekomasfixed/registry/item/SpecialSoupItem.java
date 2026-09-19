@@ -1,64 +1,62 @@
 package net.greenjab.nekomasfixed.registry.item;
 
-import com.mojang.serialization.Codec;
-
-import net.greenjab.nekomasfixed.util.StackData;
-import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.food.FoodProperties;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.UseAnim;
-import net.minecraft.world.item.alchemy.PotionUtils;
-import net.minecraft.world.level.Level;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ConsumableComponent;
+import net.minecraft.component.type.ContainerComponent;
+import net.minecraft.component.type.FoodComponent;
+import net.minecraft.component.type.PotionContentsComponent;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.consume.UseAction;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.World;
 
 import java.util.List;
 
 public class SpecialSoupItem extends Item {
 
-    // written by SoupCauldronBlock when it ladles the stew out; this class only reads it back
-    public static final String KEY_INGREDIENTS = "ingredients";
-    public static final Codec<List<ItemStack>> INGREDIENTS_CODEC = ItemStack.CODEC.listOf();
-
-    public SpecialSoupItem(Properties settings) {
+    public SpecialSoupItem(Settings settings) {
         super(settings);
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {
-        user.startUsingItem(hand);
-        return InteractionResultHolder.consume(user.getItemInHand(hand));
+    public ActionResult use(World world, PlayerEntity user, Hand hand) {
+        user.setCurrentHand(hand);
+        return ActionResult.CONSUME;
     }
 
     @Override
-    public UseAnim getUseAnimation(ItemStack stack) {
-        return UseAnim.EAT;
+    public UseAction getUseAction(ItemStack stack) {
+        return UseAction.EAT;
     }
 
     @Override
-    public int getUseDuration(ItemStack stack) {
+    public int getMaxUseTime(ItemStack stack, LivingEntity user) {
         return 32;
     }
 
     @Override
-    public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity user) {
-        ItemStack result = super.finishUsingItem(stack, level, user);
-        if (!level.isClientSide && user instanceof Player player) {
-            List<ItemStack> ingredients = StackData.read(stack, KEY_INGREDIENTS, INGREDIENTS_CODEC, List.of());
+    public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
+        if (!world.isClient() && user instanceof PlayerEntity player) {
+            ContainerComponent c = stack.getOrDefault(DataComponentTypes.CONTAINER, ContainerComponent.fromStacks(List.of()));
+            List<ItemStack> ingredients = c.stream().toList();
             for (ItemStack ingredient : ingredients) {
-                if (ingredient.isEmpty()) continue;
-                for (MobEffectInstance effect : PotionUtils.getMobEffects(ingredient)) {
-                    player.addEffect(new MobEffectInstance(effect.getEffect(), Math.max(1, effect.getDuration() / 2), effect.getAmplifier()));
-                }
-                FoodProperties food = ingredient.getFoodProperties(player);
-                if (food != null) player.getFoodData().eat(Mth.ceil(food.getNutrition() / 2F), food.getSaturationModifier() / 2F);
+                PotionContentsComponent potions = ingredient.get(DataComponentTypes.POTION_CONTENTS);
+                if (potions != null) potions.getEffects().forEach(effect -> player.addStatusEffect(new StatusEffectInstance(effect.withScaledDuration(0.5f))));
+
+                FoodComponent food = ingredient.get(DataComponentTypes.FOOD);
+                if (food != null) player.getHungerManager().add(MathHelper.ceil(food.nutrition()/2f), food.saturation()/2f);
+
+                ConsumableComponent consume = ingredient.get(DataComponentTypes.CONSUMABLE);
+                if (consume != null) consume.finishConsumption(world, user, stack.copy());
             }
         }
-        return user instanceof Player player && player.getAbilities().instabuild ? result : new ItemStack(Items.BOWL);
+        ConsumableComponent consumableComponent = stack.get(DataComponentTypes.CONSUMABLE);
+        return consumableComponent != null ? consumableComponent.finishConsumption(world, user, stack) : stack;
     }
 }

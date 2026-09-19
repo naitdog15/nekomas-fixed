@@ -1,140 +1,58 @@
 package net.greenjab.nekomasfixed.render.other;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.greenjab.nekomasfixed.NekomasFixed;
-import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
-import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.Particle;
-import net.minecraft.client.particle.ParticleProvider;
-import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.core.particles.SimpleParticleType;
-import net.minecraft.util.Mth;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.particle.*;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.particle.SimpleParticleType;
+import net.minecraft.util.math.random.Random;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-// Particle#render only gets a raw VertexConsumer, no font/buffer source, so digits can't be drawn
-// from inside it - this carries motion/lifetime/curve only (NO_RENDER), text drawn a stage later
-// from an AFTER_PARTICLES handler that has a real buffer source
-// billboard transform matches vanilla's own name-tag one (camera rotation, then the -0.025 flip)
+@Environment(EnvType.CLIENT)
 public class NumberParticle extends Particle {
-
-    // client thread only; no synchronization needed
-    private static final List<NumberParticle> ACTIVE = new ArrayList<>();
-    // an evicted particle (once a render type holds too many) is never ticked to death, so the oldest
-    // is dropped here instead of waiting for a death that won't arrive
-    private static final int MAX_ACTIVE = 512;
-
-    private final double damage;
-
-    NumberParticle(ClientLevel level, double x, double y, double z, double damage) {
-        super(level, x + level.getRandom().nextGaussian() / 5f, y + level.getRandom().nextGaussian() / 10f,
-                z + level.getRandom().nextGaussian() / 5f);
+     private final double damage;
+    public static ParticleTextureSheet particleTextureSheet = new ParticleTextureSheet("number");
+    NumberParticle(ClientWorld world, double x, double y, double z, double damage) {
+        super(world, x+world.random.nextGaussian()/5f, y+world.random.nextGaussian()/10f, z+world.random.nextGaussian()/5f);
         this.damage = damage;
-        this.friction = 0.66F;
-        this.speedUpWhenYMotionIsBlocked = true;
-        this.lifetime = (int) Math.min(20 + damage * 2, 50);
-        while (ACTIVE.size() >= MAX_ACTIVE) ACTIVE.remove(0);
-        ACTIVE.add(this);
+        this.velocityMultiplier = 0.66F;
+        this.ascending = true;
+        this.maxAge = (int) Math.min(20+damage*2, 50);
     }
 
-    private boolean isIn(ClientLevel current) {
-        return this.level == current;
-    }
-
-    @Override
     public void tick() {
-        this.xo = this.x;
-        this.yo = this.y;
-        this.zo = this.z;
-        if (this.age++ >= this.lifetime) this.remove();
-        else this.move(0, 0.015, 0);
+        this.lastX = this.x;
+        this.lastY = this.y;
+        this.lastZ = this.z;
+        if (this.age++ >= this.maxAge) {
+            this.markDead();
+        } else {
+            this.move(0, 0.015, 0);
+        }
     }
 
     @Override
-    public ParticleRenderType getRenderType() {
-        return ParticleRenderType.NO_RENDER;
+    public ParticleTextureSheet textureSheet() {
+        return particleTextureSheet;
     }
 
-    /** Nothing goes through the particle sheet; {@link Events} draws the digits instead. */
-    @Override
-    public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
+    public double getDamage() {
+        return damage;
     }
 
-    private String text() {
-        String formatted = String.format("%.1f", Math.round(this.damage * 10) / 10.0);
-        return formatted.endsWith(".0") ? formatted.substring(0, formatted.length() - 2) : formatted;
+    public int getAge() {
+        return age;
     }
 
-    private void drawInto(PoseStack poseStack, MultiBufferSource buffers, Font font, Camera camera, float partialTicks) {
-        float age = this.age + partialTicks;
-        float scale = (float) (Math.sin(Math.min(age, 8) / 5) * Math.min(0.5 + this.damage / 10.0, 2));
-        int alpha = (int) (Mth.clamp((this.lifetime - age) / 8f, 0f, 1f) * 255);
-        if (alpha <= 0 || scale <= 0) return;
+    @Environment(EnvType.CLIENT)
+    public static class Factory implements ParticleFactory<SimpleParticleType> {
 
-        String text = this.text();
-        poseStack.pushPose();
-        poseStack.translate(
-                Mth.lerp(partialTicks, this.xo, this.x) - camera.getPosition().x,
-                Mth.lerp(partialTicks, this.yo, this.y) - camera.getPosition().y,
-                Mth.lerp(partialTicks, this.zo, this.z) - camera.getPosition().z);
-        poseStack.mulPose(camera.rotation());
-        poseStack.scale(-0.025F * scale, -0.025F * scale, 0.025F * scale);
-        font.drawInBatch(text, -font.width(text) / 2.0F, 0.0F, alpha << 24 | 0xFEFFFF, true,
-                poseStack.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-        poseStack.popPose();
-    }
-
-    public static class Factory implements ParticleProvider<SimpleParticleType> {
         public Factory() {
         }
 
-        // returning null simply spawns nothing, so with the config off none of these are created, ticked or drawn
-        @Override
-        public Particle createParticle(SimpleParticleType type, ClientLevel level,
-                                        double x, double y, double z, double damage, double h, double i) {
-            if (!NekomasFixedClientConfig.FLOATING_DAMAGE_NUMBERS.get()) return null;
-            return new NumberParticle(level, x, y, z, damage);
-        }
-    }
-
-    @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
-    public static final class Events {
-        private Events() {
-        }
-
-        @SubscribeEvent
-        public static void onRenderLevelStage(RenderLevelStageEvent event) {
-            if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || ACTIVE.isEmpty()) return;
-
-            Minecraft minecraft = Minecraft.getInstance();
-            MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
-            PoseStack poseStack = event.getPoseStack();
-            float partialTicks = event.getPartialTick();
-
-            // dead particles are dropped here rather than in remove(), so a world change that throws
-            // the whole particle engine away cannot leave this list holding onto an old level
-            Iterator<NumberParticle> iterator = ACTIVE.iterator();
-            while (iterator.hasNext()) {
-                NumberParticle particle = iterator.next();
-                if (!particle.isAlive() || !particle.isIn(minecraft.level)) {
-                    iterator.remove();
-                    continue;
-                }
-                particle.drawInto(poseStack, buffers, minecraft.font, event.getCamera(), partialTicks);
-            }
-            buffers.endBatch();
+        public Particle createParticle(
+                SimpleParticleType simpleParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Random random
+        ) {
+            return new NumberParticle(clientWorld, d, e, f, g);
         }
     }
 }

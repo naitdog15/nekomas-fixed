@@ -1,8 +1,6 @@
 package net.greenjab.nekomasfixed.registry.other;
 
-import net.minecraft.world.inventory.tooltip.TooltipComponent;
+import net.minecraft.item.tooltip.TooltipData;
 
-// TooltipComponent is a bare marker in common code (net.minecraft.world.inventory.tooltip), not
-// client-only, so this record can be produced without pulling in a rendering class
-public record AnimalTooltipData(AnimalComponent contents) implements TooltipComponent {
+public record AnimalTooltipData(AnimalComponent contents) implements TooltipData {
 }

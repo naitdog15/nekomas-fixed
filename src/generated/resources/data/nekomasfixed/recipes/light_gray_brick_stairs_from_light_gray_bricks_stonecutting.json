@@ -1,8 +1,0 @@
-{
-  "type": "minecraft:stonecutting",
-  "count": 1,
-  "ingredient": {
-    "item": "nekomasfixed:light_gray_bricks"
-  },
-  "result": "nekomasfixed:light_gray_brick_stairs"
-}

@@ -1,106 +1,123 @@
 package net.greenjab.nekomasfixed.registry.item;
 
+import java.util.List;
 import java.util.function.Predicate;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
-import net.greenjab.nekomasfixed.compat.vanillabackport.BackportedContent;
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
-import net.greenjab.nekomasfixed.registry.entity.SlingshotProjectile;
+import net.greenjab.nekomasfixed.registry.entity.SlingshotProjectileEntity;
 import net.greenjab.nekomasfixed.util.ModTags;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.stats.Stats;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ProjectileWeaponItem;
-import net.minecraft.world.item.UseAnim;
-import net.minecraft.world.level.Level;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.item.RangedWeaponItem;
+import net.minecraft.item.consume.UseAction;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.world.World;
+import org.jspecify.annotations.Nullable;
 
-public class SlingshotItem extends ProjectileWeaponItem {
+public class SlingshotItem extends RangedWeaponItem {
 
-    public SlingshotItem(Item.Properties settings) {
+    public SlingshotItem(Item.Settings settings) {
         super(settings);
     }
 
     @Override
-    public void releaseUsing(ItemStack stack, Level level, LivingEntity user, int remainingUseTicks) {
-        if (!(user instanceof Player playerEntity)) return;
-        ItemStack itemStack = playerEntity.getProjectile(stack);
-        if (itemStack.isEmpty()) return;
-        if (itemStack.is(Items.ARROW)) itemStack = new ItemStack(Items.IRON_NUGGET);
-        float f = getPullProgress(this.getUseDuration(stack) - remainingUseTicks);
-        if (f < 0.99F) return;
+    public boolean onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
+        if (!(user instanceof PlayerEntity playerEntity)) {
+            return false;
+        } else {
+            ItemStack itemStack = playerEntity.getProjectileType(stack);
+            if (itemStack.isEmpty()) {
+                return false;
+            } else {
+                if (itemStack.isOf(Items.ARROW)) itemStack = Items.IRON_NUGGET.getDefaultStack();
+                int i = this.getMaxUseTime(stack, user) - remainingUseTicks;
+                float f = getPullProgress(i);
+                if (f < 0.99) {
+                    return false;
+                } else {
+                    List<ItemStack> list = load(stack, itemStack, playerEntity);
+                    if (world instanceof ServerWorld serverWorld && !list.isEmpty()) {
+                        this.shootAll(serverWorld, playerEntity, playerEntity.getActiveHand(), stack, list, f * 3.0F*((itemStack.isOf(Items.AMETHYST_SHARD)||itemStack.isOf(Items.RESIN_CLUMP))?(1/2f):2/3f), 1.0F, f == 1.0F, null);
+                    }
 
-        if (!level.isClientSide) {
-            boolean shatter = NekomasFixedConfig.SHATTER_ENCHANTMENT.get()
-                    && NekomasFixed.enchantLevel(stack, "shatter") != 0;
-            SlingshotProjectile projectile = new SlingshotProjectile(level, playerEntity, itemStack, stack, shatter);
-            boolean heavyRound = itemStack.is(Items.AMETHYST_SHARD) || isResinClump(itemStack);
-            float speed = f * 3.0F * (heavyRound ? (1 / 2F) : (2 / 3F));
-            projectile.shootFromRotation(playerEntity, playerEntity.getXRot(), playerEntity.getYRot(), 0.0F, speed, 1.0F);
-            level.addFreshEntity(projectile);
-
-            stack.hurtAndBreak(1, playerEntity, entity -> entity.broadcastBreakEvent(playerEntity.getUsedItemHand()));
-            if (!playerEntity.getAbilities().instabuild) {
-                itemStack.shrink(1);
-                if (itemStack.isEmpty()) playerEntity.getInventory().removeItem(itemStack);
+                    world.playSound(
+                            null,
+                            playerEntity.getX(),
+                            playerEntity.getY(),
+                            playerEntity.getZ(),
+                            SoundEvents.ENTITY_ARROW_SHOOT,
+                            SoundCategory.PLAYERS,
+                            1.0F,
+                            1.0F / (world.getRandom().nextFloat() * 0.4F + 1.2F) + f * 0.5F
+                    );
+                    playerEntity.incrementStat(Stats.USED.getOrCreateStat(this));
+                    return true;
+                }
             }
         }
-
-        level.playSound(null, playerEntity.getX(), playerEntity.getY(), playerEntity.getZ(),
-                SoundEvents.ARROW_SHOOT, SoundSource.PLAYERS,
-                1.0F, 1.0F / (level.getRandom().nextFloat() * 0.4F + 1.2F) + f * 0.5F);
-        playerEntity.awardStat(Stats.ITEM_USED.get(this));
     }
 
-    // resin clump isn't in this version on its own - only exists if another mod supplies it,
-    // so it's looked up by name and ignored quietly when absent
-    private static boolean isResinClump(ItemStack stack) {
-        return NekomasFixedConfig.BACKPORTED_SLINGSHOT_AMMO.get()
-                && BackportedContent.RESIN_CLUMP.isPresent()
-                && stack.is(BackportedContent.RESIN_CLUMP.get());
+    @Override
+    protected ProjectileEntity createArrowEntity(World world, LivingEntity shooter, ItemStack weaponStack, ItemStack projectileStack, boolean critical) {
+        return new SlingshotProjectileEntity(world, shooter, projectileStack, weaponStack, NekomasFixed.enchantLevel(weaponStack, "shatter")!=0);
+    }
+
+    @Override
+    protected void shoot(LivingEntity shooter, ProjectileEntity projectile, int index, float speed, float divergence, float yaw, @Nullable LivingEntity target) {
+        projectile.setVelocity(shooter, shooter.getPitch(), shooter.getYaw() + yaw, 0.0F, speed, divergence);
     }
 
     public static float getPullProgress(int useTicks) {
         float f = useTicks / 20.0F;
         f = (f * f + f * 2.0F) / 1.5F;
-        if (f > 1.0F) f = 1.0F;
+        if (f > 1.0F) {
+            f = 1.0F;
+        }
+
         return f;
     }
 
     @Override
-    public int getUseDuration(ItemStack stack) {
+    public int getMaxUseTime(ItemStack stack, LivingEntity user) {
         return 72000;
     }
 
     @Override
-    public UseAnim getUseAnimation(ItemStack stack) {
-        return UseAnim.BOW;
+    public UseAction getUseAction(ItemStack stack) {
+        return UseAction.BOW;
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {
-        ItemStack itemStack = user.getItemInHand(hand);
-        boolean bl = !user.getProjectile(itemStack).isEmpty();
-        if (!user.getAbilities().instabuild && !bl) return InteractionResultHolder.fail(itemStack);
-        user.startUsingItem(hand);
-        return InteractionResultHolder.consume(itemStack);
+    public ActionResult use(World world, PlayerEntity user, Hand hand) {
+        ItemStack itemStack = user.getStackInHand(hand);
+        boolean bl = !user.getProjectileType(itemStack).isEmpty();
+        if (!user.isInCreativeMode() && !bl) {
+            return ActionResult.FAIL;
+        } else {
+            user.setCurrentHand(hand);
+            return ActionResult.CONSUME;
+        }
     }
 
-    public static final Predicate<ItemStack> SLINGSHOT_PROJECTILES = stack -> stack.is(ModTags.SLINGSHOT_PROJECTILES);
+    public static final Predicate<ItemStack> SLINGSHOT_PROJECTILES =
+            stack -> stack.isIn(ModTags.SLINGSHOT_PROJECTILES);
 
     @Override
-    public Predicate<ItemStack> getAllSupportedProjectiles() {
+    public Predicate<ItemStack> getProjectiles() {
         return SLINGSHOT_PROJECTILES;
     }
 
     @Override
-    public int getDefaultProjectileRange() {
+    public int getRange() {
         return 15;
     }
 }

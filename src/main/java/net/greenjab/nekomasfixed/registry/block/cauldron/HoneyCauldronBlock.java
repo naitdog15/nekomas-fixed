@@ -1,140 +1,154 @@
 package net.greenjab.nekomasfixed.registry.block.cauldron;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.cauldron.CauldronInteraction;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ItemUtils;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.AbstractCauldronBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
-import net.minecraft.world.item.Item;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.block.AbstractCauldronBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.cauldron.CauldronBehavior;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityCollisionHandler;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsage;
+import net.minecraft.item.Items;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 import java.util.Map;
 
 public class HoneyCauldronBlock extends AbstractCauldronBlock {
+    public static final MapCodec<HoneyCauldronBlock> CODEC = createCodec(HoneyCauldronBlock::new);
 
-    public static final IntegerProperty HONEY_LEVEL = IntegerProperty.create("honey_level", 1, 4);
+    public static final IntProperty HONEY_LEVEL = IntProperty.of("honey_level", 1, 4);
     public static final int MAX_LEVEL = 4;
 
-    public HoneyCauldronBlock(Properties settings) {
+    public HoneyCauldronBlock(Settings settings) {
         super(settings, createBehaviorMap());
-        this.registerDefaultState(this.stateDefinition.any()
-                .setValue(HONEY_LEVEL, MAX_LEVEL));
+        this.setDefaultState(this.stateManager.getDefaultState()
+                .with(HONEY_LEVEL, MAX_LEVEL));
+    }
+
+    protected ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state, boolean includeData) {
+        return Items.CAULDRON.getDefaultStack();
     }
 
     @Override
-    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
-        return Items.CAULDRON.getDefaultInstance();
+    protected MapCodec<? extends AbstractCauldronBlock> getCodec() {
+        return CODEC;
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         builder.add(HONEY_LEVEL);
     }
 
-    // same factory vanilla's EMPTY/WATER/LAVA/POWDER_SNOW maps use; populated by registerInteractions(), not here
-    public static final Map<Item, CauldronInteraction> HONEY = CauldronInteraction.newInteractionMap();
+    private static CauldronBehavior.CauldronBehaviorMap createBehaviorMap() {
+        CauldronBehavior.CauldronBehaviorMap behaviorMap = CauldronBehavior.createMap("honey");
+        Map<Item, CauldronBehavior> map = behaviorMap.map();
 
-    private static Map<Item, CauldronInteraction> createBehaviorMap() {
-        return HONEY;
-    }
-
-    // called from FMLCommonSetupEvent#enqueueWork by CauldronBehaviour.register(), not at class-load time
-    public static void registerInteractions() {
-        HONEY.put(Items.AIR, (state, level, pos, player, hand, stack) -> {
-            if(state.getValue(HONEY_LEVEL) == MAX_LEVEL) {
-                if (!level.isClientSide()) {
-                    player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, new ItemStack(Items.HONEY_BLOCK)));
-                    level.setBlockAndUpdate(pos, Blocks.CAULDRON.defaultBlockState());
-                    level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY, SoundSource.BLOCKS, 1.0F, 1.0F);
+        map.put(Items.AIR, (state, world, pos, player, hand, stack) -> {
+            if(state.get(HONEY_LEVEL) == MAX_LEVEL) {
+                if (!world.isClient()) {
+                    player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.HONEY_BLOCK)));
+                    world.setBlockState(pos, Blocks.CAULDRON.getDefaultState());
+                    world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
                 }
-                return InteractionResult.SUCCESS;
+                return ActionResult.SUCCESS;
             } else {
-                return InteractionResult.PASS;
+                return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
             }
         });
 
-        HONEY.put(Items.GLASS_BOTTLE, (state, level, pos, player, hand, stack) -> {
-            if (!level.isClientSide()) {
-                player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, new ItemStack(Items.HONEY_BOTTLE)));
-                if (state.getValue(HONEY_LEVEL) > 1) level.setBlockAndUpdate(pos, state.setValue(HONEY_LEVEL, state.getValue(HONEY_LEVEL) - 1));
-                else  level.setBlockAndUpdate(pos, Blocks.CAULDRON.defaultBlockState());
+        map.put(Items.GLASS_BOTTLE, (state, world, pos, player, hand, stack) -> {
+            if (!world.isClient()) {
+                player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.HONEY_BOTTLE)));
+                int level = state.get(HONEY_LEVEL);
+                if (level > 1) world.setBlockState(pos, state.with(HONEY_LEVEL, level - 1));
+                else  world.setBlockState(pos, Blocks.CAULDRON.getDefaultState());
 
-                level.playSound(null, pos, SoundEvents.BOTTLE_FILL,
-                        SoundSource.BLOCKS, 1.0F, 1.0F);
+                world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_FILL,
+                        SoundCategory.BLOCKS, 1.0F, 1.0F);
             }
-            return InteractionResult.SUCCESS;
+            return ActionResult.SUCCESS;
         });
 
-        HONEY.put(Items.HONEY_BOTTLE, (state, level, pos, player, hand, stack) -> {
-            if (state.getValue(HONEY_LEVEL) < MAX_LEVEL) {
-                if (!level.isClientSide()) {
-                    level.setBlockAndUpdate(pos, state.setValue(HONEY_LEVEL, state.getValue(HONEY_LEVEL) + 1));
-                    player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, new ItemStack(Items.GLASS_BOTTLE)));
-                    level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY,
-                            SoundSource.BLOCKS, 1.0F, 1.0F);
+        map.put(Items.HONEY_BOTTLE, (state, world, pos, player, hand, stack) -> {
+            int level = state.get(HONEY_LEVEL);
+            if (level < MAX_LEVEL) {
+                if (!world.isClient()) {
+                    world.setBlockState(pos, state.with(HONEY_LEVEL, level + 1));
+                    player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.GLASS_BOTTLE)));
+                    world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_EMPTY,
+                            SoundCategory.BLOCKS, 1.0F, 1.0F);
                 }
             }
-            return InteractionResult.SUCCESS;
+            return ActionResult.SUCCESS;
         });
 
+        return behaviorMap;
+    }
+
+    protected void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler handler, boolean bl) {
+        if (entity.getEntity()!=null)
+            entity.getEntity().setStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 3*20), entity.getEntity());
     }
 
     @Override
-    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if (this.isEntityInsideContent(state, pos, entity) && entity instanceof LivingEntity living) {
-            living.forceAddEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 3*20), living);
-        }
-    }
-
-    @Override
-    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!level.isClientSide()) {
-            boolean hasBeehive = isBeeHiveAbove(pos, level);
+    protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        if (!world.isClient()) {
+            boolean hasBeehive = isBeeHiveAbove(pos, world);
             if (hasBeehive) {
-                int currentLevel = state.getValue(HONEY_LEVEL);
+                int currentLevel = state.get(HONEY_LEVEL);
                 if (currentLevel < MAX_LEVEL) {
-                    level.setBlockAndUpdate(pos, state.setValue(HONEY_LEVEL, currentLevel + 1));
-                    level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY,
-                            SoundSource.BLOCKS, 1.0F, 1.0F);
+                    world.setBlockState(pos, state.with(HONEY_LEVEL, currentLevel + 1));
+                    world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_EMPTY,
+                            SoundCategory.BLOCKS, 1.0F, 1.0F);
                 }
             }
         }
+
+        world.scheduleBlockTick(pos, this, 2000);
+
     }
 
-    private boolean isBeeHiveAbove(BlockPos pos, Level level) {
+    @Override
+    protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
+        if (!world.isClient()) {
+            world.scheduleBlockTick(pos, this, 2000);
+        }
+    }
+
+    private boolean isBeeHiveAbove(BlockPos pos, World world) {
         BlockPos abovePos = new BlockPos(pos.getX(), pos.getY() + 2, pos.getZ());
-        Block block = level.getBlockState(abovePos).getBlock();
+        Block block = world.getBlockState(abovePos).getBlock();
+
         return block == Blocks.BEEHIVE || block == Blocks.BEE_NEST;
     }
 
     @Override
-    protected double getContentHeight(BlockState state) {
-        return (4.0 + state.getValue(HONEY_LEVEL) * 3.0) / 16.0;
+    protected double getFluidHeight(BlockState state) {
+        return (4.0 + state.get(HONEY_LEVEL) * 3.0) / 16.0;
     }
 
     @Override
     public boolean isFull(BlockState state) {
-        return state.getValue(HONEY_LEVEL) == MAX_LEVEL;
+        return state.get(HONEY_LEVEL) == MAX_LEVEL;
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
-        return state.getValue(HONEY_LEVEL);
+    protected int getComparatorOutput(BlockState state, World world, BlockPos pos, Direction direction) {
+        return state.get(HONEY_LEVEL);
     }
 }

@@ -1,101 +1,117 @@
 package net.greenjab.nekomasfixed.registry.block.entity;
 
+import com.mojang.logging.LogUtils;
 import net.greenjab.nekomasfixed.registry.block.ClamBlock;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.NonNullList;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.world.ContainerHelper;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.entity.ChestLidController;
-import net.minecraft.world.level.block.entity.LidBlockEntity;
-import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.gameevent.GameEvent;
+import net.greenjab.nekomasfixed.registry.registries.ComponentRegistry;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.*;
+import net.minecraft.component.ComponentMap;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventories;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.storage.NbtWriteView;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
+import net.minecraft.text.Text;
+import net.minecraft.util.ErrorReporter;
+import net.minecraft.util.HeldItemContext;
+import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
+import org.slf4j.Logger;
 
-public class ClamBlockEntity extends RandomizableContainerBlockEntity implements LidBlockEntity {
-	private NonNullList<ItemStack> inventory = NonNullList.withSize(1, ItemStack.EMPTY);
+public class ClamBlockEntity extends LootableContainerBlockEntity implements LidOpenable, HeldItemContext {
+	private static final Logger LOGGER = LogUtils.getLogger();
+	private DefaultedList<ItemStack> inventory = DefaultedList.ofSize(1, ItemStack.EMPTY);
 	private int state = 0;
-	private final ChestLidController lidAnimator = new ChestLidController();
+	private final ChestLidAnimator lidAnimator = new ChestLidAnimator();
 
 	protected ClamBlockEntity(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
 		super(blockEntityType, blockPos, blockState);
 	}
 
 	public ClamBlockEntity(BlockPos pos, BlockState state) {
-		this(BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY.get(), pos, state);
+		this(BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY, pos, state);
 	}
 
 	@Override
-	public void load(CompoundTag tag) {
-		super.load(tag);
-		this.readInventoryNbt(tag);
+	protected void readData(ReadView view) {
+		super.readData(view);
+		this.readInventoryNbt(view);
 	}
 
 	@Override
-	protected void saveAdditional(CompoundTag tag) {
-		super.saveAdditional(tag);
-		if (!this.trySaveLootTable(tag)) {
-			ContainerHelper.saveAllItems(tag, this.inventory, false);
+	protected void writeData(WriteView view) {
+		super.writeData(view);
+		if (!this.writeLootTable(view)) {
+			Inventories.writeData(view, this.inventory, false);
 		}
 	}
 
-	public void readInventoryNbt(CompoundTag tag) {
-		this.inventory = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
-		if (!this.tryLoadLootTable(tag)) {
-			ContainerHelper.loadAllItems(tag, this.inventory);
+	public void readInventoryNbt(ReadView readView) {
+		this.inventory = DefaultedList.ofSize(this.size(), ItemStack.EMPTY);
+		if (!this.readLootTable(readView)) {
+			Inventories.readData(readView, this.inventory);
 		}
 	}
 
-	// createMenu returns null (no screen), but getName() is still reachable and a null here would crash it
 	@Override
-	protected Component getDefaultName() {
-		return this.getBlockState().getBlock().getName();
+	protected Text getContainerName() {
+		return null;
+	}
+
+	public BlockEntityUpdateS2CPacket toUpdatePacket() {
+		return BlockEntityUpdateS2CPacket.create(this);
 	}
 
 	@Override
-	public ClientboundBlockEntityDataPacket getUpdatePacket() {
-		return ClientboundBlockEntityDataPacket.create(this);
+	public void onBlockReplaced(BlockPos pos, BlockState oldState) {
 	}
 
 	@Override
-	public CompoundTag getUpdateTag() {
-		// force the Items list even when empty, or removing the pearl leaves the client rendering the old one
-		CompoundTag tag = new CompoundTag();
-		ContainerHelper.saveAllItems(tag, this.inventory, true);
-		return tag;
+	public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+		NbtCompound var4;
+		try (ErrorReporter.Logging logging = new ErrorReporter.Logging(this.getReporterContext(), LOGGER)) {
+			NbtWriteView nbtWriteView = NbtWriteView.create(logging, registries);
+			Inventories.writeData(nbtWriteView, this.inventory, true);
+			var4 = nbtWriteView.getNbt();
+		}
+
+		return var4;
 	}
 
-	public static void clientTick(Level level, BlockPos pos, BlockState state, ClamBlockEntity blockEntity) {
-		blockEntity.lidAnimator.shouldBeOpen(state.getValue(ClamBlock.OPEN));
-		blockEntity.lidAnimator.tickLid();
-		if (state.getValue(ClamBlock.OPEN) && state.getValue(ClamBlock.WATERLOGGED) && blockEntity.lidAnimator.getOpenness(0)<1){
-			level.addParticle(ParticleTypes.BUBBLE, pos.getX()+0.5+ level.getRandom().nextGaussian()*0.15, pos.getY()+0.2, pos.getZ()+0.5+ level.getRandom().nextGaussian()*0.15, 0.0, 0.75, 0.0);
+	public static void clientTick(World world, BlockPos pos, BlockState state, ClamBlockEntity blockEntity) {
+		blockEntity.lidAnimator.setOpen(state.get(ClamBlock.OPEN));
+		blockEntity.lidAnimator.step();
+		if (state.get(ClamBlock.OPEN) && state.get(ClamBlock.WATERLOGGED) && blockEntity.lidAnimator.getProgress(0)<1){
+			blockEntity.getEntityWorld().addParticleClient(ParticleTypes.BUBBLE, pos.getX()+0.5+world.random.nextGaussian()*0.15, pos.getY()+0.2, pos.getZ()+0.5+world.random.nextGaussian()*0.15, 0.0, 0.75, 0.0);
 		}
 
 	}
 
 	@Override
-	public boolean triggerEvent(int type, int data) {
-		return super.triggerEvent(type, data);
+	public boolean onSyncedBlockEvent(int type, int data) {
+		return super.onSyncedBlockEvent(type, data);
 	}
 
 	@Override
-	public float getOpenNess(float tickProgress) {
-		return this.lidAnimator.getOpenness(tickProgress);
+	public float getAnimationProgress(float tickProgress) {
+		return this.lidAnimator.getProgress(tickProgress);
 	}
 
 
 	@Override
-	public NonNullList<ItemStack> getItems() {
+	public DefaultedList<ItemStack> getHeldStacks() {
 		return this.inventory;
 	}
 
@@ -105,40 +121,54 @@ public class ClamBlockEntity extends RandomizableContainerBlockEntity implements
 
 
 	@Override
-	protected void setItems(NonNullList<ItemStack> inventory) {
+	protected void setHeldStacks(DefaultedList<ItemStack> inventory) {
 		this.inventory = inventory;
 	}
 
 	@Override
-	protected AbstractContainerMenu createMenu(int syncId, Inventory playerInventory) {
+	protected ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory) {
 		return null;
 	}
 
-	public ItemStack swapStack(int slot, ItemStack stack) {
-		ItemStack itemStack = this.removeItemNoUpdate(slot);
-		this.setItem(slot, stack);
-		return itemStack;
+	@Override
+	public World getEntityWorld() {
+		return this.world;
 	}
 
-	public void markDirty(GameEvent gameEvent) {
-		super.setChanged();
-		if (this.level != null) {
-			this.level.gameEvent(gameEvent, this.worldPosition, GameEvent.Context.of(this.getBlockState()));
-			this.getLevel().sendBlockUpdated(this.getBlockPos(), this.getBlockState(), this.getBlockState(), Block.UPDATE_ALL);
+	@Override
+	public Vec3d getEntityPos() {
+		return this.getPos().toCenterPos();
+	}
+
+	@Override
+	public float getBodyYaw() {
+		return (this.getCachedState().get(ClamBlock.FACING)).getOpposite().getPositiveHorizontalDegrees();
+	}
+	public ItemStack swapStack(int slot, ItemStack stack) {
+		ItemStack itemStack = this.removeStack(slot);
+		this.setStack(slot, stack);
+		return itemStack;
+	}
+	public void markDirty(RegistryEntry.Reference<GameEvent> gameEvent) {
+		super.markDirty();
+		if (this.world != null) {
+			this.world.emitGameEvent(gameEvent, this.pos, GameEvent.Emitter.of(this.getCachedState()));
+			this.getWorld().updateListeners(this.getPos(), this.getCachedState(), this.getCachedState(), Block.NOTIFY_ALL);
 		}
 	}
 
 	@Override
-	public int getContainerSize() {
+	public int size() {
 		return 1;
 	}
 
-	// derived by the block from state+contents right before the drop is built; deliberately not saved
-	public void setState(int cstate) {
-		state = cstate;
+	@Override
+	protected void addComponents(ComponentMap.Builder builder) {
+		super.addComponents(builder);
+		if (state!=0) builder.add(ComponentRegistry.CLAM_STATE, state);
 	}
 
-	public int getState() {
-		return state;
+	public void setState(int cstate) {
+		state = cstate;
 	}
 }

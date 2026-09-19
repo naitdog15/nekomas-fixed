@@ -1,21 +1,22 @@
 package net.greenjab.nekomasfixed.render.entity;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
-import net.greenjab.nekomasfixed.registry.entity.SuspiciousSpider;
-import net.greenjab.nekomasfixed.render.entity.model.SuspiciousSpiderModel;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.entity.RenderLayerParent;
-import net.minecraft.client.renderer.entity.layers.EyesLayer;
+import net.greenjab.nekomasfixed.render.entity.model.SuspiciousSpiderEntityModel;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.entity.feature.EyesFeatureRenderer;
+import net.minecraft.client.render.entity.feature.FeatureRendererContext;
+import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 
-public class SuspiciousSpiderEyesFeatureRenderer<M extends SuspiciousSpiderModel> extends EyesLayer<SuspiciousSpider, M> {
-    private static final RenderType SKIN = RenderType.eyes(NekomasFixed.id("textures/entity/suspicious_spider_eyes.png"));
+public class SuspiciousSpiderEyesFeatureRenderer<M extends SuspiciousSpiderEntityModel> extends EyesFeatureRenderer<LivingEntityRenderState, M> {
+    private static final RenderLayer SKIN = RenderLayers.eyes(NekomasFixed.id("textures/entity/suspicious_spider_eyes.png"));
 
-    public SuspiciousSpiderEyesFeatureRenderer(RenderLayerParent<SuspiciousSpider, M> featureRendererContext) {
+    public SuspiciousSpiderEyesFeatureRenderer(FeatureRendererContext<LivingEntityRenderState, M> featureRendererContext) {
         super(featureRendererContext);
     }
 
     @Override
-    public RenderType renderType() {
+    public RenderLayer getEyesTexture() {
         return SKIN;
     }
 }

@@ -1,32 +1,24 @@
 package net.greenjab.nekomasfixed;
 
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.greenjab.nekomasfixed.network.UpdateClockPayload;
 import net.greenjab.nekomasfixed.registry.block.entity.ClockBlockEntity;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraft.util.math.BlockPos;
 
-/**
- * Client-side receiver for {@link UpdateClockPayload}, reached only through
- * {@code DistExecutor.unsafeRunWhenOn(Dist.CLIENT, ...)} in {@code UpdateClockPayload.handle} —
- * never called directly from common code.
- */
-@OnlyIn(Dist.CLIENT)
-public final class ClientSyncHandler {
-    private ClientSyncHandler() {
+public class ClientSyncHandler {
+    public static void init() {
+        ClientPlayNetworking.registerGlobalReceiver(UpdateClockPayload.PACKET_ID, ClientSyncHandler::updateClockTimer);
+
     }
 
-    public static void apply(UpdateClockPayload payload) {
-        Minecraft client = Minecraft.getInstance();
-        if (client.level == null) {
-            return;
-        }
-        BlockPos pos = new BlockPos(payload.x(), payload.y(), payload.z());
-        if (client.level.getBlockEntity(pos) instanceof ClockBlockEntity clockBlockEntity) {
-            clockBlockEntity.setTimer(payload.timer());
-            clockBlockEntity.setBell(payload.hasBell());
-            clockBlockEntity.setShowsTime(payload.showsTime());
-        }
+    private static void updateClockTimer(UpdateClockPayload payload, ClientPlayNetworking.Context context) {
+        context.client().execute(() -> {
+            if (context.client().world.getBlockEntity(new BlockPos(payload.x(), payload.y(), payload.z())) instanceof ClockBlockEntity clockBlockEntity){
+                clockBlockEntity.setTimer(payload.timer());
+                clockBlockEntity.setBell(payload.hasBell());
+                clockBlockEntity.setShowsTime(payload.showsTime());
+            }
+        });
     }
+
 }

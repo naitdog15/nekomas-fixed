@@ -1,19 +1,27 @@
 package net.greenjab.nekomasfixed.util;
 
-import net.minecraft.world.item.DyeColor;
-import net.minecraft.world.item.DyeItem;
-import net.minecraft.world.item.Item;
+import net.minecraft.item.DyeItem;
+import net.minecraft.item.Item;
+import net.minecraft.util.DyeColor;
 
-/**
- * the four extra dyes must be real DyeItems - DyeItemMixin, the firework-star recipe and every
- * PyrotechnicsMenu slot recognise a dye by instanceof DyeItem. DyeColor is a closed enum, so each
- * one borrows the vanilla colour its wool/carpet/terracotta family already uses.
- * DyeItem's constructor also files every dye into a static colour-to-item map, which would let
- * these shadow yellow/light blue/magenta/red in DyeItem.byColor(...); DyeItemMixin skips that write
- * for this class so vanilla keeps those four entries.
- */
+import java.util.HashMap;
+import java.util.Map;
+
 public class ModDyeItems extends DyeItem {
-    public ModDyeItems(DyeColor nearestVanillaColor, Item.Properties settings) {
-        super(nearestVanillaColor, settings);
+    private static final Map<ModColors, ModDyeItems> DYES = new HashMap<>();
+    private final ModColors color;
+
+    public ModDyeItems(ModColors color, Item.Settings settings) {
+        super(DyeColor.WHITE, settings);
+        this.color = color;
+        DYES.put(color, this);
+    }
+
+    public ModColors getModColor() {
+        return color;
+    }
+
+    public static ModDyeItems byColor(ModColors color) {
+        return DYES.get(color);
     }
 }

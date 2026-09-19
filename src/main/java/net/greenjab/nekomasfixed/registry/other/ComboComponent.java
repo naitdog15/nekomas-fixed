@@ -1,27 +1,29 @@
 package net.greenjab.nekomasfixed.registry.other;
 
 import com.mojang.serialization.Codec;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.component.ComponentsAccess;
+import net.minecraft.item.Item;
+import net.minecraft.item.tooltip.TooltipAppender;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
-import java.util.List;
+import java.util.function.Consumer;
 
-// 1.20.1 has no default-component mechanism, so the sickle bakes its own starting value
-// (ModItemSettings#sickleDefaultCombo); this record only holds a stack's override
-public record ComboComponent(int multiplier) {
-    public static final Codec<ComboComponent> CODEC =
-            Codec.INT.xmap(ComboComponent::new, ComboComponent::multiplier);
+public record ComboComponent(int multiplier) implements TooltipAppender {
+	public static final Codec<ComboComponent> CODEC = Codec.INT.xmap(ComboComponent::new, ComboComponent::multiplier);
+	public static final PacketCodec<ByteBuf, ComboComponent> PACKET_CODEC = PacketCodecs.VAR_INT.xmap(ComboComponent::new, ComboComponent::multiplier);
 
-    // ramp shown is steps 1-3 then step 10, where the combo caps
-    public List<Component> tooltipLines() {
-        StringBuilder ramp = new StringBuilder();
-        for (int step = 1; step <= 3; step++) {
-            ramp.append(step * this.multiplier).append(step < 3 ? "%, " : "%");
-        }
-        ramp.append(" ... ").append(10 * this.multiplier).append("%");
-        return List.of(
-                Component.translatable("component.nekomasfixed.combo", ramp.toString()).withStyle(ChatFormatting.GRAY),
-                Component.translatable("component.nekomasfixed.duel_wield").withStyle(ChatFormatting.GRAY)
-        );
-    }
+	@Override
+	public void appendTooltip(Item.TooltipContext context, Consumer<Text> textConsumer, TooltipType type, ComponentsAccess components) {
+		StringBuilder string = new StringBuilder();
+		for (int i = 1; i <= 3;i++) string.append((i * multiplier)).append(i<3?"%, ":"%");
+		string.append(" ... ");
+		string.append((10 * multiplier)).append("%");
+		textConsumer.accept(Text.translatable("component.nekomasfixed.combo", string.toString()).formatted(Formatting.GRAY));
+		textConsumer.accept(Text.translatable("component.nekomasfixed.duel_wield").formatted(Formatting.GRAY));
+	}
 }

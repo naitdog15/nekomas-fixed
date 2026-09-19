@@ -1,65 +1,79 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.util.Util;
+import net.minecraft.util.function.BooleanBiFunction;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 
 public class GeyserBlock extends Block {
+    private static final VoxelShape RAYCAST_SHAPE = Block.createCuboidShape(2, 0, 2, 14, 16, 14);
 
-    public GeyserBlock(Properties settings) {
+    public static final VoxelShape OUTLINE_Y = Util.make(() -> VoxelShapes.combineAndSimplify(
+            VoxelShapes.fullCube(),
+            VoxelShapes.union(Block.createColumnShape(16.0F, 8.0F, 0.0F, 0.0F),
+                    Block.createColumnShape(8.0F, 16.0F, 0.0F, 0.0F),
+                    Block.createColumnShape(12.0F, 0.0F, 0.0F), RAYCAST_SHAPE),
+            BooleanBiFunction.ONLY_FIRST));
+
+    public GeyserBlock(Settings settings) {
         super(settings);
     }
 
     @Override
-    public VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos pos) {return Shapes.block();}
+    public VoxelShape getRaycastShape(BlockState state, BlockView world, BlockPos pos) {return VoxelShapes.fullCube();}
 
     @Override
-    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {return Shapes.block();}
+    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {return VoxelShapes.fullCube();}
 
     @Override
-    public void stepOn(Level level, BlockPos pos, BlockState state, Entity entity) {
-            entity.setSecondsOnFire(3);
-            entity.setDeltaMovement(entity.getDeltaMovement().x, 1.2, entity.getDeltaMovement().z);
-            if(level.isClientSide()){
+    public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
+            entity.setOnFireFor(3);
+            entity.setVelocity(entity.getVelocity().x, 1.2, entity.getVelocity().z);
+            if(world.isClient()){
                 java.util.Random random = new java.util.Random();
                 for(int i = 0; i<=20; ++i){
-                    level.addAlwaysVisibleParticle(ParticleTypes.LARGE_SMOKE, true, pos.getX()+(0.5 + (random.nextDouble())*(random.nextBoolean()?1:-1)), pos.getY() + 1.0 , pos.getZ()+0.5+(random.nextDouble() * (random.nextBoolean()?1:-1)), 0.001  * (random.nextBoolean()?1:-1), 0.0001, 0.001 *  (random.nextBoolean()?1:-1));
-                    if(i<=10) level.addAlwaysVisibleParticle(ParticleTypes.FLAME, true, pos.getX()+0.5, pos.getY() + 1.0 , pos.getZ()+0.5, 0, 0.2, 0);
+                    world.addImportantParticleClient(ParticleTypes.LARGE_SMOKE, true, pos.getX()+(0.5 + (random.nextDouble())*(random.nextBoolean()?1:-1)), pos.getY() + 1.0 , pos.getZ()+0.5+(random.nextDouble() * (random.nextBoolean()?1:-1)), 0.001  * (random.nextBoolean()?1:-1), 0.0001, 0.001 *  (random.nextBoolean()?1:-1));
+                    if(i<=10)world.addImportantParticleClient(ParticleTypes.FLAME, true, pos.getX()+0.5, pos.getY() + 1.0 , pos.getZ()+0.5, 0, 0.2, 0);
                 }
             }
     }
 
     @Override
-    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-        if (level.isClientSide()) {
-            level.addAlwaysVisibleParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, true, pos.getX() + 0.5 + random.nextDouble()/2 * (random.nextBoolean()?1:-1), pos.getY() + random.nextDouble() + random.nextDouble(), pos.getZ() + 0.5 + random.nextDouble()/2 * (random.nextBoolean()?1:-1), 0.0, 0.07, 0.0);
+    public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+        if (world.isClient()) {
+            world.addImportantParticleClient(ParticleTypes.CAMPFIRE_COSY_SMOKE, true, pos.getX() + 0.5 + random.nextDouble()/2 * (random.nextBoolean()?1:-1), pos.getY() + random.nextDouble() + random.nextDouble(), pos.getZ() + 0.5 + random.nextDouble()/2 * (random.nextBoolean()?1:-1), 0.0, 0.07, 0.0);
         }
     }
 
     @Override
-    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide()) {
-            ItemStack tool = player.getMainHandItem();
-            boolean silkTouch = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool) > 0;
+    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+        if (!world.isClient()) {
+            ItemStack tool = player.getMainHandStack();
+
+            boolean silkTouch =EnchantmentHelper.getLevel(world.getRegistryManager()
+                                    .getOrThrow(net.minecraft.registry.RegistryKeys.ENCHANTMENT)
+                                    .getOrThrow(Enchantments.SILK_TOUCH), tool) > 0;
+
             if (!silkTouch) {
-                level.setBlockAndUpdate(pos, Blocks.LAVA.defaultBlockState());
-                return;
+                world.setBlockState(pos, Blocks.LAVA.getDefaultState());
+                return state;
             }
         }
-        super.playerWillDestroy(level, pos, state, player);
+        return super.onBreak(world, pos, state, player);
     }
 
 }

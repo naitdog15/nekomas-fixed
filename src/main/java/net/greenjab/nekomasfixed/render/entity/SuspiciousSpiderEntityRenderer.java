@@ -1,23 +1,31 @@
 package net.greenjab.nekomasfixed.render.entity;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
-import net.greenjab.nekomasfixed.registries.ModModelLayerRegistry;
-import net.greenjab.nekomasfixed.registry.entity.SuspiciousSpider;
-import net.greenjab.nekomasfixed.render.entity.model.SuspiciousSpiderModel;
-import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.greenjab.nekomasfixed.registries.ModEntityLayerRegistry;
+import net.greenjab.nekomasfixed.registry.entity.SuspiciousSpiderEntity;
+import net.greenjab.nekomasfixed.render.entity.model.SuspiciousSpiderEntityModel;
+import net.minecraft.client.render.entity.EntityRendererFactory;
+import net.minecraft.client.render.entity.MobEntityRenderer;
+import net.minecraft.client.render.entity.state.LivingEntityRenderState;
+import net.minecraft.util.Identifier;
 
-public class SuspiciousSpiderEntityRenderer extends MobRenderer<SuspiciousSpider, SuspiciousSpiderModel> {
-    private static final ResourceLocation TEXTURE = NekomasFixed.id("textures/entity/suspicious_spider/suspicious_spider.png");
-
-    public SuspiciousSpiderEntityRenderer(EntityRendererProvider.Context context) {
-        super(context, new SuspiciousSpiderModel(context.bakeLayer(ModModelLayerRegistry.SUSPICIOUS_SPIDER)), 0.5f);
-        this.addLayer(new SuspiciousSpiderEyesFeatureRenderer<>(this));
+public class SuspiciousSpiderEntityRenderer extends MobEntityRenderer<SuspiciousSpiderEntity, LivingEntityRenderState, SuspiciousSpiderEntityModel> {
+    private static final Identifier TEXTURE = NekomasFixed.id("textures/entity/suspicious_spider/suspicious_spider.png");
+    public SuspiciousSpiderEntityRenderer(EntityRendererFactory.Context context) {
+        super(context, new SuspiciousSpiderEntityModel(context.getPart(ModEntityLayerRegistry.SUSPICIOUS_SPIDER)), 0.5f);
+        this.addFeature(new SuspiciousSpiderEyesFeatureRenderer<>(this));
     }
 
     @Override
-    public ResourceLocation getTextureLocation(SuspiciousSpider entity) {
+    public LivingEntityRenderState createRenderState() {
+        return new LivingEntityRenderState();
+    }
+
+    protected float getLyingPositionRotationDegrees() {
+        return 180.0F;
+    }
+
+    public Identifier getTexture(LivingEntityRenderState state) {
         return TEXTURE;
     }
 }

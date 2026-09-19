@@ -1,94 +1,101 @@
 package net.greenjab.nekomasfixed.registry.block;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.tags.FluidTags;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.HorizontalDirectionalBlock;
-import net.minecraft.world.level.block.Mirror;
-import net.minecraft.world.level.block.Rotation;
-import net.minecraft.world.level.block.WallTorchBlock;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.VoxelShape;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.block.*;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.EnumProperty;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
+import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
 public class WallGlowTorchBlock extends GlowTorchBlock {
-	public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
+	public static final MapCodec<WallGlowTorchBlock> CODEC = createCodec(WallGlowTorchBlock::new);
+	public static final EnumProperty<Direction> FACING = HorizontalFacingBlock.FACING;
 	public static final BooleanProperty WATERLOGGED = GlowTorchBlock.WATERLOGGED;
 
-	public WallGlowTorchBlock(BlockBehaviour.Properties settings) {
+	@Override
+	public MapCodec<WallGlowTorchBlock> getCodec() {
+		return CODEC;
+	}
+
+	public WallGlowTorchBlock(AbstractBlock.Settings settings) {
 		super(settings);
-		this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(WATERLOGGED, true));
+		this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH).with(WATERLOGGED, true));
 	}
 
 	@Override
-	public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-		return WallTorchBlock.getShape(state);
+	protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+		return WallTorchBlock.getBoundingShape(state);
 	}
 
 	@Override
-	public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
-		Direction facing = state.getValue(FACING);
-		BlockPos support = pos.relative(facing.getOpposite());
-		return level.getBlockState(support).isFaceSturdy(level, support, facing);
+	protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
+		return WallTorchBlock.canPlaceAt(world, pos, state.get(FACING));
 	}
 
 	@Override
-	public BlockState updateShape(
-            BlockState state, Direction direction, BlockState neighborState,
-            LevelAccessor level, BlockPos pos, BlockPos neighborPos
-    ) {
-		if (state.getValue(WATERLOGGED)) level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
-		return direction.getOpposite() == state.getValue(FACING) && !state.canSurvive(level, pos) ? Blocks.AIR.defaultBlockState() : state;
+	protected BlockState getStateForNeighborUpdate(
+			BlockState state,
+			WorldView world,
+			ScheduledTickView tickView,
+			BlockPos pos,
+			Direction direction,
+			BlockPos neighborPos,
+			BlockState neighborState,
+			Random random
+	) {
+		if (state.get(WATERLOGGED)) {
+			tickView.scheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+		}
+		return direction.getOpposite() == state.get(FACING) && !state.canPlaceAt(world, pos) ? Blocks.AIR.getDefaultState() : state;
 	}
 
 	@Nullable
 	@Override
-	public BlockState getStateForPlacement(BlockPlaceContext ctx) {
-		BlockState blockState = Blocks.WALL_TORCH.getStateForPlacement(ctx);
-		FluidState fluidState = ctx.getLevel().getFluidState(ctx.getClickedPos());
-		return blockState == null ? null : this.defaultBlockState().setValue(FACING, blockState.getValue(FACING)).setValue(WATERLOGGED, fluidState.is(FluidTags.WATER) && fluidState.getAmount() == 8);
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		BlockState blockState = Blocks.WALL_TORCH.getPlacementState(ctx);
+		FluidState fluidState = ctx.getWorld().getFluidState(ctx.getBlockPos());
+		return blockState == null ? null : this.getDefaultState().with(FACING, blockState.get(FACING)).with(WATERLOGGED, fluidState.isIn(FluidTags.WATER) && fluidState.getLevel() == 8);
 	}
 
 	@Override
-	public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-		if (level.getRandom().nextInt(4)!=0) return;
-		if (state.getValue(WATERLOGGED)) {
-			Direction direction = (state.getValue(FACING)).getOpposite();
-			double e = pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.2 + 0.27 * direction.getStepX();
+	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+		if (world.random.nextInt(4)!=0) return;
+		if (state.get(WATERLOGGED)) {
+			Direction direction = (state.get(FACING)).getOpposite();
+			double e = pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.2 + 0.27 * direction.getOffsetX();
 			double f = pos.getY() + 0.7 + (random.nextDouble() - 0.5) * 0.2 + 0.22;
-			double g = pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.2 + 0.27 * direction.getStepZ();
-			level.addParticle(ParticleTypes.SCRAPE, e, f, g, 0.0, 0.0, 0.0);
+			double g = pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.2 + 0.27 * direction.getOffsetZ();
+			world.addParticleClient(ParticleTypes.SCRAPE, e, f, g, 0.0, 0.0, 0.0);
 		}
 	}
 
 	@Override
-	public BlockState rotate(BlockState state, Rotation rotation) {
-		return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
+	protected BlockState rotate(BlockState state, BlockRotation rotation) {
+		return state.with(FACING, rotation.rotate(state.get(FACING)));
 	}
 
 	@Override
-	public BlockState mirror(BlockState state, Mirror mirror) {
-		return state.rotate(mirror.getRotation(state.getValue(FACING)));
+	protected BlockState mirror(BlockState state, BlockMirror mirror) {
+		return state.rotate(mirror.getRotation(state.get(FACING)));
 	}
 
 	@Override
-	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(FACING, WATERLOGGED);
 	}
 

@@ -1,104 +1,96 @@
 package net.greenjab.nekomasfixed.registry.block;
 
+import com.mojang.serialization.MapCodec;
 import net.greenjab.nekomasfixed.registry.block.entity.EndermanHeadBlockEntity;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.Equipable;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BaseEntityBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityTicker;
-import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
-import net.minecraft.world.level.pathfinder.PathComputationType;
-import javax.annotation.Nullable;
+import net.minecraft.block.*;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.entity.ai.pathing.NavigationType;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.block.OrientationHelper;
+import net.minecraft.world.block.WireOrientation;
+import org.jspecify.annotations.Nullable;
 
-public abstract class AbstractEndermanHeadBlock extends BaseEntityBlock implements Equipable {
-	public static final IntegerProperty POWER = BlockStateProperties.POWER;
+public abstract class AbstractEndermanHeadBlock extends BlockWithEntity {
+	public static final IntProperty POWER = Properties.POWER;
 
-	public AbstractEndermanHeadBlock(Properties settings) {
+	@Override
+	public abstract MapCodec<? extends AbstractEndermanHeadBlock> getCodec();
+
+	public AbstractEndermanHeadBlock(Settings settings) {
 		super(settings);
-		this.registerDefaultState(this.stateDefinition.any().setValue(POWER, 0));
-	}
-
-	// like vanilla skulls, Equipable routes through the block (not the item) for the head slot; right-click doesn't equip it
-	@Override
-	public EquipmentSlot getEquipmentSlot() {
-		return EquipmentSlot.HEAD;
+		this.setDefaultState(this.stateManager.getDefaultState().with(POWER, 0));
 	}
 
 	@Override
-	public BlockState getStateForPlacement(BlockPlaceContext ctx) {
-		return this.defaultBlockState().setValue(POWER, 0);
+	public BlockState getPlacementState(ItemPlacementContext ctx) {
+		return this.getDefaultState().with(POWER, 0);
 	}
 
 	@Override
-	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(POWER);
 	}
 
 	@Override
-	public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
 		return new EndermanHeadBlockEntity(pos, state);
 	}
 
 	@Nullable
 	@Override
-	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-		return createTickerHelper(type, BlockEntityTypeRegistry.ENDERMAN_HEAD_BLOCK_ENTITY.get(), level.isClientSide()? null: EndermanHeadBlockEntity::tick);
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+		return validateTicker(type, BlockEntityTypeRegistry.ENDERMAN_HEAD_BLOCK_ENTITY, world.isClient()? null: EndermanHeadBlockEntity::tick);
 	}
 
 	@Override
-	public int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-		return state.getValue(POWER);
+	protected int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+		return state.get(POWER);
 	}
 
 	@Override
-	public int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-		return direction == Direction.UP ? state.getSignal(level, pos, direction) : 0;
+	protected int getStrongRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
+		return direction == Direction.UP ? state.getWeakRedstonePower(world, pos, direction) : 0;
 	}
 
 	@Override
-	public boolean isSignalSource(BlockState state) {
+	protected boolean emitsRedstonePower(BlockState state) {
 		return true;
 	}
 
-	public void setPower(Level level, BlockPos pos, BlockState state, int power) {
-		state = state.setValue(AbstractEndermanHeadBlock.POWER, power);
-		level.setBlock(pos, state, Block.UPDATE_ALL);
-		updateNeighbors(state, level, pos);
+	public void setPower(World world, BlockPos pos,BlockState state, int power) {
+		state = state.with(AbstractEndermanHeadBlock.POWER, power);
+		world.setBlockState(pos, state, Block.NOTIFY_ALL);
+		updateNeighbors(state, world, pos);
 	}
-	public void updateNeighbors(BlockState state, Level level, BlockPos pos) {
+	public void updateNeighbors(BlockState state, World world, BlockPos pos) {
 		Direction direction = Direction.DOWN;
-		level.updateNeighborsAt(pos, this);
-		level.updateNeighborsAt(pos.relative(direction), this);
+		WireOrientation wireOrientation = OrientationHelper.getEmissionOrientation(
+				world, direction, Direction.UP
+		);
+		world.updateNeighborsAlways(pos, this, wireOrientation);
+		world.updateNeighborsAlways(pos.offset(direction), this, wireOrientation);
 	}
 
 	@Override
-	public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
-		if (!moved && !state.is(newState.getBlock())) {
-			this.notifyNeighborsOnRemoval(state, level, pos);
-		}
-		super.onRemove(state, level, pos, newState, moved);
-	}
-
-	/** Split out so the wall variant can notify along its own facing instead. */
-	protected void notifyNeighborsOnRemoval(BlockState state, Level level, BlockPos pos) {
-		if (state.getValue(POWER)>0) {
-			this.updateNeighbors(state.setValue(POWER, 0), level, pos);
+	protected void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
+		if (state.get(POWER)>0) {
+			this.updateNeighbors(state.with(POWER, 0), world, pos);
 		}
 	}
 
 	@Override
-	public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) {
+	protected boolean canPathfindThrough(BlockState state, NavigationType type) {
 		return false;
 	}
 }

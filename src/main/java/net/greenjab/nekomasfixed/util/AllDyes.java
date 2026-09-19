@@ -1,8 +1,8 @@
 package net.greenjab.nekomasfixed.util;
 
-import net.minecraft.util.StringRepresentable;
+import net.minecraft.util.StringIdentifiable;
 
-public enum AllDyes implements StringRepresentable {
+public enum AllDyes implements StringIdentifiable {
     WHITE("white" ),
     ORANGE("orange"),
     MAGENTA("magenta"),
@@ -30,7 +30,7 @@ public enum AllDyes implements StringRepresentable {
     }
 
     @Override
-    public String getSerializedName() {
+    public String asString() {
         return this.id;
     }
 }

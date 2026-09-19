@@ -1,46 +1,44 @@
 package net.greenjab.nekomasfixed.registry.entity.goal;
 
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import com.mojang.datafixers.util.Pair;
 import net.greenjab.nekomasfixed.registry.registries.OtherRegistry;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.animal.Dolphin;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.entity.ai.goal.Goal;
+import net.minecraft.entity.passive.DolphinEntity;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 
 public class MoveToCoralReefGoal extends Goal {
-    private final Dolphin dolphin;
+    private final DolphinEntity dolphin;
     private BlockPos target;
     private int timer = 0;
 
-    public MoveToCoralReefGoal(Dolphin dolphin) {
+    public MoveToCoralReefGoal(DolphinEntity dolphin) {
         this.dolphin = dolphin;
     }
 
     private BlockPos searchCoralReef() {
-        if (dolphin.level() instanceof ServerLevel level) {
-            Pair<BlockPos, Holder<Biome>> pair = level.findClosestBiome3d(
-                    entry -> entry.is(Biomes.WARM_OCEAN),
-                    dolphin.blockPosition(),5000,32,64);
+        if (dolphin.getEntityWorld() instanceof ServerWorld serverWorld) {
+            Pair<BlockPos, RegistryEntry<Biome>> pair = serverWorld.locateBiome(
+                    entry -> entry.matchesKey(BiomeKeys.WARM_OCEAN),
+                    dolphin.getBlockPos(),5000,32,64);
             if (pair != null) return pair.getFirst();
         }
         return null;
     }
 
     @Override
-    public boolean canUse() {
-        return NekomasFixedConfig.DOLPHINS_SEEK_CORAL_REEFS.get()
-                && dolphin.getEntityData().get(OtherRegistry.IS_TROPICAL_FISH_FED)
-                && !dolphin.onGround() && !dolphin.level().getBiome(dolphin.blockPosition()).is(Biomes.WARM_OCEAN);
+    public boolean canStart() {
+        return dolphin.getDataTracker().get(OtherRegistry.IS_TROPICAL_FISH_FED)
+                && !dolphin.isOnGround() && !dolphin.getEntityWorld().getBiome(dolphin.getBlockPos()).matchesKey(BiomeKeys.WARM_OCEAN);
     }
 
     @Override
-    public boolean isInterruptable(){
-        return !dolphin.onGround() || dolphin.level().getBiome(dolphin.blockPosition()).is(Biomes.WARM_OCEAN) || timer >= 30;
+    public boolean canStop(){
+        return !dolphin.isOnGround() || dolphin.getEntityWorld().getBiome(dolphin.getBlockPos()).matchesKey(BiomeKeys.WARM_OCEAN) || timer >= 30;
     }
 
     @Override
@@ -51,10 +49,10 @@ public class MoveToCoralReefGoal extends Goal {
 
     @Override
     public void tick() {
-        if (dolphin.level().isClientSide()) return;
-        ((ServerLevel)dolphin.level()).sendParticles(ParticleTypes.GLOW, dolphin.getX(), dolphin.getY(), dolphin.getZ(), 1, 0, 0, 0, 0);
-        if (target != null && dolphin.level().getGameTime()%20==0&&target.closerThan(dolphin.blockPosition(), 5000) && dolphin.getDeltaMovement().horizontalDistance()>0.1) {
-            dolphin.getNavigation().moveTo(target.getX(), target.getY(), target.getZ(),1.2);
+        if (dolphin.getEntityWorld().isClient()) return;
+        ((ServerWorld)dolphin.getEntityWorld()).spawnParticles(ParticleTypes.GLOW, dolphin.getX(), dolphin.getY(), dolphin.getZ(), 1, 0, 0, 0, 0);
+        if (target != null && dolphin.getEntityWorld().getTime()%20==0&&target.isWithinDistance(dolphin.getBlockPos(), 5000) && dolphin.getVelocity().horizontalLength()>0.1) {
+            dolphin.getNavigation().startMovingTo(target.getX(), target.getY(), target.getZ(),1.2);
             timer++;
         } else timer = 30;
     }

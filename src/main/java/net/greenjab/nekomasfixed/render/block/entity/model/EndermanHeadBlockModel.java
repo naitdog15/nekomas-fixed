@@ -1,54 +1,45 @@
 package net.greenjab.nekomasfixed.render.block.entity.model;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.model.Model;
-import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.model.geom.PartPose;
-import net.minecraft.client.model.geom.builders.CubeDeformation;
-import net.minecraft.client.model.geom.builders.CubeListBuilder;
-import net.minecraft.client.model.geom.builders.LayerDefinition;
-import net.minecraft.client.model.geom.builders.MeshDefinition;
-import net.minecraft.client.model.geom.builders.PartDefinition;
-import net.minecraft.client.renderer.RenderType;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.greenjab.nekomasfixed.render.block.entity.state.EndermanHeadBlockEntityRenderState;
+import net.minecraft.client.model.*;
+import net.minecraft.client.render.RenderLayers;
 
-public class EndermanHeadBlockModel extends Model {
-	private final ModelPart root;
+@Environment(EnvType.CLIENT)
+public class EndermanHeadBlockModel<S extends EndermanHeadBlockEntityRenderState> extends Model<S> {
 	private final ModelPart head;
 	private final ModelPart mouth;
 
-	public EndermanHeadBlockModel(ModelPart root) {
-		super(RenderType::entitySolid);
-		this.root = root;
+    public EndermanHeadBlockModel(ModelPart root) {
+		super(root, RenderLayers::entitySolid);
 		this.head = root.getChild("head");
 		this.mouth = root.getChild("mouth");
 	}
 
-	public static LayerDefinition getTexturedModelData() {
-		MeshDefinition modelData = new MeshDefinition();
-		PartDefinition modelPartData = modelData.getRoot();
+	public static TexturedModelData getTexturedModelData() {
+		ModelData modelData = new ModelData();
+		ModelPartData modelPartData = modelData.getRoot();
 
-		modelPartData.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 0)
-				.addBox(4.0F, 0.0F, 4.0F, 8.0F, 8.0F, 8.0F), PartPose.ZERO);
-		modelPartData.addOrReplaceChild("mouth", CubeListBuilder.create().texOffs(0, 16)
-				.addBox(4.0F, 0.0F, 4.0F, 8.0F, 8.0F, 8.0F, new CubeDeformation(-0.5F)), PartPose.ZERO);
+		modelPartData.addChild(
+				"head", ModelPartBuilder.create().uv(0, 0).cuboid(4.0F, 0.0F, 4.0F, 8.0F, 8.0F, 8.0F), ModelTransform.NONE
+		);
+		modelPartData.addChild(
+				"mouth", ModelPartBuilder.create().uv(0, 16).cuboid(4.0F, 0.0F, 4.0F, 8.0F, 8.0F, 8.0F, new Dilation(-0.5F)), ModelTransform.NONE
+		);
 
-		return LayerDefinition.create(modelData, 64, 32);
+		return TexturedModelData.of(modelData, 64, 32);
 	}
 
-	public void setupAnim(boolean powered, boolean wall) {
-		this.head.y = 0;
-		this.mouth.y = 0;
-		if (powered) {
-			if (wall) {
-				this.head.y -= 2.5F;
-				this.mouth.y += 2.5F;
-			} else this.head.y -= 5.0F;
+	public void setAngles(S state) {
+		super.setAngles(state);
+		if (state.powered) {
+			if (state.wall) {
+				this.head.originY -= 2.5F;
+				this.mouth.originY += 2.5F;
+			} else {
+				this.head.originY -= 5.0F;
+			}
 		}
-	}
-
-	@Override
-	public void renderToBuffer(PoseStack poseStack, VertexConsumer vertexConsumer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
-		this.root.render(poseStack, vertexConsumer, packedLight, packedOverlay, red, green, blue, alpha);
 	}
 }

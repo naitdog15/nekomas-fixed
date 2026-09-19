@@ -14,7 +14,7 @@ license="${mod_license}"
     description='''${mod_description}'''
     authors="${mod_authors}"
     logoFile="assets/nekomasfixed/icon.png"
-    credits="Forge 1.20.1 port by naitdog15. Original mod by Green_Jab. See readme.md for the full Nekoma, developer and texture credits."
+    credits="Forge 1.21.11 port by naitdog15. Original mod by Green_Jab. See readme.md for the full Nekoma, developer and texture credits."
 
 [[dependencies.nekomasfixed]]
     modId="forge"
@@ -28,12 +28,6 @@ license="${mod_license}"
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
-[[dependencies.nekomasfixed]]
-    modId="cloth_config"
-    mandatory=false
-    versionRange="[11,)"
-    ordering="AFTER"
-    side="CLIENT"
 [[dependencies.nekomasfixed]]
     modId="vanillabackport"
     mandatory=false

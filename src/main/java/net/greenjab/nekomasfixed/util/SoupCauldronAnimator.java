@@ -1,6 +1,6 @@
 package net.greenjab.nekomasfixed.util;
 
-import net.minecraft.util.Mth;
+import net.minecraft.util.math.MathHelper;
 
 public class SoupCauldronAnimator  {
     private boolean started;
@@ -18,7 +18,7 @@ public class SoupCauldronAnimator  {
     }
 
     public float getProgress(float tickProgress) {
-        return Mth.lerp(tickProgress, this.lastProgress, this.progress);
+        return MathHelper.lerp(tickProgress, this.lastProgress, this.progress);
     }
 
     public void setStarted(boolean started) {

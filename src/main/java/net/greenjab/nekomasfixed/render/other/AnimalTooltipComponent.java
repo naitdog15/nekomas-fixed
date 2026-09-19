@@ -1,20 +1,19 @@
 package net.greenjab.nekomasfixed.render.other;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.greenjab.nekomasfixed.registry.other.AnimalComponent;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.Level;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
+import net.minecraft.client.gui.tooltip.TooltipComponent;
+import net.minecraft.entity.*;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.world.World;
 
-// this version's ClientTooltipComponent is getHeight()/getWidth(Font)/renderImage(Font,x,y,GuiGraphics),
-// not 26.2's extractImage(...); renderEntityInInventoryFollowsMouse here still takes an origin+scale,
-// not 26.2's renamed extractEntityInInventoryFollowsMouse rectangle - only reason the call below differs
-// image only - the "Holding: ..." text is AnimalComponent#tooltipLine() on appendHoverText
-public class AnimalTooltipComponent implements ClientTooltipComponent {
+@Environment(EnvType.CLIENT)
+public class AnimalTooltipComponent implements TooltipComponent {
     private final AnimalComponent animalComponent;
 
     public AnimalTooltipComponent(AnimalComponent animalComponent) {
@@ -22,34 +21,52 @@ public class AnimalTooltipComponent implements ClientTooltipComponent {
     }
 
     @Override
-    public int getHeight() {
-        return this.animalComponent.animal().isEmpty() ? 0 : 3 * 24;
+    public int getHeight(TextRenderer textRenderer) {
+        return this.getHeight();
     }
 
     @Override
-    public int getWidth(Font font) {
-        return this.animalComponent.animal().isEmpty() ? 0 : 3 * 24;
+    public int getWidth(TextRenderer textRenderer) {
+        return this.getWidth() ;
     }
 
     @Override
-    public void renderImage(Font font, int x, int y, GuiGraphics guiGraphics) {
-        Level level = Minecraft.getInstance().level;
-        if (level == null || this.animalComponent.animal().isEmpty()) return;
-        Entity entity = this.animalComponent.animal().get(0).loadEntity(level);
-        if (!(entity instanceof LivingEntity livingEntity)) return;
+    public boolean isSticky() {
+        return true;
+    }
 
-        entity.tickCount = Math.toIntExact(level.getGameTime());
-        float time = System.currentTimeMillis() % (20 * 1000);
-        time *= (float) (2 * Math.PI) / (20 * 1000.0f);
-        float dx = 10 * (float) (Math.cos(7 * time) + Math.sin(3 * time));
-        float dy = 10 * (float) (Math.cos(5 * time) + Math.sin(2 * time));
-        int width = this.getWidth(font);
-        int height = this.getHeight();
-        int centerX = x + width / 2;
-        int bottomY = y + height;
-        // 1.20.1's helper wants the offset from the render origin to the "mouse", not the mouse
-        // position itself; feeding it the same wandering point keeps the slow turn the preview had.
-        InventoryScreen.renderEntityInInventoryFollowsMouse(guiGraphics, centerX, bottomY, 40,
-                centerX - (x - 15.0F + dx), (bottomY - 50.0F) - (y + 30.0F + dy), livingEntity);
+    private int getHeight() {
+        if (animalComponent.animal().isEmpty()) return 0;
+        return 3 * 24;
+    }
+
+    private int getWidth() {
+        if (animalComponent.animal().isEmpty()) return 0;
+        return 3 * 24;
+    }
+
+
+    @Override
+    public void drawItems(TextRenderer textRenderer, int x, int y, int width, int height, DrawContext context) {
+            this.drawNonEmptyTooltip(x, y, context);
+    }
+
+    private void drawNonEmptyTooltip( int x, int y, DrawContext context) {
+        World world = MinecraftClient.getInstance().world;
+        if (world!=null &&!animalComponent.animal().isEmpty()) {
+            TypedEntityData<EntityType<?>> entityData = animalComponent.animal().get(0).entityData();
+            NbtCompound nbtCompound = entityData.copyNbtWithoutId();
+            AnimalComponent.IRRELEVANT_ANIMAL_NBT_KEYS.forEach(nbtCompound::remove);
+            Entity entity = EntityType.loadEntityWithPassengers(entityData.getType(), nbtCompound, world, SpawnReason.LOAD, entityx -> entityx);
+            if (entity!=null) {
+                entity.age = Math.toIntExact(world.getTime());
+                float time = System.currentTimeMillis() % (20 * 1000);
+                time *= (float) (2 * Math.PI) / (20 * 1000.0f);
+                float dx = 10 * (float) (Math.cos(7 * time) + Math.sin(3 * time));
+                float dy = 10 * (float) (Math.cos(5 * time) + Math.sin(2 * time));
+                InventoryScreen.drawEntity(context, x, y - 20, x + getWidth(), y + getHeight(), 40, 0.25F, x - 15 + dx, y + 30 + dy, (LivingEntity) entity);
+                entity.discard();
+            }
+        }
     }
 }

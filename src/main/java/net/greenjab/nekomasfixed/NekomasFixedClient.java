@@ -1,54 +1,51 @@
 package net.greenjab.nekomasfixed;
 
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.rendering.v1.BlockRenderLayerMap;
+import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
+import net.greenjab.nekomasfixed.registries.*;
 import net.greenjab.nekomasfixed.registry.block.cauldron.SoupCauldronBlock;
-import net.greenjab.nekomasfixed.registry.block.entity.SoupCauldronBlockEntity;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
-import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
-import net.minecraft.client.color.block.BlockColor;
-import net.minecraft.client.renderer.item.ItemProperties;
-import net.minecraft.client.renderer.BiomeColors;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.BlockAndTintGetter;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterColorHandlersEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.greenjab.nekomasfixed.screen.KilnScreen;
+import net.greenjab.nekomasfixed.registry.registries.ScreenHandlerRegistry;
+import net.greenjab.nekomasfixed.screen.PyrotechnicsTableScreen;
+import net.minecraft.client.gui.screen.ingame.HandledScreens;
+import net.minecraft.client.render.BlockRenderLayer;
 
-import javax.annotation.Nullable;
+public class NekomasFixedClient implements ClientModInitializer {
 
-/**
- * this file's only remaining job is block-color registration - everything else that used to live
- * here now self-registers elsewhere (renderer/model registries under {@code registries/**}, four
- * {@code Material} constants, {@code ClientSyncHandler.init()} folded into the SimpleChannel
- * construction, {@code MenuScreens.register(...)} in {@code ScreenRegistration}).
- * the null-level branch below is the old separate "color(state)" case; {@link BlockColor#getColor}
- * collapses both onto one method.
- */
-@Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-public class NekomasFixedClient {
+	@Override
+	public void onInitializeClient() {
+		BlockEntityRendererRegistry.registerBlockEntityRenderer();
+		ModEntityRendererRegistry.registerEntityRenderer();
+		ModEntityLayerRegistry.registerEntityModelLayer();
+		TextureRegistry.registerTextureRegistry();
 
-    @SubscribeEvent
-    public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> ItemProperties.register(ItemRegistry.WILDFIRE_SHIELD.get(), NekomasFixed.id("blocking"),
-                (stack, level, entity, seed) -> entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F));
-    }
+		ClientSyncHandler.init();
 
-    @SubscribeEvent
-    public static void onRegisterBlockColors(RegisterColorHandlersEvent.Block event) {
-        event.register(NekomasFixedClient::soup, BlockRegistry.SOUP_CAULDRON.get());
-    }
+		HandledScreens.register(ScreenHandlerRegistry.KILN_SCREEN_HANDLER, KilnScreen::new);
+		HandledScreens.register(ScreenHandlerRegistry.PYROTECHNICS_TABLE_HANDLER, PyrotechnicsTableScreen::new);
 
-    public static int soup(BlockState state, @Nullable BlockAndTintGetter level, @Nullable BlockPos pos, int tintIndex) {
-        if (level == null || pos == null) return -1;
-        if (level.getBlockEntity(pos) instanceof SoupCauldronBlockEntity soupCauldronBlockEntity) {
-            float f = soupCauldronBlockEntity.getOpenNess(0);
-            int s = SoupCauldronBlock.blendFoodColors(soupCauldronBlockEntity.getInputs());
-            int w = BiomeColors.getAverageWaterColor(level, pos);
-            return ((int) (f * (s >> 16 & 255) + (1 - f) * (w >> 16 & 255)) << 16)
-                    | ((int) (f * (s >> 8 & 255) + (1 - f) * (w >> 8 & 255)) << 8)
-                    | (int) (f * (s & 255) + (1 - f) * (w & 255)) - (int) Math.pow(2, 24);
-        } else return BiomeColors.getAverageWaterColor(level, pos);
-    }
+		BlockRenderLayerMap.putBlocks(
+				BlockRenderLayer.TRANSLUCENT,
+				BlockRegistry.AMBER_STAINED_GLASS,
+				BlockRegistry.AQUA_STAINED_GLASS,
+				BlockRegistry.INDIGO_STAINED_GLASS,
+				BlockRegistry.MAROON_STAINED_GLASS,
+				BlockRegistry.AMBER_STAINED_GLASS_PANE,
+				BlockRegistry.AQUA_STAINED_GLASS_PANE,
+				BlockRegistry.INDIGO_STAINED_GLASS_PANE,
+				BlockRegistry.MAROON_STAINED_GLASS_PANE
+		);
+
+		ColorProviderRegistry.BLOCK.register((state, world, pos, tintIndex) -> {
+            if (state != null) {
+                assert world != null;
+                return SoupCauldronBlock.getTintIndex(world, pos, tintIndex);
+            } else {
+                return 0;
+            }
+        }, BlockRegistry.SOUP_CAULDRON);
+
+	}
 }

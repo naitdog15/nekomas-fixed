@@ -1,119 +1,140 @@
 package net.greenjab.nekomasfixed.registry.block.cauldron;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.cauldron.CauldronInteraction;
-import net.minecraft.world.item.Item;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ItemUtils;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.AbstractCauldronBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.block.AbstractCauldronBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.cauldron.CauldronBehavior;
+import net.minecraft.entity.CollisionEvent;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityCollisionHandler;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsage;
+import net.minecraft.item.Items;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 import java.util.Map;
 
 public class MagmaCauldronBlock extends AbstractCauldronBlock {
+    public static final MapCodec<MagmaCauldronBlock> CODEC = createCodec(MagmaCauldronBlock::new);
+    private static final VoxelShape LAVA_SHAPE = Block.createColumnShape(12.0, 4.0, 15.0);
+    private static final VoxelShape INSIDE_COLLISION_SHAPE = VoxelShapes.union(AbstractCauldronBlock.OUTLINE_SHAPE, LAVA_SHAPE);
 
-    public static final IntegerProperty MAGMA_LEVEL = IntegerProperty.create("magma_level", 1, 4);
+    public static final IntProperty MAGMA_LEVEL = IntProperty.of("magma_level", 1, 4);
     public static final int MAX_LEVEL = 4;
 
-    public MagmaCauldronBlock(Properties settings) {
+    public MagmaCauldronBlock(Settings settings) {
         super(settings, createBehaviorMap());
-        this.registerDefaultState(this.stateDefinition.any()
-                .setValue(MAGMA_LEVEL, MAX_LEVEL));
+        this.setDefaultState(this.stateManager.getDefaultState()
+                .with(MAGMA_LEVEL, MAX_LEVEL));
+    }
+
+    protected ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state, boolean includeData) {
+        return Items.CAULDRON.getDefaultStack();
     }
 
     @Override
-    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
-        return Items.CAULDRON.getDefaultInstance();
+    protected VoxelShape getInsideCollisionShape(BlockState state, BlockView world, BlockPos pos, Entity entity) {
+        return INSIDE_COLLISION_SHAPE;
     }
 
-    /** {@code lavaHurt} already ignites and burns; the thaw is what the lava layer adds on top. */
-    @Override
-    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if (this.isEntityInsideContent(state, pos, entity)) {
-            entity.setTicksFrozen(0);
-            entity.lavaHurt();
-        }
+    protected void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler handler, boolean bl) {
+        handler.addEvent(CollisionEvent.CLEAR_FREEZE);
+        handler.addEvent(CollisionEvent.LAVA_IGNITE);
+        handler.addPostCallback(CollisionEvent.LAVA_IGNITE, Entity::setOnFireFromLava);
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+    protected MapCodec<? extends AbstractCauldronBlock> getCodec() {
+        return CODEC;
+    }
+
+    @Override
+    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         builder.add(MAGMA_LEVEL);
     }
 
-    // See HoneyCauldronBlock.java's javadoc on this exact pattern.
-    public static final Map<Item, CauldronInteraction> MAGMA = CauldronInteraction.newInteractionMap();
+    private static CauldronBehavior.CauldronBehaviorMap createBehaviorMap() {
+        CauldronBehavior.CauldronBehaviorMap behaviorMap = CauldronBehavior.createMap("magma");
+        Map<Item, CauldronBehavior> map = behaviorMap.map();
 
-    private static Map<Item, CauldronInteraction> createBehaviorMap() {
-        return MAGMA;
-    }
-
-    /** See HoneyCauldronBlock.registerInteractions()'s javadoc. */
-    public static void registerInteractions() {
-        MAGMA.put(Items.AIR, (state, level, pos, player, hand, stack) -> {
-            if(state.getValue(MAGMA_LEVEL) == MAX_LEVEL) {
-                if (!level.isClientSide()) {
-                    player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, new ItemStack(Items.MAGMA_BLOCK)));
-                    level.setBlockAndUpdate(pos, Blocks.CAULDRON.defaultBlockState());
-                    level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY, SoundSource.BLOCKS, 1.0F, 1.0F);
+        map.put(Items.AIR, (state, world, pos, player, hand, stack) -> {
+            if(state.get(MAGMA_LEVEL) == MAX_LEVEL) {
+                if (!world.isClient()) {
+                    player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.MAGMA_BLOCK)));
+                    world.setBlockState(pos, Blocks.CAULDRON.getDefaultState());
+                    world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
                 }
-                return InteractionResult.SUCCESS;
+                return ActionResult.SUCCESS;
             } else {
-                return InteractionResult.PASS;
+                return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
             }
         });
 
-        MAGMA.put(Items.MAGMA_CREAM, (state, level, pos, player, hand, stack) -> {
-            if (state.getValue(MAGMA_LEVEL) < MAX_LEVEL) {
-                if (!level.isClientSide()) {
-                    if (!player.getAbilities().instabuild) {
-                        stack.shrink(1);
-                    }
-                    level.setBlockAndUpdate(pos, state.setValue(MAGMA_LEVEL, state.getValue(MAGMA_LEVEL) + 1));
-                    level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY,
-                            SoundSource.BLOCKS, 1.0F, 1.0F);
+        map.put(Items.MAGMA_CREAM, (state, world, pos, player, hand, stack) -> {
+            int level = state.get(MAGMA_LEVEL);
+            if (level < MAX_LEVEL) {
+                if (!world.isClient()) {
+                    stack.decrementUnlessCreative(1, player);
+                    world.setBlockState(pos, state.with(MAGMA_LEVEL, level + 1));
+                    world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_EMPTY,
+                            SoundCategory.BLOCKS, 1.0F, 1.0F);
                 }
             }
-            return InteractionResult.SUCCESS;
+            return ActionResult.SUCCESS;
         });
+
+        return behaviorMap;
     }
 
     @Override
-    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!level.isClientSide()) {
-                if (state.getValue(MAGMA_LEVEL) < MAX_LEVEL) {
-                    level.setBlockAndUpdate(pos, state.setValue(MAGMA_LEVEL, state.getValue(MAGMA_LEVEL) + 1));
-                    level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY,
-                            SoundSource.BLOCKS, 1.0F, 1.0F);
+    protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        if (!world.isClient()) {
+                int currentLevel = state.get(MAGMA_LEVEL);
+                if (currentLevel < MAX_LEVEL) {
+                    world.setBlockState(pos, state.with(MAGMA_LEVEL, currentLevel + 1));
+                    world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_EMPTY,
+                            SoundCategory.BLOCKS, 1.0F, 1.0F);
                 }
+        }
+        world.scheduleBlockTick(pos, this, 2000);
+    }
+
+    @Override
+    protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
+        if (!world.isClient()) {
+            world.scheduleBlockTick(pos, this, 2000);
         }
     }
 
     @Override
-    protected double getContentHeight(BlockState state) {
-        return (4.0 + state.getValue(MAGMA_LEVEL) * 3.0) / 16.0;
+    protected double getFluidHeight(BlockState state) {
+        return (4.0 + state.get(MAGMA_LEVEL) * 3.0) / 16.0;
     }
 
     @Override
     public boolean isFull(BlockState state) {
-        return state.getValue(MAGMA_LEVEL) == MAX_LEVEL;
+        return state.get(MAGMA_LEVEL) == MAX_LEVEL;
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
-        return state.getValue(MAGMA_LEVEL);
+    protected int getComparatorOutput(BlockState state, World world, BlockPos pos, Direction direction) {
+        return state.get(MAGMA_LEVEL);
     }
 
 }

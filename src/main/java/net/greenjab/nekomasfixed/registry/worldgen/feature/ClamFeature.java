@@ -2,66 +2,62 @@ package net.greenjab.nekomasfixed.registry.worldgen.feature;
 
 import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.block.ClamBlock;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.greenjab.nekomasfixed.registry.registries.LootTableRegistry;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.WorldGenLevel;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.CountConfiguration;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.LootTable;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.item.ItemStack;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootContextTypes;
+import net.minecraft.loot.context.LootWorldContext;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.gen.CountConfig;
+import net.minecraft.world.gen.feature.Feature;
+import net.minecraft.world.gen.feature.util.FeatureContext;
 import org.spongepowered.asm.mixin.Unique;
 
-public class ClamFeature extends Feature<CountConfiguration> {
-	public ClamFeature(Codec<CountConfiguration> codec) {
+public class ClamFeature extends Feature<CountConfig> {
+	public ClamFeature(Codec<CountConfig> codec) {
 		super(codec);
 	}
 
 	@Override
-	public boolean place(FeaturePlaceContext<CountConfiguration> context) {
-		if (!NekomasFixedConfig.CLAM_GENERATION.get()) return false;
-
+	public boolean generate(FeatureContext<CountConfig> context) {
 		int i = 0;
-		RandomSource random = context.random();
-		WorldGenLevel level = context.level();
-		BlockPos blockPos = context.origin();
-		int j = context.config().count().sample(random);
+		Random random = context.getRandom();
+		StructureWorldAccess world = context.getWorld();
+		BlockPos blockPos = context.getOrigin();
+		int j = context.getConfig().getCount().get(random);
 
 		for (int k = 0; k < j; k++) {
 			int l = random.nextInt(8) - random.nextInt(8);
 			int m = random.nextInt(8) - random.nextInt(8);
-			int n = level.getHeight(Heightmap.Types.OCEAN_FLOOR, blockPos.getX() + l, blockPos.getZ() + m);
+			int n = world.getTopY(Heightmap.Type.OCEAN_FLOOR, blockPos.getX() + l, blockPos.getZ() + m);
 			BlockPos blockPos2 = new BlockPos(blockPos.getX() + l, n, blockPos.getZ() + m);
-			Block clamType =  getClam(level.getRandom().nextFloat());
-			BlockState blockState =clamType.defaultBlockState().setValue(ClamBlock.WATERLOGGED, true).setValue(ClamBlock.FACING, Direction.Plane.HORIZONTAL.getRandomDirection(random));
-			if (level.getBlockState(blockPos2).is(Blocks.WATER) &&
-					level.getBlockState(blockPos2.above()).is(Blocks.WATER) &&
-					level.getBlockState(blockPos2.below()).is(Blocks.SAND) &&
-					blockState.canSurvive(level, blockPos2)) {
-				level.setBlock(blockPos2, blockState, Block.UPDATE_CLIENTS);
-				level.getBlockEntity(blockPos2, BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY.get())
+			Block clamType =  getClam(world.getRandom().nextFloat());
+			BlockState blockState =clamType.getDefaultState().with(ClamBlock.WATERLOGGED, true).with(ClamBlock.FACING, Direction.Type.HORIZONTAL.random(random));
+			if (world.getBlockState(blockPos2).isOf(Blocks.WATER) &&
+					world.getBlockState(blockPos2.up()).isOf(Blocks.WATER) &&
+					world.getBlockState(blockPos2.down()).isOf(Blocks.SAND) &&
+					blockState.canPlaceAt(world, blockPos2)) {
+				world.setBlockState(blockPos2, blockState, Block.NOTIFY_LISTENERS);
+				world.getBlockEntity(blockPos2, BlockEntityTypeRegistry.CLAM_BLOCK_ENTITY)
 						.ifPresent(blockEntity -> {
-							LootTable lootTable = level.getServer()
-									.getLootData()
+							LootTable lootTable = world.getServer()
+									.getReloadableRegistries()
 									.getLootTable(LootTableRegistry.CLAM_LOOT_TABLE);
 
-							LootParams lootContextParameterSet = (new LootParams.Builder(level.getLevel())).withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(blockPos2)).withParameter(LootContextParams.TOOL, null).withParameter(LootContextParams.THIS_ENTITY, null).withLuck(getLuck(clamType)).create(LootContextParamSets.FISHING);
+							LootWorldContext lootContextParameterSet = (new LootWorldContext.Builder(world.toServerWorld())).add(LootContextParameters.ORIGIN, blockPos2.toCenterPos()).add(LootContextParameters.TOOL, null).add(LootContextParameters.THIS_ENTITY, null).luck(getLuck(clamType)).build(LootContextTypes.FISHING);
 
-							ObjectArrayList<ItemStack> loots = lootTable.getRandomItems(lootContextParameterSet);
+							ObjectArrayList<ItemStack> loots = lootTable.generateLoot(lootContextParameterSet);
 							if (!loots.isEmpty()) blockEntity.setHeldStack(loots.get(0));
 						});
 				i++;
@@ -73,18 +69,18 @@ public class ClamFeature extends Feature<CountConfiguration> {
 
 	@Unique
 	private Block getClam(float rarity) {
-		if (rarity>0.5) return BlockRegistry.CLAM.get();
-		if (rarity>0.25) return BlockRegistry.CLAM_BLUE.get();
-		if (rarity>0.125) return BlockRegistry.CLAM_PINK.get();
-		if (rarity>0.0625) return BlockRegistry.CLAM_PURPLE.get();
-		return BlockRegistry.CLAM.get();
+		if (rarity>0.5) return BlockRegistry.CLAM;
+		if (rarity>0.25) return BlockRegistry.CLAM_BLUE;
+		if (rarity>0.125) return BlockRegistry.CLAM_PINK;
+		if (rarity>0.0625) return BlockRegistry.CLAM_PURPLE;
+		return BlockRegistry.CLAM;
 	}
 
 	public static int getLuck(Block clamType) {
-		if (clamType==BlockRegistry.CLAM.get()) return 0;
-		if (clamType==BlockRegistry.CLAM_BLUE.get()) return 1;
-		if (clamType==BlockRegistry.CLAM_PINK.get()) return 2;
-		if (clamType==BlockRegistry.CLAM_PURPLE.get()) return 3;
+		if (clamType==BlockRegistry.CLAM) return 0;
+		if (clamType==BlockRegistry.CLAM_BLUE) return 1;
+		if (clamType==BlockRegistry.CLAM_PINK) return 2;
+		if (clamType==BlockRegistry.CLAM_PURPLE) return 3;
 		return 0;
 	}
 }

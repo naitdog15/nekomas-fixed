@@ -1,120 +1,59 @@
 package net.greenjab.nekomasfixed.registry.item;
 
-import net.greenjab.nekomasfixed.network.ServerFlags;
-import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
-import com.google.common.collect.Multimap;
-import net.greenjab.nekomasfixed.registry.other.ComboComponent;
-import net.greenjab.nekomasfixed.util.ModItemSettings;
 import net.greenjab.nekomasfixed.util.ModTags;
-import net.greenjab.nekomasfixed.util.StackData;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Tier;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.level.Level;
-
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.function.Supplier;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.world.World;
 
 public class SickleItem extends Item {
 
     public static final float SPEED = -2.4F;
 
-    private final Multimap<Attribute, AttributeModifier> defaultModifiers;
-
-    // fallback combo step for this tier - can't bake a starting value onto the stack at craft time
-    private final int comboMultiplier;
-
-    // Item has no tier of its own here, so the enchantability and repair ingredient are kept next to the modifiers
-    private final int enchantability;
-    private final Supplier<Ingredient> repairIngredient;
-
-    public SickleItem(Tier material, Item.Properties settings) {
-        this(material, material.getEnchantmentValue(), material::getRepairIngredient, settings);
-    }
-
-    // the copper sickle borrows the stone tier's damage and durability, but not its cobblestone repair
-    public SickleItem(Tier material, int enchantability, Supplier<Ingredient> repairIngredient, Item.Properties settings) {
+    public SickleItem(Item.Settings settings) {
         super(settings);
-        this.defaultModifiers = ModItemSettings.sickleAttributeModifiers(material, SPEED);
-        this.comboMultiplier = ModItemSettings.sickleDefaultCombo(material);
-        this.enchantability = enchantability;
-        this.repairIngredient = repairIngredient;
     }
 
-    public int comboMultiplier() {
-        return this.comboMultiplier;
+
+    public ActionResult use(World world, PlayerEntity user, Hand hand) {
+        if (hand == Hand.MAIN_HAND) return ActionResult.PASS;
+        if (!user.getStackInHand(Hand.MAIN_HAND).isIn(ModTags.SICKLES))  return ActionResult.PASS;
+        if (user.getAttackCooldownProgress(0)<0.5) return ActionResult.PASS;
+        user.getItemCooldownManager().set(user.getStackInHand(hand), 12);
+        if (user.ticksSinceLastAttack>5) user.ticksSinceLastAttack = 5;
+        return ActionResult.SUCCESS;
     }
 
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, level, tooltip, flag);
-        if (NekomasFixedClientConfig.enabled(NekomasFixedClientConfig.COMBO_DAMAGE_TOOLTIP)) {
-            tooltip.addAll(StackData.read(stack, StackData.KEY_COMBO_MULTIPLIER, ComboComponent.CODEC,
-                    new ComboComponent(this.comboMultiplier)).tooltipLines());
-        }
-    }
+    public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
+        if (hand == Hand.MAIN_HAND) return ActionResult.PASS;
+        if (!user.getStackInHand(Hand.MAIN_HAND).isIn(ModTags.SICKLES))  return ActionResult.PASS;
+        if (user.getAttackCooldownProgress(0)<0.5) return ActionResult.PASS;
+        if (user.getItemCooldownManager().getCooldownProgress(user.getStackInHand(hand), 0)>0) return ActionResult.PASS;
+        user.getItemCooldownManager().set(stack, 12);
+        if (user.ticksSinceLastAttack>5) user.ticksSinceLastAttack = 5;
+        if (user.getEntityWorld().isClient()) return ActionResult.SUCCESS;
 
-    @Override
-    public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
-        return slot == EquipmentSlot.MAINHAND ? this.defaultModifiers : super.getDefaultAttributeModifiers(slot);
-    }
+        int tt = user.ticksSinceLastAttack;
 
-    @Override
-    public int getEnchantmentValue() {
-        return this.enchantability;
-    }
-
-    @Override
-    public boolean isValidRepairItem(ItemStack stack, ItemStack ingredient) {
-        return this.repairIngredient.get().test(ingredient);
-    }
-
-    public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {
-        ItemStack stack = user.getItemInHand(hand);
-        if (!ServerFlags.offhandAttack()) return InteractionResultHolder.pass(stack);
-        if (hand == InteractionHand.MAIN_HAND) return InteractionResultHolder.pass(stack);
-        if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResultHolder.pass(stack);
-        if (user.getAttackStrengthScale(0)<0.5) return InteractionResultHolder.pass(stack);
-        user.getCooldowns().addCooldown(stack.getItem(), 12);
-        if (user.attackStrengthTicker>5) user.attackStrengthTicker = 5;
-        return InteractionResultHolder.success(stack);
-    }
-
-    public InteractionResult interactLivingEntity(ItemStack stack, Player user, LivingEntity entity, InteractionHand hand) {
-        if (!ServerFlags.offhandAttack()) return InteractionResult.PASS;
-        if (hand == InteractionHand.MAIN_HAND) return InteractionResult.PASS;
-        if (!user.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES))  return InteractionResult.PASS;
-        if (user.getAttackStrengthScale(0)<0.5) return InteractionResult.PASS;
-        if (user.getCooldowns().getCooldownPercent(user.getItemInHand(hand).getItem(), 0)>0) return InteractionResult.PASS;
-        user.getCooldowns().addCooldown(stack.getItem(), 12);
-        if (user.attackStrengthTicker>5) user.attackStrengthTicker = 5;
-        if (user.level().isClientSide()) return InteractionResult.SUCCESS;
-
-        int tt = user.attackStrengthTicker;
         swapHands(user);
-        user.detectEquipmentUpdates();
-        user.attackStrengthTicker =1000;
+        user.sendEquipmentChanges();
+
+        user.ticksSinceLastAttack =1000;
         user.attack(entity);
+
         swapHands(user);
-        user.attackStrengthTicker =tt;
-        return InteractionResult.SUCCESS;
+
+        user.ticksSinceLastAttack =tt;
+        return ActionResult.SUCCESS;
     }
 
-    private static void swapHands(Player user) {
-        ItemStack itemStack = user.getItemInHand(InteractionHand.OFF_HAND);
-        user.setItemInHand(InteractionHand.OFF_HAND, user.getItemInHand(InteractionHand.MAIN_HAND));
-        user.setItemInHand(InteractionHand.MAIN_HAND, itemStack);
+    private static void swapHands(PlayerEntity user) {
+        ItemStack itemStack = user.getStackInHand(Hand.OFF_HAND);
+        user.setStackInHand(Hand.OFF_HAND, user.getStackInHand(Hand.MAIN_HAND));
+        user.setStackInHand(Hand.MAIN_HAND, itemStack);
     }
+
 }

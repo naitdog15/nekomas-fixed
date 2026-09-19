@@ -1,64 +1,74 @@
 package net.greenjab.nekomasfixed.registry.block.cauldron;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.cauldron.CauldronInteraction;
-import net.minecraft.world.item.Item;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ItemUtils;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.AbstractCauldronBlock;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.block.state.BlockState;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.block.*;
+import net.minecraft.block.cauldron.CauldronBehavior;
+import net.minecraft.entity.CollisionEvent;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityCollisionHandler;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsage;
+import net.minecraft.item.Items;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
 
 import java.util.Map;
 
 public class IceCauldronBlock extends AbstractCauldronBlock {
+    public static final MapCodec<IceCauldronBlock> CODEC = createCodec(IceCauldronBlock::new);
+    private static final VoxelShape ICE_SHAPE = Block.createColumnShape(12.0, 4.0, 15.0);
+    private static final VoxelShape INSIDE_COLLISION_SHAPE = VoxelShapes.union(AbstractCauldronBlock.OUTLINE_SHAPE, ICE_SHAPE);
 
-    public IceCauldronBlock(BlockBehaviour.Properties settings) {
+    @Override
+    public MapCodec<IceCauldronBlock> getCodec() {
+        return CODEC;
+    }
+
+    public IceCauldronBlock(AbstractBlock.Settings settings) {
         super(settings, createBehaviorMap());
     }
 
-    @Override
-    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
-        return Items.CAULDRON.getDefaultInstance();
+    protected ItemStack getPickStack(WorldView world, BlockPos pos, BlockState state, boolean includeData) {
+        return Items.CAULDRON.getDefaultStack();
     }
 
-    // See HoneyCauldronBlock.java's javadoc on this exact pattern.
-    public static final Map<Item, CauldronInteraction> ICE = CauldronInteraction.newInteractionMap();
+    private static CauldronBehavior.CauldronBehaviorMap createBehaviorMap() {
+        CauldronBehavior.CauldronBehaviorMap behaviorMap = CauldronBehavior.createMap("ice");
+        Map<Item, CauldronBehavior> map = behaviorMap.map();
 
-    private static Map<Item, CauldronInteraction> createBehaviorMap() {
-        return ICE;
-    }
-
-    /** See HoneyCauldronBlock.registerInteractions()'s javadoc. */
-    public static void registerInteractions() {
-        ICE.put(Items.AIR, (state, level, pos, player, hand, stack) -> {
-            if (!level.isClientSide()) {
-                player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, new ItemStack(Items.ICE)));
-                level.setBlockAndUpdate(pos, Blocks.CAULDRON.defaultBlockState());
-                level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY, SoundSource.BLOCKS, 1.0F, 1.0F);
+        map.put(Items.AIR, (state, world, pos, player, hand, stack) -> {
+            if (!world.isClient()) {
+                player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.ICE)));
+                world.setBlockState(pos, Blocks.CAULDRON.getDefaultState());
+                world.playSound(null, pos, SoundEvents.ITEM_BOTTLE_EMPTY, SoundCategory.BLOCKS, 1.0F, 1.0F);
             }
-            return InteractionResult.SUCCESS;
+            return ActionResult.SUCCESS;
         });
+        return behaviorMap;
     }
 
-    /** Powder-snow flag is what drives the freeze counter, so standing in the ice chills the same way. */
+    protected void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler handler, boolean bl) {
+       handler.addEvent(CollisionEvent.FREEZE);
+    }
+
     @Override
-    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if (this.isEntityInsideContent(state, pos, entity)) {
-            entity.setIsInPowderSnow(true);
+    protected void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
+        if (!world.isClient()) {
+            world.scheduleBlockTick(pos, this, 200);
         }
     }
 
     @Override
-    protected double getContentHeight(BlockState state) {
+    protected double getFluidHeight(BlockState state) {
         return 0.9375;
     }
 
@@ -68,7 +78,12 @@ public class IceCauldronBlock extends AbstractCauldronBlock {
     }
 
     @Override
-    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+    protected VoxelShape getInsideCollisionShape(BlockState state, BlockView world, BlockPos pos, Entity entity) {
+        return INSIDE_COLLISION_SHAPE;
+    }
+
+    @Override
+    protected int getComparatorOutput(BlockState state, World world, BlockPos pos, Direction direction) {
         return 3;
     }
 }

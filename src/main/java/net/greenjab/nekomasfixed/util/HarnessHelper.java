@@ -1,28 +1,26 @@
 package net.greenjab.nekomasfixed.util;
 
-import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.RegistryObject;
+import net.minecraft.component.type.EquippableComponent;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryEntryLookup;
+import net.minecraft.registry.tag.EntityTypeTags;
+import net.minecraft.sound.SoundEvents;
 
-/**
- * ghast harness wearing/removal/slot is owned by whatever supplies the happy ghast; this only gates
- * the creative tab listing and the equip interaction for this mod's own four.
- */
-public final class HarnessHelper {
+public class HarnessHelper {
 
-    private HarnessHelper() {
-    }
+    public static EquippableComponent ofHarness(ModColors color) {
+        RegistryEntryLookup<EntityType<?>> registryEntryLookup =
+                Registries.createEntryLookup(Registries.ENTITY_TYPE);
 
-    public static boolean isModHarness(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-        return matches(stack, ItemRegistry.AMBER_HARNESS)
-                || matches(stack, ItemRegistry.AQUA_HARNESS)
-                || matches(stack, ItemRegistry.INDIGO_HARNESS)
-                || matches(stack, ItemRegistry.MAROON_HARNESS);
-    }
-
-    private static boolean matches(ItemStack stack, RegistryObject<Item> handle) {
-        return handle.isPresent() && stack.is(handle.get());
+        return EquippableComponent.builder(EquipmentSlot.BODY)
+                .equipSound(SoundEvents.ENTITY_HAPPY_GHAST_EQUIP)
+                .model(ModEquipmentAssets.HARNESS_FROM_MOD_COLOR.get(color))
+                .allowedEntities(registryEntryLookup.getOrThrow(EntityTypeTags.CAN_EQUIP_HARNESS))
+                .equipOnInteract(true)
+                .canBeSheared(true)
+                .shearingSound(Registries.SOUND_EVENT.getEntry(SoundEvents.ENTITY_HAPPY_GHAST_UNEQUIP))
+                .build();
     }
 }

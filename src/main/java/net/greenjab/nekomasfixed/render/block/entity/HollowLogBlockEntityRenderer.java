@@ -1,29 +1,64 @@
 package net.greenjab.nekomasfixed.render.block.entity;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.greenjab.nekomasfixed.registry.block.entity.HollowLogBlockEntity;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
+import net.greenjab.nekomasfixed.render.block.entity.state.HollowLogBlockEntityRenderState;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.block.BlockRenderManager;
+import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
+import net.minecraft.client.render.block.entity.state.BlockEntityRenderState;
+import net.minecraft.client.render.command.ModelCommandRenderer;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.state.CameraRenderState;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Vec3d;
+import org.jspecify.annotations.Nullable;
 
-public class HollowLogBlockEntityRenderer implements BlockEntityRenderer<HollowLogBlockEntity> {
-    private final BlockRenderDispatcher blockRenderer;
+public class HollowLogBlockEntityRenderer implements BlockEntityRenderer<HollowLogBlockEntity, HollowLogBlockEntityRenderState>{
 
-    public HollowLogBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
-        this.blockRenderer = context.getBlockRenderDispatcher();
+    public HollowLogBlockEntityRenderer(BlockEntityRendererFactory.Context context) {
     }
 
     @Override
-    public void render(HollowLogBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
-        BlockState storedBlock = blockEntity.getStoredBlock();
-        if (storedBlock.is(Blocks.AIR)) return;
-        poseStack.pushPose();
-        poseStack.translate(0.125, 0.125, 0.125);
-        poseStack.scale(0.75f, 0.75f, 0.75f);
-        this.blockRenderer.renderSingleBlock(storedBlock, poseStack, buffer, packedLight, packedOverlay);
-        poseStack.popPose();
+    public HollowLogBlockEntityRenderState createRenderState() {
+        return new HollowLogBlockEntityRenderState();
+    }
+
+    @Override
+    public void updateRenderState(HollowLogBlockEntity blockEntity,
+                                  HollowLogBlockEntityRenderState state,
+                                  float tickProgress,
+                                  Vec3d cameraPos,
+                                  ModelCommandRenderer.@Nullable CrumblingOverlayCommand crumblingOverlay) {
+
+        state.blockState = blockEntity.getStoredBlock();
+        BlockEntityRenderState.updateBlockEntityRenderState(blockEntity, state, crumblingOverlay);
+    }
+
+    @Override
+    public void render(HollowLogBlockEntityRenderState state,
+                       MatrixStack matrixStack,
+                       OrderedRenderCommandQueue queue,
+                       CameraRenderState cameraState) {
+
+        MinecraftClient client = MinecraftClient.getInstance();
+        BlockRenderManager blockRenderManager = client.getBlockRenderManager();
+
+        if (state.blockState == null) return;
+
+        matrixStack.push();
+        matrixStack.translate(0.125, 0.125, 0.125);
+        matrixStack.scale(0.75f, 0.75f, 0.75f);
+
+        blockRenderManager.renderBlockAsEntity(
+                state.blockState,
+                matrixStack,
+                client.getBufferBuilders().getEntityVertexConsumers(),
+                state.lightmapCoordinates,
+                OverlayTexture.DEFAULT_UV
+        );
+
+        matrixStack.pop();
     }
 }

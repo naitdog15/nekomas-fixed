@@ -2,86 +2,74 @@ package net.greenjab.nekomasfixed.registry.entity.WildFire;
 
 import com.mojang.serialization.Dynamic;
 import net.greenjab.nekomasfixed.registry.registries.OtherRegistry;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.syncher.EntityDataAccessor;
-import net.minecraft.network.syncher.EntityDataSerializers;
-import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerBossEvent;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.BossEvent;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.Brain;
-import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.memory.MemoryModuleType;
-import net.minecraft.world.entity.ai.sensing.SensorType;
-import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
-import javax.annotation.Nullable;
+import net.minecraft.entity.*;
+import net.minecraft.entity.ai.brain.Brain;
+import net.minecraft.entity.ai.brain.MemoryModuleType;
+import net.minecraft.entity.ai.pathing.PathNodeType;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.boss.BossBar;
+import net.minecraft.entity.boss.ServerBossBar;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.entity.projectile.WindChargeEntity;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
+import net.minecraft.text.Text;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.util.profiler.Profiler;
+import net.minecraft.util.profiler.Profilers;
+import net.minecraft.world.RaycastContext;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
+import net.minecraft.world.WorldView;
+import net.minecraft.world.debug.DebugTrackable;
+import org.jspecify.annotations.Nullable;
 
-/**
- * A nether-fortress boss that fights the way a breeze does - sliding, leaping and lobbing fire -
- * behind a ring of four spinning shield plates that thin out as its health drops. Killing it the
- * first time only strips the plates: it comes back soul-lit at full health for a second phase (see
- * the wildfire {@code LivingEntityMixin}).
- *
- * <p>Its brain is the standard imperative kind - {@link #brainProvider()} declares the memories and
- * sensors, {@link WildfireAi} wires the activities - and everything it needs beyond the base game's
- * vocabulary lives in {@link WildfireRegistrations}.
- */
-public class WildfireEntity extends Monster {
+import java.util.Optional;
 
-	/** Wind charges only exist alongside New Trials, so the plates ask for it by id. */
-	private static final ResourceLocation WIND_CHARGE = ResourceLocation.fromNamespaceAndPath("ntrials", "wind_charge_projectile");
+public class WildfireEntity extends HostileEntity {
 	public float eyeOffset = 0.5F;
 	public float clientFireTime = 0;
 	public float clientExtraSpin = 0;
-	private final ServerBossEvent bossBar;
+	private final ServerBossBar bossBar;
 	private BlockPos spawnPos;
-	private static final EntityDataAccessor<Byte> WILDFIRE_FLAGS = SynchedEntityData.defineId(WildfireEntity.class, EntityDataSerializers.BYTE);
+	private static final TrackedData<Byte> WILDFIRE_FLAGS = DataTracker.registerData(WildfireEntity.class, TrackedDataHandlerRegistry.BYTE);
 
-	public WildfireEntity(EntityType<? extends WildfireEntity> entityType, Level level) {
-		super(entityType, level);
-		this.setPathfindingMalus(BlockPathTypes.WATER, -1.0F);
-		this.setPathfindingMalus(BlockPathTypes.LAVA, 8.0F);
-		this.setPathfindingMalus(BlockPathTypes.DANGER_FIRE, 0.0F);
-		this.setPathfindingMalus(BlockPathTypes.DAMAGE_FIRE, 0.0F);
-		this.bossBar = (new ServerBossEvent(this.getDisplayName(), BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.PROGRESS));
-		this.xpReward = 50;
+	public WildfireEntity(EntityType<? extends WildfireEntity> entityType, World world) {
+		super(entityType, world);
+		this.setPathfindingPenalty(PathNodeType.WATER, -1.0F);
+		this.setPathfindingPenalty(PathNodeType.LAVA, 8.0F);
+		this.setPathfindingPenalty(PathNodeType.DANGER_FIRE, 0.0F);
+		this.setPathfindingPenalty(PathNodeType.DAMAGE_FIRE, 0.0F);
+		this.bossBar = (new ServerBossBar(this.getDisplayName(), BossBar.Color.YELLOW, BossBar.Style.PROGRESS));
+		this.experiencePoints = 50;
 		setShieldsActive(4);
 	}
 
-	public static boolean canSpawn(EntityType<WildfireEntity> type, LevelAccessor level, MobSpawnType spawnReason, BlockPos pos, RandomSource random) {
+	public static boolean canSpawn(EntityType<WildfireEntity> type, WorldAccess world, SpawnReason spawnReason, BlockPos pos, Random random) {
 		return true;
 	}
 
 	@Override
-	public boolean checkSpawnObstruction(LevelReader level) {
-		return level.isUnobstructed(this);
+	public boolean canSpawn(WorldView world) {
+		return world.doesNotIntersectEntities(this);
 	}
 
 	public BlockPos getSpawnPos(){
@@ -89,26 +77,32 @@ public class WildfireEntity extends Monster {
 	}
 
 	@Override
-	public void addAdditionalSaveData(CompoundTag tag) {
-		super.addAdditionalSaveData(tag);
-		tag.putInt("State", this.entityData.get(WILDFIRE_FLAGS));
+	protected void writeCustomData(WriteView view) {
+		super.writeCustomData(view);
+		view.putInt("State", this.dataTracker.get(WILDFIRE_FLAGS));
 		if (spawnPos==null) spawnPos = new BlockPos(0, 0, 0);
-		tag.putInt("spawnX", spawnPos.getX());
-		tag.putInt("spawnY", spawnPos.getY());
-		tag.putInt("spawnZ", spawnPos.getZ());
+		view.putInt("spawnX", spawnPos.getX());
+		view.putInt("spawnY", spawnPos.getY());
+		view.putInt("spawnZ", spawnPos.getZ());
 	}
 
 	@Override
-	public void readAdditionalSaveData(CompoundTag tag) {
-		super.readAdditionalSaveData(tag);
-		this.entityData.set(WILDFIRE_FLAGS, (byte) tag.getInt("State"));
-		spawnPos = new BlockPos(tag.getInt("spawnX"), tag.getInt("spawnY"), tag.getInt("spawnZ"));
-		if (this.hasCustomName()) this.bossBar.setName(this.getDisplayName());
-		if (isSoulActive()) this.bossBar.setColor(BossEvent.BossBarColor.BLUE);
+	protected void readCustomData(ReadView view) {
+		super.readCustomData(view);
+		this.dataTracker.set(WILDFIRE_FLAGS, (byte)view.getInt("State", 0));
+		spawnPos = new BlockPos(view.getInt("spawnX", 0), view.getInt("spawnY", 0), view.getInt("spawnZ", 0));
+		if (this.hasCustomName()) {
+			this.bossBar.setName(this.getDisplayName());
+		}
 	}
-	public void setCustomName(@Nullable Component name) {
+	public void setCustomName(@Nullable Text name) {
 		super.setCustomName(name);
 		this.bossBar.setName(this.getDisplayName());
+	}
+
+	@Override
+	protected Brain<?> deserializeBrain(Dynamic<?> dynamic) {
+		return WildfireBrain.create(this, this.createBrainProfile().deserialize(dynamic));
 	}
 
 	@Override
@@ -117,247 +111,234 @@ public class WildfireEntity extends Monster {
 	}
 
 	@Override
-	protected Brain.Provider<WildfireEntity> brainProvider() {
-		return Brain.provider(java.util.List.of(
-				MemoryModuleType.ATTACK_TARGET, MemoryModuleType.WALK_TARGET,
-				MemoryModuleType.HURT_BY, MemoryModuleType.HURT_BY_ENTITY,
-				MemoryModuleType.NEAREST_ATTACKABLE, MemoryModuleType.NEAREST_LIVING_ENTITIES,
-				MemoryModuleType.NEAREST_PLAYERS, MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE,
-				MemoryModuleType.LIKED_NOTEBLOCK_COOLDOWN_TICKS,
-				WildfireRegistrations.BREEZE_SHOOT.get(), WildfireRegistrations.BREEZE_LEAVING_WATER.get(),
-				WildfireRegistrations.BREEZE_SHOOT_COOLDOWN.get(), WildfireRegistrations.BREEZE_SHOOT_CHARGING.get(),
-				WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get(), WildfireRegistrations.BREEZE_JUMP_TARGET.get(),
-				WildfireRegistrations.BREEZE_JUMP_COOLDOWN.get(), WildfireRegistrations.BREEZE_JUMP_INHALING.get()
-		), java.util.List.of(
-				SensorType.NEAREST_LIVING_ENTITIES, SensorType.HURT_BY, SensorType.NEAREST_PLAYERS,
-				OtherRegistry.WILDFIRE_ATTACK_ENTITY_SENSOR.get()
-		));
+	protected Brain.Profile<WildfireEntity> createBrainProfile() {
+		return Brain.createProfile(WildfireBrain.MEMORY_MODULES, WildfireBrain.SENSORS);
+	}
+
+	public static DefaultAttributeContainer.Builder createWildfireAttributes() {
+		return HostileEntity.createHostileAttributes()
+				.add(EntityAttributes.MAX_HEALTH, 150.0)
+				.add(EntityAttributes.ATTACK_DAMAGE, 6.0)
+				.add(EntityAttributes.MOVEMENT_SPEED, 0.5F)
+				.add(EntityAttributes.FOLLOW_RANGE, 48.0);
 	}
 
 	@Override
-	protected Brain<?> makeBrain(Dynamic<?> dynamic) {
-		return WildfireAi.makeBrain(this, this.brainProvider().makeBrain(dynamic));
-	}
-
-	public static AttributeSupplier.Builder createWildfireAttributes() {
-		return Monster.createMonsterAttributes()
-				.add(Attributes.MAX_HEALTH, 150.0)
-				.add(Attributes.ATTACK_DAMAGE, 6.0)
-				.add(Attributes.MOVEMENT_SPEED, 0.5F)
-				.add(Attributes.FOLLOW_RANGE, 48.0);
-	}
-
-	@Override
-	protected void defineSynchedData() {
-		super.defineSynchedData();
-		this.entityData.define(WILDFIRE_FLAGS, (byte)16);
+	protected void initDataTracker(DataTracker.Builder builder) {
+		super.initDataTracker(builder);
+		builder.add(WILDFIRE_FLAGS, (byte)16);
 	}
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return SoundEvents.BLAZE_AMBIENT;
+		return SoundEvents.ENTITY_BLAZE_AMBIENT;
 	}
 
 	@Override
 	protected SoundEvent getHurtSound(DamageSource source) {
-		return SoundEvents.BLAZE_HURT;
+		return SoundEvents.ENTITY_BLAZE_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.BLAZE_DEATH;
+		return SoundEvents.ENTITY_BLAZE_DEATH;
+	}
+
+	public Optional<LivingEntity> getHurtBy() {
+		return this.getBrain()
+				.getOptionalRegisteredMemory(MemoryModuleType.HURT_BY)
+				.map(DamageSource::getAttacker)
+				.filter(attacker -> attacker instanceof LivingEntity)
+				.map(livingAttacker -> (LivingEntity)livingAttacker);
 	}
 
 	@Override
-	public float getLightLevelDependentMagicValue() {
+	public float getBrightnessAtEyes() {
 		return 1.0F;
 	}
 
 	@Override
-	public void aiStep() {
-		if (spawnPos == null || spawnPos.closerThan(new BlockPos(0, 0 ,0), 1))
+	public void tickMovement() {
+		if (spawnPos == null || spawnPos.isWithinDistance(new BlockPos(0, 0 ,0), 1))
 			spawnPos = new BlockPos(this.getBlockX(), this.getBlockY(), this.getBlockZ());
-		if (!this.onGround() && this.getDeltaMovement().y < 0.0) {
-			this.setDeltaMovement(this.getDeltaMovement().multiply(1.0, (this.eyeOffset > -1?0.85:0.6), 1.0));
+		if (!this.isOnGround() && this.getVelocity().y < 0.0) {
+			this.setVelocity(this.getVelocity().multiply(1.0, (this.eyeOffset > -1?0.85:0.6), 1.0));
 		}
 
-		if (this.level().isClientSide()) {
+		if (this.getEntityWorld().isClient()) {
 			if (this.random.nextInt(24) == 0 && !this.isSilent()) {
-				this.level()
-						.playLocalSound(
+				this.getEntityWorld()
+						.playSoundClient(
 								this.getX() + 0.5,
 								this.getY() + 0.5,
 								this.getZ() + 0.5,
-								SoundEvents.BLAZE_BURN,
-								this.getSoundSource(),
+								SoundEvents.ENTITY_BLAZE_BURN,
+								this.getSoundCategory(),
 								1.0F + this.random.nextFloat(),
 								this.random.nextFloat() * 0.7F + 0.3F,
 								false
 						);
 			}
 
-			if (this.level().getGameTime()%2==0) {
-				this.level().addParticle(ParticleTypes.LARGE_SMOKE, this.getRandomX(0.5), this.getRandomY(), this.getRandomZ(0.5), 0.0, 0.0, 0.0);
-				this.level().addParticle(isSoulActive()?ParticleTypes.SOUL:ParticleTypes.LAVA, this.getRandomX(1), this.getRandomY(), this.getRandomZ(1), 0.0, 0.0, 0.0);
+			if (this.getEntityWorld().getTime()%2==0) {
+				this.getEntityWorld().addParticleClient(ParticleTypes.LARGE_SMOKE, this.getParticleX(0.5), this.getRandomBodyY(), this.getParticleZ(0.5), 0.0, 0.0, 0.0);
+				this.getEntityWorld().addParticleClient(isSoulActive()?ParticleTypes.SOUL:ParticleTypes.LAVA, this.getParticleX(1), this.getRandomBodyY(), this.getParticleZ(1), 0.0, 0.0, 0.0);
 			}
 
-			this.clientFireTime= Mth.clamp(this.clientFireTime +0.5f/20f*(this.isOnFire()?1:-1), 0, 1);
+			this.clientFireTime= MathHelper.clamp(this.clientFireTime +0.5f/20f*(this.isOnFire()?1:-1), 0, 1);
 			this.clientExtraSpin+=this.clientFireTime*4;
 		}
 
-		super.aiStep();
+		super.tickMovement();
 	}
 
 	@Override
-	public boolean isSensitiveToWater() {
+	public boolean hurtByWater() {
 		return true;
 	}
 
 	@Override
-	protected void customServerAiStep() {
-		ServerLevel level = (ServerLevel) this.level();
+	protected void mobTick(ServerWorld world) {
 		LivingEntity livingEntity = this.getTarget();
-		this.bossBar.setProgress(this.getHealth() / this.getMaxHealth());
-		if (livingEntity != null && this.canAttack(livingEntity)) {
+		this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
+		if (livingEntity != null && this.canTarget(livingEntity)) {
 
-			if (this.hasLineOfSight(livingEntity)) {
-				this.getBrain().eraseMemory(MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE);
+			if (this.canSee(livingEntity)) {
+				brain.forget(MemoryModuleType.CANT_REACH_WALK_TARGET_SINCE);
 			}
 
-			Vec3 vec3d = this.getDeltaMovement();
+			Vec3d vec3d = this.getVelocity();
 
 			double d = livingEntity.getEyeY() - (this.getEyeY() + this.eyeOffset);
 			if (this.eyeOffset > -1 && d>-3) {
-				BlockHitResult blockHitResult = this.level()
-						.clip(
-								new ClipContext(
-										this.getEyePosition(), this.position().add(0, -3, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this
+				BlockHitResult blockHitResult = this.getEntityWorld()
+						.raycast(
+								new RaycastContext(
+										this.getEyePos(), this.getEntityPos().add(0, -3, 0), RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, this
 								)
 						);
 				if (blockHitResult.getType() == HitResult.Type.MISS ) {
 					if ( livingEntity.getEyeY() > this.getEyeY() + this.eyeOffset) {
-						this.setDeltaMovement(this.getDeltaMovement().add(0.0, (0.3F - vec3d.y) * 0.6F, 0.0));
+						this.setVelocity(this.getVelocity().add(0.0, (0.3F - vec3d.y) * 0.6F, 0.0));
 					}
-					this.setDeltaMovement(this.getDeltaMovement().add(livingEntity.getEyePosition().subtract(this.position()).multiply(1.0, 0.0, 1.0).normalize().scale(0.03f)));
+					this.setVelocity(this.getVelocity().add(livingEntity.getEyePos().subtract(this.getEntityPos()).getHorizontal().normalize().multiply(0.03f)));
 				}
 			} else {
 				if ( livingEntity.getEyeY() > this.getEyeY() + this.eyeOffset) {
-					this.setDeltaMovement(this.getDeltaMovement().add(0.0, (0.3F - vec3d.y) * 0.6F, 0.0));
-					this.hasImpulse = true;
+					this.setVelocity(this.getVelocity().add(0.0, (0.3F - vec3d.y) * 0.6F, 0.0));
+					this.velocityDirty = true;
 				}
 			}
 		}
 
-		if (level.getGameTime()%20==0) {
-			if (level.getBlockState(this.blockPosition()).is(BlockTags.FIRE))this.heal(1);
+		if (world.getTime()%20==0) {
+			if (world.getBlockState(this.getBlockPos()).isIn(BlockTags.FIRE))this.heal(1);
 			int lastShields = getShieldsActive();
-			int newShields = (int)Mth.clamp(5*this.getHealth()/this.getMaxHealth(), 0, 4);
+			int newShields = (int)MathHelper.clamp(5*this.getHealth()/this.getMaxHealth(), 0, 4);
 			setShieldsActive(newShields);
 			if (newShields < lastShields) {
-				// The shield break is the closest thing in the sound library to a plate popping off.
-				level.playSound(null, this, SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS, 1.0F, 1.0F);
+				world.playSoundFromEntity(null, this, SoundEvents.ITEM_WOLF_ARMOR_BREAK.value(), SoundCategory.PLAYERS, 1.0F, 1.0F);
 			} else if (newShields > lastShields) {
-				level.playSound(null, this, SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.7F, 2.0F);
+				world.playSoundFromEntity(null, this, SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 0.7F, 2.0F);
 			}
 		}
 
-		level.getProfiler().push("wildfireBrain");
-		this.getBrain().tick(level, this);
-		level.getProfiler().popPush("wildfireActivityUpdate");
-		WildfireAi.updateActivities(this);
-		level.getProfiler().pop();
-		super.customServerAiStep();
+		Profiler profiler = Profilers.get();
+		profiler.push("wildfireBrain");
+		this.getBrain().tick(world, this);
+		profiler.swap("wildfireActivityUpdate");
+		WildfireBrain.updateActivities(this);
+		profiler.pop();
+		super.mobTick(world);
 	}
 
 	@Nullable
 	@Override
 	public LivingEntity getTarget() {
-		return this.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET).orElse(null);
+		return this.getTargetInBrain();
 	}
 
-	public void startSeenByPlayer(ServerPlayer player) {
-		super.startSeenByPlayer(player);
+	@Override
+	public void registerTracking(ServerWorld world, DebugTrackable.Tracker tracker) {
+		super.registerTracking(world, tracker);
+		tracker.track(
+				OtherRegistry.WILDFIRES,
+				 () -> new WildfireDebugData(
+						this.getBrain().getOptionalRegisteredMemory(MemoryModuleType.ATTACK_TARGET).map(Entity::getId),
+						this.getBrain().getOptionalRegisteredMemory(MemoryModuleType.BREEZE_JUMP_TARGET)
+				)
+		);
+	}
+
+	public void onStartedTrackingBy(ServerPlayerEntity player) {
+		super.onStartedTrackingBy(player);
 		this.bossBar.addPlayer(player);
 	}
-	public void stopSeenByPlayer(ServerPlayer player) {
-		super.stopSeenByPlayer(player);
+	public void onStoppedTrackingBy(ServerPlayerEntity player) {
+		super.onStoppedTrackingBy(player);
 		this.bossBar.removePlayer(player);
 	}
-
-
+	
+	
 	@Override
 	public boolean isOnFire() {
 		return this.isFireActive();
 	}
 
 	private boolean isFireActive() {
-		return (this.entityData.get(WILDFIRE_FLAGS) & 1) != 0;
+		return (this.dataTracker.get(WILDFIRE_FLAGS) & 1) != 0;
 	}
 
 	public void setFireActive(boolean fireActive) {
-		byte b = this.entityData.get(WILDFIRE_FLAGS);
+		byte b = this.dataTracker.get(WILDFIRE_FLAGS);
 		if (fireActive) {
 			b = (byte)(b | 1);
 		} else {
 			b = (byte)(b & -(1+1));
 		}
 
-		this.entityData.set(WILDFIRE_FLAGS, b);
+		this.dataTracker.set(WILDFIRE_FLAGS, b);
 	}
 
 	public boolean isSoulActive() {
-		return (this.entityData.get(WILDFIRE_FLAGS) & 2) != 0;
+		return (this.dataTracker.get(WILDFIRE_FLAGS) & 2) != 0;
 	}
 
 	public void setSoulActive(boolean soulActive) {
-		byte b = this.entityData.get(WILDFIRE_FLAGS);
+		byte b = this.dataTracker.get(WILDFIRE_FLAGS);
 		if (soulActive) {
 			b = (byte)(b | 2);
 		} else {
 			b = (byte)(b & -(2+1));
 		}
-		this.bossBar.setColor(BossEvent.BossBarColor.BLUE);
-		this.entityData.set(WILDFIRE_FLAGS, b);
+		this.bossBar.setColor(BossBar.Color.BLUE);
+		this.dataTracker.set(WILDFIRE_FLAGS, b);
 	}
 
 	public int getShieldsActive() {
-		return (this.entityData.get(WILDFIRE_FLAGS) & 28)/4;
+		return (this.dataTracker.get(WILDFIRE_FLAGS) & 28)/4;
 	}
 
 	public void setShieldsActive(int shieldsActive) {
-		byte b = this.entityData.get(WILDFIRE_FLAGS);
+		byte b = this.dataTracker.get(WILDFIRE_FLAGS);
 		b = (byte)(b & -(28+1));
 		b = (byte)(b | 4*shieldsActive);
 
-		this.entityData.set(WILDFIRE_FLAGS, b);
+		this.dataTracker.set(WILDFIRE_FLAGS, b);
 	}
 
-	/**
-	 * The plate roll deliberately sits ahead of {@code super.hurt}, so a blocked arrow neither deals
-	 * damage nor opens the 10-tick invulnerability window - the next arrow gets its own roll. Damage
-	 * that gets past the plates falls through to LivingEntity's normal pipeline, keeping vanilla
-	 * invulnerability timing, knockback and hurt sounds intact.
-	 */
 	@Override
-	public boolean hurt(DamageSource source, float amount) {
-		if(this == source.getEntity())return false;
-		if (!isOnFire() && this.level() instanceof ServerLevel level) {
-			Entity entity = source.getDirectEntity();
-			if (entity != null && (entity instanceof AbstractArrow || isWindCharge(entity))) {
+	public boolean damage(ServerWorld world, DamageSource source, float amount) {
+		if(this == source.getAttacker())return false;
+		if (!isOnFire()) {
+			Entity entity = source.getSource();
+			if (entity instanceof PersistentProjectileEntity || entity instanceof WindChargeEntity) {
 				if (random.nextInt(4)<getShieldsActive()) {
-					level.playSound(null, this, SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1.0F, 1.0F);
+					world.playSoundFromEntity(null, this, SoundEvents.ITEM_SHIELD_BLOCK.value(), SoundCategory.PLAYERS, 1.0F, 1.0F);
 					return false;
 				}
 			}
 		}
-		return super.hurt(source, amount);
-	}
-
-	/**
-	 * The plates bat wind charges away as readily as arrows. Matched by id rather than by type, so
-	 * this costs nothing and means nothing when no wind charge is installed.
-	 */
-	private static boolean isWindCharge(Entity entity) {
-		return WIND_CHARGE.equals(ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()));
+		return super.damage(world,source,amount);
 	}
 }

@@ -1,25 +1,30 @@
 package net.greenjab.nekomasfixed.registry.registries;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
-import net.greenjab.nekomasfixed.screen.KilnMenu;
-import net.greenjab.nekomasfixed.screen.PyrotechnicsMenu;
-import net.greenjab.nekomasfixed.util.ModRecipeBookType;
-import net.minecraft.world.flag.FeatureFlags;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.greenjab.nekomasfixed.screen.KilnScreenHandler;
+import net.greenjab.nekomasfixed.screen.PyrotechnicsTableScreenHandler;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.resource.featuretoggle.FeatureFlags;
+import net.minecraft.screen.ScreenHandlerType;
 
 public class ScreenHandlerRegistry {
 
-    static { ModRecipeBookType.init(); }
+    public static final ScreenHandlerType<KilnScreenHandler> KILN_SCREEN_HANDLER =
+            Registry.register(
+                    Registries.SCREEN_HANDLER,
+                    NekomasFixed.id("kiln"),
+                    new ScreenHandlerType<>(KilnScreenHandler::new, FeatureFlags.VANILLA_FEATURES)
+            );
 
-    public static final DeferredRegister<MenuType<?>> MENU_TYPES =
-            DeferredRegister.create(ForgeRegistries.MENU_TYPES, NekomasFixed.NAMESPACE);
+    public static final ScreenHandlerType<PyrotechnicsTableScreenHandler> PYROTECHNICS_TABLE_HANDLER =
+            Registry.register(
+                    Registries.SCREEN_HANDLER,
+                    NekomasFixed.id("pyrotechnics_table"),
+                    new ScreenHandlerType<>(PyrotechnicsTableScreenHandler::new, FeatureFlags.VANILLA_FEATURES)
+            );
 
-    public static final RegistryObject<MenuType<KilnMenu>> KILN =
-            MENU_TYPES.register("kiln", () -> new MenuType<>(KilnMenu::new, FeatureFlags.VANILLA_SET));
-
-    public static final RegistryObject<MenuType<PyrotechnicsMenu>> PYROTECHNICS =
-            MENU_TYPES.register("pyrotechnics", () -> new MenuType<>(PyrotechnicsMenu::new, FeatureFlags.VANILLA_SET));
+    public static void registerScreenHandlers() {
+        NekomasFixed.LOGGER.info("Registering screen handlers for " + "nekomasfixed");
+    }
 }

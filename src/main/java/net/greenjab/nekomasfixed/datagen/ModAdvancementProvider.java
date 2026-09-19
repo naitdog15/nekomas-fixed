@@ -1,16 +1,28 @@
 package net.greenjab.nekomasfixed.datagen;
 
-import net.minecraft.advancements.Advancement;
-import net.minecraft.core.HolderLookup;
-import net.minecraftforge.common.data.ExistingFileHelper;
-import net.minecraftforge.common.data.ForgeAdvancementProvider;
+import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
+import net.fabricmc.fabric.api.datagen.v1.provider.FabricAdvancementProvider;
+import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
+import net.minecraft.advancement.*;
+import net.minecraft.advancement.criterion.InventoryChangedCriterion;
+import net.minecraft.item.Items;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.util.Identifier;
+import org.jspecify.annotations.NonNull;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-/** vanilla's AdvancementProvider.AdvancementGenerator (with AdvancementHolder) doesn't exist on
- * 1.20.1 - it hands raw Advancement to the saver, so use Forge's ForgeAdvancementProvider one instead. */
-public class ModAdvancementProvider implements ForgeAdvancementProvider.AdvancementGenerator {
+public class ModAdvancementProvider extends FabricAdvancementProvider {
+
+    public ModAdvancementProvider(FabricDataOutput output, CompletableFuture<RegistryWrapper.WrapperLookup> registryLookup) {
+        super(output, registryLookup);
+    }
+
     @Override
-    public void generate(HolderLookup.Provider registries, Consumer<Advancement> saver, ExistingFileHelper existingFileHelper) {
+    public void generateAdvancement(RegistryWrapper.@NonNull WrapperLookup wrapperLookup, @NonNull Consumer<AdvancementEntry> consumer) {
+
     }
 }

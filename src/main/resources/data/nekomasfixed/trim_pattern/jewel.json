@@ -1,6 +1,5 @@
 {
   "asset_id": "nekomasfixed:jewel",
-  "template_item": "nekomasfixed:jewel_armor_trim_smithing_template",
   "decal": false,
   "description": {
     "translate": "trim_pattern.nekomasfixed:jewel"
