@@ -1,6 +1,26 @@
 {
-  "parent": "minecraft:item/trident",
-  "textures": {
-    "layer0": "nekomasfixed:item/wildfire_trident"
-  }
+    "loader": "forge:separate_transforms",
+    "gui_light": "front",
+    "base": {
+        "parent": "nekomasfixed:item/wildfire_trident_in_hand"
+    },
+    "perspectives": {
+        "gui": {
+            "parent": "nekomasfixed:item/wildfire_trident_sprite"
+        },
+        "ground": {
+            "parent": "nekomasfixed:item/wildfire_trident_sprite"
+        },
+        "fixed": {
+            "parent": "nekomasfixed:item/wildfire_trident_sprite"
+        }
+    },
+    "overrides": [
+        {
+            "predicate": {
+                "nekomasfixed:throwing": 1
+            },
+            "model": "nekomasfixed:item/wildfire_trident_throwing"
+        }
+    ]
 }

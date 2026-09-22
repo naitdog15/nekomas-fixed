@@ -31,8 +31,13 @@ public class NekomasFixedClient {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> ItemProperties.register(ItemRegistry.WILDFIRE_SHIELD.get(), NekomasFixed.id("blocking"),
-                (stack, level, entity, seed) -> entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F));
+        event.enqueueWork(() -> {
+            ItemProperties.register(ItemRegistry.WILDFIRE_SHIELD.get(), NekomasFixed.id("blocking"),
+                    (stack, level, entity, seed) -> entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F);
+            // vanilla registers "throwing" for Items.TRIDENT only; the charge-up model swap needs it on ours too
+            ItemProperties.register(ItemRegistry.WILDFIRE_TRIDENT.get(), NekomasFixed.id("throwing"),
+                    (stack, level, entity, seed) -> entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F);
+        });
     }
 
     @SubscribeEvent
