@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -37,11 +38,14 @@ public class NumberParticle extends Particle {
     private static final int MAX_ACTIVE = 512;
 
     private final double damage;
+    private final String text;
 
     NumberParticle(ClientLevel level, double x, double y, double z, double damage) {
         super(level, x + level.getRandom().nextGaussian() / 5f, y + level.getRandom().nextGaussian() / 10f,
                 z + level.getRandom().nextGaussian() / 5f);
         this.damage = damage;
+        String formatted = String.format("%.1f", Math.round(this.damage * 10) / 10.0);
+        this.text = formatted.endsWith(".0") ? formatted.substring(0, formatted.length() - 2) : formatted;
         this.friction = 0.66F;
         this.speedUpWhenYMotionIsBlocked = true;
         this.lifetime = (int) Math.min(20 + damage * 2, 50);
@@ -72,18 +76,13 @@ public class NumberParticle extends Particle {
     public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
     }
 
-    private String text() {
-        String formatted = String.format("%.1f", Math.round(this.damage * 10) / 10.0);
-        return formatted.endsWith(".0") ? formatted.substring(0, formatted.length() - 2) : formatted;
-    }
-
     private void drawInto(PoseStack poseStack, MultiBufferSource buffers, Font font, Camera camera, float partialTicks) {
         float age = this.age + partialTicks;
         float scale = (float) (Math.sin(Math.min(age, 8) / 5) * Math.min(0.5 + this.damage / 10.0, 2));
         int alpha = (int) (Mth.clamp((this.lifetime - age) / 8f, 0f, 1f) * 255);
         if (alpha <= 0 || scale <= 0) return;
 
-        String text = this.text();
+        String text = this.text;
         poseStack.pushPose();
         poseStack.translate(
                 Mth.lerp(partialTicks, this.xo, this.x) - camera.getPosition().x,
@@ -112,6 +111,11 @@ public class NumberParticle extends Particle {
     @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
     public static final class Events {
         private Events() {
+        }
+
+        @SubscribeEvent
+        public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+            ACTIVE.clear();
         }
 
         @SubscribeEvent

@@ -164,9 +164,9 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.INDIGO_STAINED_GLASS.get());
                         entries.accept(ItemRegistry.MAROON_STAINED_GLASS.get());
                         entries.accept(ItemRegistry.AMBER_STAINED_GLASS_PANE.get());
-                        entries.accept(ItemRegistry.AQUA_STAINED_GLASSS_PANE.get());
-                        entries.accept(ItemRegistry.INDIGO_STAINED_GLASSS_PANE.get());
-                        entries.accept(ItemRegistry.MAROON_STAINED_GLASSS_PANE.get());
+                        entries.accept(ItemRegistry.AQUA_STAINED_GLASS_PANE.get());
+                        entries.accept(ItemRegistry.INDIGO_STAINED_GLASS_PANE.get());
+                        entries.accept(ItemRegistry.MAROON_STAINED_GLASS_PANE.get());
 
                         entries.accept(ItemRegistry.AMBER_SHULKER_BOX.get());
                         entries.accept(ItemRegistry.AQUA_SHULKER_BOX.get());

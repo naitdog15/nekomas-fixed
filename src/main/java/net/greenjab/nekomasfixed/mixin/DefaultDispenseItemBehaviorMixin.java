@@ -24,6 +24,7 @@ public abstract class DefaultDispenseItemBehaviorMixin {
     @Inject(at = @At("HEAD"), method = "execute", cancellable = true)
     public void SpearAttack(BlockSource source, ItemStack dispensed, CallbackInfoReturnable<ItemStack> cir) {
         if (!ServerFlags.spearInteractions()) return;
+        if (!dispensed.is(ModTags.SPEARS)) return;
 
         Level level = source.getLevel();
         if (level.isClientSide())  return;
@@ -38,15 +39,13 @@ public abstract class DefaultDispenseItemBehaviorMixin {
             return;
         }
 
-        if (dispensed.is(ModTags.SPEARS)) {
-            SpearEntity entity = EntityTypeRegistry.SPEAR.get().create(level);
-            if (entity != null) {
-                entity.absMoveTo(pos.getX()+0.5, pos.getY()+0.2, pos.getZ()+0.5, 0, 0);
-                entity.setStack(dispensed);
-                entity.setDirection( source.getBlockState().getValue(DispenserBlock.FACING));
-                level.addFreshEntity(entity);
-                cir.setReturnValue(dispensed);
-            }
+        SpearEntity entity = EntityTypeRegistry.SPEAR.get().create(level);
+        if (entity != null) {
+            entity.absMoveTo(pos.getX()+0.5, pos.getY()+0.2, pos.getZ()+0.5, 0, 0);
+            entity.setStack(dispensed);
+            entity.setDirection( source.getBlockState().getValue(DispenserBlock.FACING));
+            level.addFreshEntity(entity);
+            cir.setReturnValue(dispensed);
         }
     }
 }

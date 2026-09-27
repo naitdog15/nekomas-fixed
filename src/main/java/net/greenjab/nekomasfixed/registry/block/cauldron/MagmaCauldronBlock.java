@@ -3,10 +3,8 @@ package net.greenjab.nekomasfixed.registry.block.cauldron;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.cauldron.CauldronInteraction;
 import net.minecraft.world.item.Item;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
@@ -88,17 +86,6 @@ public class MagmaCauldronBlock extends AbstractCauldronBlock {
             }
             return InteractionResult.SUCCESS;
         });
-    }
-
-    @Override
-    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!level.isClientSide()) {
-                if (state.getValue(MAGMA_LEVEL) < MAX_LEVEL) {
-                    level.setBlockAndUpdate(pos, state.setValue(MAGMA_LEVEL, state.getValue(MAGMA_LEVEL) + 1));
-                    level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY,
-                            SoundSource.BLOCKS, 1.0F, 1.0F);
-                }
-        }
     }
 
     @Override

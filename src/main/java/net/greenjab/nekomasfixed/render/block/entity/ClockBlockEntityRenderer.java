@@ -18,7 +18,14 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.RotationSegment;
 
+import java.util.WeakHashMap;
+
 public class ClockBlockEntityRenderer implements BlockEntityRenderer<ClockBlockEntity> {
+	private record CachedText(int dayBucket, String dayText, int timerValue, String timerText) {
+	}
+
+	private static final WeakHashMap<ClockBlockEntity, CachedText> TEXT_CACHE = new WeakHashMap<>();
+
 	private final ItemRenderer itemRenderer;
 	private final Font font;
 
@@ -42,18 +49,28 @@ public class ClockBlockEntityRenderer implements BlockEntityRenderer<ClockBlockE
 				: -1;
 
 		int color = FastColor.ARGB32.color(255, 255, 255, 255);
+		CachedText cached = TEXT_CACHE.computeIfAbsent(blockEntity, be -> new CachedText(Integer.MIN_VALUE, "", Integer.MIN_VALUE, ""));
 		if (dayTime != -1) {
 			int hour = dayTime / 1000;
 			int min = ((dayTime % 1000) * 60) / 1000;
-			String text = (hour < 10 ? "0" : "") + hour + ":" + (min < 10 ? "0" : "") + min;
-			drawFloatingText(text, poseStack, buffer, packedLight, wall, yaw, color);
+			int dayBucket = hour * 60 + min;
+			if (dayBucket != cached.dayBucket()) {
+				String text = (hour < 10 ? "0" : "") + hour + ":" + (min < 10 ? "0" : "") + min;
+				cached = new CachedText(dayBucket, text, cached.timerValue(), cached.timerText());
+				TEXT_CACHE.put(blockEntity, cached);
+			}
+			drawFloatingText(cached.dayText(), poseStack, buffer, packedLight, wall, yaw, color);
 		} else {
 			int time = timer + 20;
-			int min = time / 1200;
-			int sec = (time - min * 1200) / 20;
 			if (time > 20) {
-				String text = (min != 0 ? min + " Minute" + (min != 1 ? "s" : "") + ", " : "") + sec + " Second" + (sec != 1 ? "s" : "");
-				drawFloatingText(text, poseStack, buffer, packedLight, wall, yaw, color);
+				if (time != cached.timerValue()) {
+					int min = time / 1200;
+					int sec = (time - min * 1200) / 20;
+					String text = (min != 0 ? min + " Minute" + (min != 1 ? "s" : "") + ", " : "") + sec + " Second" + (sec != 1 ? "s" : "");
+					cached = new CachedText(cached.dayBucket(), cached.dayText(), time, text);
+					TEXT_CACHE.put(blockEntity, cached);
+				}
+				drawFloatingText(cached.timerText(), poseStack, buffer, packedLight, wall, yaw, color);
 			}
 		}
 

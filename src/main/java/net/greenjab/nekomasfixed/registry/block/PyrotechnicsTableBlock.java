@@ -8,6 +8,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -35,7 +36,7 @@ public class PyrotechnicsTableBlock extends HorizontalDirectionalBlock {
 
     @Override
     public MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
-        return new SimpleMenuProvider((syncId, inventory, player) -> new PyrotechnicsMenu(syncId, inventory), TITLE);
+        return new SimpleMenuProvider((syncId, inventory, player) -> new PyrotechnicsMenu(syncId, inventory, ContainerLevelAccess.create(level, pos)), TITLE);
     }
 
     public BlockState getStateForPlacement(BlockPlaceContext ctx) {

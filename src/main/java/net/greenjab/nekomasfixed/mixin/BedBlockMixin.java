@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.util.MessyBedAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
@@ -47,12 +48,16 @@ public class BedBlockMixin implements MessyBedAccessor {
                 cir.setReturnValue(InteractionResult.SUCCESS);
                 return;
             }
+        }
+    }
 
-            if(level.isNight() && !state.getValue(MessyBedAccessor.MESSY) && !state.getValue(BedBlock.OCCUPIED)){
-                BlockState otherState = level.getBlockState(otherPos);
-                level.setBlockAndUpdate(pos, state.setValue(MessyBedAccessor.MESSY, true));
-                level.setBlockAndUpdate(otherPos, otherState.setValue(MessyBedAccessor.MESSY, true));
-            }
+    @Inject(method = "use", at = @At("TAIL"))
+    private void onUseTail(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
+        if(!level.isClientSide() && NekomasFixedConfig.MESSY_BEDS.get() && level.isNight() && player.isSleeping() && !state.getValue(MessyBedAccessor.MESSY)){
+            BlockPos otherPos = state.getValue(BedBlock.PART) == BedPart.FOOT ? pos.relative(state.getValue(BedBlock.FACING)) :pos.relative(state.getValue(BedBlock.FACING).getOpposite()) ;
+            BlockState otherState = level.getBlockState(otherPos);
+            level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(MessyBedAccessor.MESSY, true));
+            level.setBlockAndUpdate(otherPos, otherState.setValue(MessyBedAccessor.MESSY, true));
         }
     }
 }

@@ -3,13 +3,17 @@ package net.greenjab.nekomasfixed.mixin;
 import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.level.BlockEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -66,10 +70,18 @@ public abstract class SpearLungeMixin {
         );
 
         for (BlockPos pos : intersectingBlocks) {
-            if (serverLevel.getBlockState(pos).is(shatterTag)) {
-                serverLevel.destroyBlock(pos, false, player, 512);
-                shatteredGlass = true;
-            }
+            BlockState state = serverLevel.getBlockState(pos);
+            if (!state.is(shatterTag)) continue;
+
+            ServerPlayer serverPlayer = (ServerPlayer) player;
+            if (player.blockActionRestricted(serverLevel, pos, serverPlayer.gameMode.getGameModeForPlayer())) continue;
+            if (!serverLevel.mayInteract(player, pos)) continue;
+            BlockEvent.BreakEvent breakEvent = new BlockEvent.BreakEvent(serverLevel, pos, state, player);
+            MinecraftForge.EVENT_BUS.post(breakEvent);
+            if (breakEvent.isCanceled()) continue;
+
+            serverLevel.destroyBlock(pos, false, player, 512);
+            shatteredGlass = true;
         }
 
         if (shatteredGlass) {

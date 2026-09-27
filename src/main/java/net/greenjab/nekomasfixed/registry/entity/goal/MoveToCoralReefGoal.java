@@ -25,7 +25,7 @@ public class MoveToCoralReefGoal extends Goal {
         if (dolphin.level() instanceof ServerLevel level) {
             Pair<BlockPos, Holder<Biome>> pair = level.findClosestBiome3d(
                     entry -> entry.is(Biomes.WARM_OCEAN),
-                    dolphin.blockPosition(),5000,32,64);
+                    dolphin.blockPosition(),1024,32,64);
             if (pair != null) return pair.getFirst();
         }
         return null;
@@ -47,13 +47,22 @@ public class MoveToCoralReefGoal extends Goal {
     public void start() {
         this.target = searchCoralReef();
         this.timer = 0;
+        if (this.target == null) {
+            dolphin.getEntityData().set(OtherRegistry.IS_TROPICAL_FISH_FED, false);
+        }
+    }
+
+    @Override
+    public boolean canContinueToUse() {
+        return target != null && !dolphin.onGround()
+                && !dolphin.level().getBiome(dolphin.blockPosition()).is(Biomes.WARM_OCEAN);
     }
 
     @Override
     public void tick() {
         if (dolphin.level().isClientSide()) return;
         ((ServerLevel)dolphin.level()).sendParticles(ParticleTypes.GLOW, dolphin.getX(), dolphin.getY(), dolphin.getZ(), 1, 0, 0, 0, 0);
-        if (target != null && dolphin.level().getGameTime()%20==0&&target.closerThan(dolphin.blockPosition(), 5000) && dolphin.getDeltaMovement().horizontalDistance()>0.1) {
+        if (target != null && dolphin.level().getGameTime()%20<2&&target.closerThan(dolphin.blockPosition(), 1024) && dolphin.getDeltaMovement().horizontalDistance()>0.1) {
             dolphin.getNavigation().moveTo(target.getX(), target.getY(), target.getZ(),1.2);
             timer++;
         } else timer = 30;

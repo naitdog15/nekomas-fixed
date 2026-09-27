@@ -37,6 +37,7 @@ public abstract class ServerLevelMixin {
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void depowerRedstoneStruckBlocks(BooleanSupplier haveTime, CallbackInfo ci) {
+        if (RedstoneStrikerItem.STRUCK_WIRES.isEmpty()) return;
         ServerLevel level = ((ServerLevel)(Object)this);
         HashMap<GlobalPos, Long> STRUCK_WIRES_COPY = new HashMap<>(RedstoneStrikerItem.STRUCK_WIRES);
         for (Map.Entry<GlobalPos, Long> entry : STRUCK_WIRES_COPY.entrySet()) {

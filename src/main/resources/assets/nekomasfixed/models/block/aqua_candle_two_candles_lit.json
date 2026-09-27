@@ -1,5 +1,6 @@
 {
   "parent": "minecraft:block/template_two_candles",
+  "render_type": "minecraft:cutout",
   "textures": {
     "all": "nekomasfixed:block/aqua_candle_lit",
     "particle": "nekomasfixed:block/aqua_candle_lit"

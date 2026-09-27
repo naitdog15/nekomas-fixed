@@ -100,12 +100,20 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
         if (!player.canEat(false)) {
             return InteractionResult.PASS;
         } else {
+            if (!(level.getBlockEntity(pos) instanceof StackedCakeBlockEntity blockEntity)) return InteractionResult.FAIL;
+
+            int totalSlices = state.getValue(SLICES)-1;
+            int height = totalSlices /7;
+            BlockState currentState = state;
+            if (height ==1) currentState = blockEntity.LAYER_2_STATE;
+            if (height ==2) currentState = blockEntity.LAYER_3_STATE;
+
+            if(!currentState.hasProperty(StackedCakeBlock.SLICES)) return InteractionResult.FAIL;
+
             if (state.getValue(CANDLE)) {
-                if (level.getBlockEntity(pos) instanceof StackedCakeBlockEntity blockEntity) {
-                    popResource(level, pos.above(), blockEntity.CANDLE_STATE.getBlock().asItem().getDefaultInstance());
-                    blockEntity.CANDLE_STATE = Blocks.AIR.defaultBlockState();
-                    blockEntity.setChanged();
-                }
+                popResource(level, pos.above(), blockEntity.CANDLE_STATE.getBlock().asItem().getDefaultInstance());
+                blockEntity.CANDLE_STATE = Blocks.AIR.defaultBlockState();
+                blockEntity.setChanged();
                 state = state.setValue(CANDLE, false).setValue(LIT, false);
             }
 
@@ -113,27 +121,18 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
             player.getFoodData().eat(2, 0.1F);
             level.playSound(null, player, SoundEvents.GENERIC_EAT, SoundSource.PLAYERS, 1.0F, 1.0F);
 
-            if(level.getBlockEntity(pos) instanceof StackedCakeBlockEntity blockEntity){
-                int totalSlices = state.getValue(SLICES)-1;
-                int height = totalSlices /7;
-                BlockState currentState = state;
-                if (height ==1) currentState = blockEntity.LAYER_2_STATE;
-                if (height ==2) currentState = blockEntity.LAYER_3_STATE;
-
-                if(!currentState.hasProperty(StackedCakeBlock.SLICES)) return InteractionResult.FAIL;
-                level.gameEvent(player, GameEvent.EAT, pos);
-                if (totalSlices %7==0) {
-                    if (height ==1) blockEntity.LAYER_2_STATE=Blocks.AIR.defaultBlockState();
-                    else if (height ==2) blockEntity.LAYER_3_STATE=Blocks.AIR.defaultBlockState();
-                    if (totalSlices ==0) level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
-                    else level.setBlock(pos, state.setValue(SLICES, totalSlices), 3);
-                } else {
-                    if (height ==1) blockEntity.LAYER_2_STATE=currentState.setValue(SLICES, totalSlices %7);
-                    else if (height ==2) blockEntity.LAYER_3_STATE=currentState.setValue(SLICES, totalSlices %7);
-                    level.setBlock(pos, state.setValue(SLICES, totalSlices), 3);
-                }
-                blockEntity.setChanged();
+            level.gameEvent(player, GameEvent.EAT, pos);
+            if (totalSlices %7==0) {
+                if (height ==1) blockEntity.LAYER_2_STATE=Blocks.AIR.defaultBlockState();
+                else if (height ==2) blockEntity.LAYER_3_STATE=Blocks.AIR.defaultBlockState();
+                if (totalSlices ==0) level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                else level.setBlock(pos, state.setValue(SLICES, totalSlices), 3);
+            } else {
+                if (height ==1) blockEntity.LAYER_2_STATE=currentState.setValue(SLICES, totalSlices %7);
+                else if (height ==2) blockEntity.LAYER_3_STATE=currentState.setValue(SLICES, totalSlices %7);
+                level.setBlock(pos, state.setValue(SLICES, totalSlices), 3);
             }
+            blockEntity.setChanged();
             return InteractionResult.SUCCESS;
         }
     }

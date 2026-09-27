@@ -1,7 +1,10 @@
 package net.greenjab.nekomasfixed.registry.registries;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
+import net.greenjab.nekomasfixed.registry.item.WildfireTridentItem;
+import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentCategory;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -17,13 +20,16 @@ public class EnchantmentRegistry {
     public static final DeferredRegister<Enchantment> ENCHANTMENTS =
             DeferredRegister.create(ForgeRegistries.ENCHANTMENTS, NekomasFixed.NAMESPACE);
 
+    public static final EnchantmentCategory NEKOMASFIXED_SPEAR = EnchantmentCategory.create("nekomasfixed_spear",
+            item -> item instanceof TridentItem || item instanceof WildfireTridentItem || item.builtInRegistryHolder().is(ModTags.SPEARS));
+
     public static final RegistryObject<Enchantment> DISMOUNT = ENCHANTMENTS.register("dismount", DismountEnchantment::new);
     public static final RegistryObject<Enchantment> LEECHING = ENCHANTMENTS.register("leeching", LeechingEnchantment::new);
     public static final RegistryObject<Enchantment> SHATTER = ENCHANTMENTS.register("shatter", ShatterEnchantment::new);
 
     public static class DismountEnchantment extends Enchantment {
         public DismountEnchantment() {
-            super(Rarity.UNCOMMON, EnchantmentCategory.TRIDENT, new EquipmentSlot[]{EquipmentSlot.MAINHAND});
+            super(Rarity.UNCOMMON, NEKOMASFIXED_SPEAR, new EquipmentSlot[]{EquipmentSlot.MAINHAND});
         }
 
         @Override
@@ -34,6 +40,11 @@ public class EnchantmentRegistry {
         @Override
         public int getMaxCost(int level) {
             return 50;
+        }
+
+        @Override
+        public boolean isTreasureOnly() {
+            return true;
         }
 
         @Override

@@ -54,8 +54,10 @@ public final class ModBusEvents {
             return;
         }
         // a server running in this process is the authority, singleplayer included
-        ServerFlags.fromRunningServer();
-        SyncHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), ServerFlags.asPayload());
+        server.execute(() -> {
+            ServerFlags.fromRunningServer();
+            SyncHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), ServerFlags.asPayload());
+        });
     }
 
     @SubscribeEvent

@@ -1,33 +1,22 @@
 package net.greenjab.nekomasfixed.mixin.wildfire;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import net.greenjab.nekomasfixed.registry.entity.WildFire.WildfireEntity;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.SmallFireball;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.phys.EntityHitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-// A Wildfire's fireballs hit harder than a blaze's, and harder again once it is soul-lit. This is an
-// extra hit on top of vanilla's, not a replacement for it - the inject does not cancel.
+// A Wildfire's fireballs hit harder than a blaze's, and harder again once it is soul-lit.
 @Mixin(SmallFireball.class)
 public class SmallFireballMixin {
 
-    @Inject(method = "onHitEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/projectile/SmallFireball;damageSources()Lnet/minecraft/world/damagesource/DamageSources;"))
-    private void wildFireProjectileDamage(EntityHitResult hitResult, CallbackInfo ci) {
-        SmallFireball SFE = (SmallFireball)(Object)this;
-        LivingEntity ownerEntity = (SFE.getOwner() instanceof LivingEntity livingEntity) ? livingEntity:null;
-        if (ownerEntity instanceof WildfireEntity wildFireEntity) {
-            Entity hitEntity = hitResult.getEntity();
-            DamageSource damageSource = SFE.damageSources().mobProjectile(SFE, ownerEntity);
-            if (SFE.level() instanceof ServerLevel && hitEntity.hurt(damageSource, wildFireEntity.isSoulActive()?3.0F:2.0F)) {
-                EnchantmentHelper.doPostDamageEffects(ownerEntity, hitEntity);
-            }
+    @ModifyArg(method = "onHitEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z"), index = 1)
+    private float wildFireProjectileDamage(float amount, @Local(ordinal = 1) Entity entity) {
+        if (entity instanceof WildfireEntity wildFireEntity) {
+            return amount + (wildFireEntity.isSoulActive() ? 3.0F : 2.0F);
         }
+        return amount;
     }
 }

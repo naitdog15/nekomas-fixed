@@ -83,7 +83,7 @@ public class WildfireMeleeTask extends Behavior<WildfireEntity> {
 				&& brain.getMemory(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get()).isEmpty()) {
 				brain.setMemoryWithExpiry(WildfireRegistrations.BREEZE_SHOOT_RECOVERING.get(), Unit.INSTANCE, MELEE_HIT_COOLDOWN_EXPIRY);
 
-				if (level.getBlockState(wildFireEntity.blockPosition()).is(BlockTags.REPLACEABLE))
+				if (net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(level, wildFireEntity) && level.getBlockState(wildFireEntity.blockPosition()).is(BlockTags.REPLACEABLE))
 					level.setBlockAndUpdate(wildFireEntity.blockPosition(), Blocks.FIRE.defaultBlockState());
 
 				List<LivingEntity> list = level.getEntitiesOfClass(LivingEntity.class, wildFireEntity.getBoundingBox().inflate(1.5, 0, 1.5), e -> !(e instanceof WildfireEntity) && e.isAlive());

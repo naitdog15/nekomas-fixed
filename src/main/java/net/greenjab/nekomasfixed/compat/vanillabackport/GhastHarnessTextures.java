@@ -3,7 +3,6 @@ package net.greenjab.nekomasfixed.compat.vanillabackport;
 import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.compat.CompatMods;
 import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -35,7 +34,6 @@ public final class GhastHarnessTextures {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         if (!CompatMods.vanillaBackportHarnesses()
-                || !NekomasFixedConfig.HARNESSES.get()
                 || !NekomasFixedClientConfig.HARNESS_RENDERING.get()) {
             return;
         }

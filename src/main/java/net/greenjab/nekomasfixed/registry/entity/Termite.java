@@ -9,6 +9,8 @@ import net.greenjab.nekomasfixed.registry.registries.SoundRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -318,6 +320,10 @@ public class Termite extends Monster {
         tag.putBoolean("Laden", this.isLaden());
         tag.putInt("HungerCooldown", this.hungerCooldown);
         tag.putInt("LadenTicks", this.ladenTicks);
+        if (this.isChewing()) {
+            tag.putInt("ChewProgress", this.chewProgress);
+            this.getChewTarget().ifPresent(pos -> tag.put("ChewTarget", NbtUtils.writeBlockPos(pos)));
+        }
     }
 
     @Override
@@ -326,6 +332,11 @@ public class Termite extends Monster {
         this.setLaden(tag.getBoolean("Laden"));
         this.hungerCooldown = tag.getInt("HungerCooldown");
         this.ladenTicks = tag.getInt("LadenTicks");
+        if (tag.contains("ChewTarget", Tag.TAG_COMPOUND)) {
+            this.chewProgress = tag.getInt("ChewProgress");
+            this.entityData.set(CHEW_TARGET, Optional.of(NbtUtils.readBlockPos(tag.getCompound("ChewTarget"))));
+            this.setState(State.CHEWING);
+        }
     }
 
     // 1.20.1's AnimationState only accumulates time from the renderer, so the swipe is timed off the
@@ -586,6 +597,13 @@ public class Termite extends Monster {
         public boolean canUse() {
             Termite mob = this.termite;
             Level level = mob.level();
+            if (mob.isChewing()) {
+                if (this.resumeChew()) {
+                    return true;
+                }
+                mob.clearChew();
+                return false;
+            }
             if (!NekomasFixedConfig.TERMITES_EAT_LOGS.get()
                     || !ForgeEventFactory.getMobGriefingEvent(level, mob)) {
                 return false;
@@ -687,6 +705,36 @@ public class Termite extends Monster {
             if (mob.chewProgress % 12 == 0) {
                 this.playChewSound();
             }
+        }
+
+        private boolean resumeChew() {
+            Termite mob = this.termite;
+            Level level = mob.level();
+            Optional<BlockPos> target = mob.getChewTarget();
+            if (target.isEmpty()) {
+                return false;
+            }
+            BlockPos log = target.get();
+            if (!level.isLoaded(log)) {
+                return false;
+            }
+            BlockState state = level.getBlockState(log);
+            if (!HollowLogType.hasHollowVariant(state)) {
+                return false;
+            }
+            Set<BlockPos> spots = Termite.approachSpots(level, log, false);
+            if (spots.isEmpty()) {
+                return false;
+            }
+            Path path = mob.getNavigation().createPath(spots, 0);
+            if (path == null || !path.canReach() || path.getTarget() == null) {
+                return false;
+            }
+            this.logPos = log;
+            this.standPos = path.getTarget().immutable();
+            this.expectedState = state;
+            this.plannedPath = path;
+            return true;
         }
 
         private boolean findLog() {

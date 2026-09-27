@@ -7,6 +7,8 @@ import com.llamalad7.mixinextras.sugar.Local;
 import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.compat.CompatMods;
 import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
+import net.greenjab.nekomasfixed.mixin.accessor.ThrownTridentAccessor;
+import net.greenjab.nekomasfixed.registry.entity.WildfireTrident;
 import net.greenjab.nekomasfixed.registry.item.WildfireShieldItem;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.minecraft.resources.ResourceLocation;
@@ -15,6 +17,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.ThrownTrident;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -110,8 +113,8 @@ public abstract class LivingEntityMixin {
                 if (player.getHealth() <= 6.0f) {
                     attacker.setSecondsOnFire(3);
                     attacker.knockback(1.0,
-                            attacker.getX() + player.getX(),
-                            attacker.getZ() + player.getZ());
+                            player.getX() - attacker.getX(),
+                            player.getZ() - attacker.getZ());
                 } else {
                     attacker.setSecondsOnFire(1);
                 }
@@ -132,7 +135,7 @@ public abstract class LivingEntityMixin {
     @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;actuallyHurt(Lnet/minecraft/world/damagesource/DamageSource;F)V", shift = At.Shift.AFTER))
     private void leechingEnchant(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         if (!NekomasFixedConfig.LEECHING_ENCHANTMENT.get()) return;
-        if (source.getEntity() instanceof Player PE) {
+        if (source.getEntity() instanceof Player PE && source.getDirectEntity() == PE) {
             int i = NekomasFixed.enchantLevel(PE.getMainHandItem(), "leeching");
             if (i != 0) PE.heal((i * 0.0125f + 0.0125f) * damage);
         }
@@ -145,14 +148,23 @@ public abstract class LivingEntityMixin {
     private void dismountEnchant(DamageSource source, float damage, CallbackInfoReturnable<Boolean> cir) {
         if (!NekomasFixedConfig.DISMOUNT_ENCHANTMENT.get()) return;
         LivingEntity entity = (LivingEntity)(Object)this;
-        if (source.getEntity() instanceof Player PE) {
-            // no weapon stack hangs off the damage source here - the hand that swung is the weapon
-            ItemStack weapon = PE.getMainHandItem();
-            int i = NekomasFixed.enchantLevel(weapon, "dismount");
-            if(!weapon.isEmpty() && i==1){
-                this.stopRiding();
-                entity.getPassengers().forEach(Entity::stopRiding);
-            }
+        if (!(source.getEntity() instanceof Player PE)) return;
+        Entity direct = source.getDirectEntity();
+        ItemStack weapon;
+        if (direct == PE) {
+            weapon = PE.getMainHandItem();
+        } else if (direct instanceof ThrownTrident thrownTrident) {
+            ThrownTridentAccessor accessor = (ThrownTridentAccessor) thrownTrident;
+            weapon = accessor.getTridentItem();
+        } else if (direct instanceof WildfireTrident wildfireTrident) {
+            weapon = wildfireTrident.getWeaponItem();
+        } else {
+            return;
+        }
+        int i = NekomasFixed.enchantLevel(weapon, "dismount");
+        if(!weapon.isEmpty() && i==1){
+            this.stopRiding();
+            entity.getPassengers().forEach(Entity::stopRiding);
         }
     }
 

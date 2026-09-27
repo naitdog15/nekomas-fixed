@@ -177,6 +177,8 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
                                 ((FlowerPotBlock) Blocks.FLOWER_POT).getFullPotsView().get(ForgeRegistries.BLOCKS.getKey(plant));
                         if (pottedSupplier != null) {
                             Block potted = pottedSupplier.get();
+                            if (logBE.getStoredBlock().is(BlockTags.FLOWER_POTS) && !logBE.getStoredBlock().is(Blocks.FLOWER_POT))
+                                popResource(serverLevel, pos, logBE.getStoredStack());
                             logBE.setStoredBlock(stack.copyWithCount(1), potted.defaultBlockState());
                             if (!player.getAbilities().instabuild) stack.shrink(1);
                             return InteractionResult.SUCCESS;

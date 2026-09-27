@@ -32,6 +32,7 @@ public class ClockBlockEntity extends BlockEntity {
 	private int timer = -timerDuration;
 	private boolean bell = false;
 	private boolean showsTime = false;
+	private int lastAnalogSignal = -1;
 
 	protected ClockBlockEntity(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
 		super(blockEntityType, blockPos, blockState);
@@ -115,7 +116,11 @@ public class ClockBlockEntity extends BlockEntity {
 		}
 		if (level.getGameTime() % 20L == 0L) {
 			if (level instanceof ServerLevel serverLevel) {
-				level.updateNeighbourForOutputSignal(pos, state.getBlock());
+				int analogSignal = ((AbstractClockBlock) state.getBlock()).getAnalogOutputSignal(state, level, pos);
+				if (analogSignal != blockEntity.lastAnalogSignal) {
+					blockEntity.lastAnalogSignal = analogSignal;
+					level.updateNeighbourForOutputSignal(pos, state.getBlock());
+				}
 				UpdateClockPayload payload = new UpdateClockPayload(pos.getX(), pos.getY(), pos.getZ(), blockEntity.getTimer(), blockEntity.hasBell(), blockEntity.getShowsTime());
                 sendToAround(serverLevel.getServer()
 								.getPlayerList(),

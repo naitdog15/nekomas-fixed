@@ -11,10 +11,14 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 // the four added colours share a dye slot with a vanilla one, so the block identifies them, not
 // the colour.
 @Mixin(ShulkerBoxRenderer.class)
 public class ShulkerBoxRendererMixin {
+    private static final Map<String, Material> NEKOMASFIXED$SHULKER_MATERIALS = new ConcurrentHashMap<>();
 
     @ModifyVariable(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/resources/model/Material;buffer(Lnet/minecraft/client/renderer/MultiBufferSource;Ljava/util/function/Function;)Lcom/mojang/blaze3d/vertex/VertexConsumer;"))
     private Material replaceTexture(Material material, @Local(argsOnly = true) ShulkerBoxBlockEntity blockEntity) {
@@ -23,7 +27,11 @@ public class ShulkerBoxRendererMixin {
         else if (blockEntity.getBlockState().getBlock() == BlockRegistry.AQUA_SHULKER_BOX.get()) identifier = "entity/shulker/shulker_aqua";
         else if (blockEntity.getBlockState().getBlock() == BlockRegistry.MAROON_SHULKER_BOX.get()) identifier = "entity/shulker/shulker_maroon";
         else if (blockEntity.getBlockState().getBlock() == BlockRegistry.INDIGO_SHULKER_BOX.get()) identifier = "entity/shulker/shulker_indigo";
-        if (identifier != null) return new Material(Sheets.SHULKER_SHEET, NekomasFixed.id(identifier));
+        if (identifier != null) {
+            String name = identifier;
+            return NEKOMASFIXED$SHULKER_MATERIALS.computeIfAbsent(name,
+                    n -> new Material(Sheets.SHULKER_SHEET, NekomasFixed.id(n)));
+        }
         return material;
     }
 }

@@ -2,6 +2,7 @@ package net.greenjab.nekomasfixed.screen;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.registry.registries.ScreenHandlerRegistry;
 import net.greenjab.nekomasfixed.util.ModColors;
@@ -13,6 +14,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.*;
@@ -31,9 +33,15 @@ public class PyrotechnicsMenu extends AbstractContainerMenu {
     };
     private final Container output = new SimpleContainer(1);
     private final DataSlot selectedPattern = DataSlot.standalone();
+    private final ContainerLevelAccess access;
 
     public PyrotechnicsMenu(int syncId, Inventory playerInventory) {
+        this(syncId, playerInventory, ContainerLevelAccess.NULL);
+    }
+
+    public PyrotechnicsMenu(int syncId, Inventory playerInventory, ContainerLevelAccess access) {
         super(ScreenHandlerRegistry.PYROTECHNICS.get(), syncId);
+        this.access = access;
         this.addDataSlot(selectedPattern);
 
         // dyes / stars
@@ -164,7 +172,7 @@ public class PyrotechnicsMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return true;
+        return stillValid(access, player, BlockRegistry.PYROTECHNICS_TABLE.get());
     }
 
     public int getSelectedPattern() {

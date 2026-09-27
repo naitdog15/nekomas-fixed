@@ -12,9 +12,13 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.HashMap;
+import java.util.Map;
+
 // no AgeableMobRenderer here: the baby model is a bespoke mesh, not an auto-scaled adult, so
 // this.model (protected on LivingEntityRenderer) is swapped by hand before super.render() runs
 public class MoobloomRenderer extends MobRenderer<Moobloom, MoobloomModel> {
+    private static final Map<String, ResourceLocation> TEXTURE_CACHE = new HashMap<>();
     private final MoobloomModel adultModel;
     private final MoobloomModel babyModel;
 
@@ -34,8 +38,12 @@ public class MoobloomRenderer extends MobRenderer<Moobloom, MoobloomModel> {
     public ResourceLocation getTextureLocation(Moobloom entity) {
         String variantPath = MoobloomVariants.textureFor(entity.getEntityData().get(Moobloom.VARIANT));
         boolean sheared = entity.getEntityData().get(Moobloom.SHEARED);
-        if (entity.isBaby()) return NekomasFixed.id("textures/entity/moobloom/" + variantPath + "_baby.png");
-        if (sheared) return NekomasFixed.id("textures/entity/moobloom/" + variantPath + "_sheared.png");
-        return NekomasFixed.id("textures/entity/moobloom/" + variantPath + ".png");
+        boolean baby = entity.isBaby();
+        String key = variantPath + (baby ? "_baby" : sheared ? "_sheared" : "_adult");
+        return TEXTURE_CACHE.computeIfAbsent(key, k -> {
+            if (baby) return NekomasFixed.id("textures/entity/moobloom/" + variantPath + "_baby.png");
+            if (sheared) return NekomasFixed.id("textures/entity/moobloom/" + variantPath + "_sheared.png");
+            return NekomasFixed.id("textures/entity/moobloom/" + variantPath + ".png");
+        });
     }
 }

@@ -103,6 +103,8 @@ public class BigBoat extends Boat implements HasCustomInventoryScreen, Container
 	public void tick() {
 		super.tick();
 
+		if (this.level().isClientSide()) return;
+
 		if (front==null || !front.isAlive()) {
 			front = EntityTypeRegistry.FAKE_BOAT.get().create(this.level());
 			if (front!=null) {
@@ -134,7 +136,7 @@ public class BigBoat extends Boat implements HasCustomInventoryScreen, Container
 	public InteractionResult interact(Player player, InteractionHand hand) {
 		ItemStack itemStack = player.getItemInHand(hand);
 		if (itemStack.is(Items.CHEST)) {
-			if (!hasChest() && getPassengers().size()<4) {
+			if (!hasChest() && getPassengers().size() <= getMaxPassengers() - 1) {
 				setHasChest(true);
 				itemStack.shrink(1);
 				player.level().playSound(null, this, SoundEvents.DONKEY_CHEST, SoundSource.PLAYERS, 1.0F, 1.0F);
@@ -317,10 +319,6 @@ public class BigBoat extends Boat implements HasCustomInventoryScreen, Container
 		if (front!=null) this.front.remove(RemovalReason.DISCARDED);
 		if (back!=null) this.back.remove(RemovalReason.DISCARDED);
 		super.destroy(damageSource);
-		if (this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
-			if (hasChest()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), Items.CHEST.getDefaultInstance());
-			Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getBanner());
-		}
 		this.chestVehicleDestroyed(damageSource, this.level(), this);
 	}
 
@@ -329,8 +327,10 @@ public class BigBoat extends Boat implements HasCustomInventoryScreen, Container
 		if (front!=null) this.front.remove(RemovalReason.DISCARDED);
 		if (back!=null) this.back.remove(RemovalReason.DISCARDED);
 		if (!this.level().isClientSide() && reason.shouldDestroy()) {
-			if (hasChest()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), Items.CHEST.getDefaultInstance());
-			Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getBanner());
+			if (this.level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+				if (hasChest()) Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), Items.CHEST.getDefaultInstance());
+				Containers.dropItemStack(this.level(), this.getX(), this.getY(), this.getZ(), getBanner());
+			}
 			Containers.dropContents(this.level(), this, this);
 		}
 

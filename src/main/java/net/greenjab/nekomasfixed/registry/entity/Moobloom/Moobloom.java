@@ -127,7 +127,7 @@ public class Moobloom extends Cow {
                 ItemStack stew = new ItemStack(Items.SUSPICIOUS_STEW);
                 MoobloomVariants variant = MoobloomVariants.fromPath(this.entityData.get(VARIANT));
                 SuspiciousStewItem.saveMobEffect(stew, variant.effect, variant.effectDuration);
-                player.getItemInHand(InteractionHand.MAIN_HAND).shrink(1);
+                itemStack.shrink(1);
                 if (!player.getInventory().add(stew)) {
                     player.drop(stew, false);
                 }

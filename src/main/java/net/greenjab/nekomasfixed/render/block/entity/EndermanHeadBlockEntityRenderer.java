@@ -31,7 +31,7 @@ public class EndermanHeadBlockEntityRenderer implements BlockEntityRenderer<Bloc
 
 	public EndermanHeadBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
 		this.endermanHeadModel = new EndermanHeadBlockModel(context.bakeLayer(ModModelLayerRegistry.ENDERMAN_HEAD));
-		this.endermanEyesModel = new EndermanEyesBlockModel(context.bakeLayer(ModModelLayerRegistry.ENDERMAN_HEAD));
+		this.endermanEyesModel = new EndermanEyesBlockModel(context.bakeLayer(ModModelLayerRegistry.ENDERMAN_EYES));
 	}
 
 	@Override

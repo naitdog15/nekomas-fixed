@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class RedstoneWireEvaluatorMixin {
     @Inject(method = "calculateTargetStrength", at = @At("HEAD"), cancellable = true)
     protected void powerWire(Level level, BlockPos pos, CallbackInfoReturnable<Integer> cir) {
-        if (RedstoneStrikerItem.STRUCK_WIRES.containsKey(GlobalPos.of(level.dimension(), pos))) {
+        if (!RedstoneStrikerItem.STRUCK_WIRES.isEmpty() && RedstoneStrikerItem.STRUCK_WIRES.containsKey(GlobalPos.of(level.dimension(), pos))) {
             cir.setReturnValue(15);
         }
     }

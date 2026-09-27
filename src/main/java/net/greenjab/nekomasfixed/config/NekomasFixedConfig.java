@@ -7,6 +7,7 @@ public final class NekomasFixedConfig {
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
     public static final ForgeConfigSpec.BooleanValue NETHER_FOOD_ROTTING;
+    public static final ForgeConfigSpec.BooleanValue MAGMA_BREAKS_TO_LAVA;
 
     public static final ForgeConfigSpec.BooleanValue COPPER_BUFF;
     public static final ForgeConfigSpec.BooleanValue CLAM_GENERATION;
@@ -61,6 +62,10 @@ public final class NekomasFixedConfig {
         NETHER_FOOD_ROTTING = BUILDER
                 .comment("All food items except for the golden ones rot in the Nether over time.")
                 .define("netherFoodRotting", true);
+
+        MAGMA_BREAKS_TO_LAVA = BUILDER
+                .comment("Breaking a magma block without Silk Touch can turn it into lava.")
+                .define("magmaBreaksToLava", true);
 
         BUILDER.pop();
 

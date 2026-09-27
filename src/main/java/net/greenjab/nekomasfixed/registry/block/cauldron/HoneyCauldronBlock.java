@@ -2,10 +2,8 @@ package net.greenjab.nekomasfixed.registry.block.cauldron;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.cauldron.CauldronInteraction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -100,27 +98,6 @@ public class HoneyCauldronBlock extends AbstractCauldronBlock {
         if (this.isEntityInsideContent(state, pos, entity) && entity instanceof LivingEntity living) {
             living.forceAddEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 3*20), living);
         }
-    }
-
-    @Override
-    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!level.isClientSide()) {
-            boolean hasBeehive = isBeeHiveAbove(pos, level);
-            if (hasBeehive) {
-                int currentLevel = state.getValue(HONEY_LEVEL);
-                if (currentLevel < MAX_LEVEL) {
-                    level.setBlockAndUpdate(pos, state.setValue(HONEY_LEVEL, currentLevel + 1));
-                    level.playSound(null, pos, SoundEvents.BOTTLE_EMPTY,
-                            SoundSource.BLOCKS, 1.0F, 1.0F);
-                }
-            }
-        }
-    }
-
-    private boolean isBeeHiveAbove(BlockPos pos, Level level) {
-        BlockPos abovePos = new BlockPos(pos.getX(), pos.getY() + 2, pos.getZ());
-        Block block = level.getBlockState(abovePos).getBlock();
-        return block == Blocks.BEEHIVE || block == Blocks.BEE_NEST;
     }
 
     @Override

@@ -9,4 +9,9 @@ public class AvoidTrustingOcelotGoal extends AvoidEntityGoal<Ocelot> {
     public AvoidTrustingOcelotGoal(PathfinderMob mob) {
         super(mob, Ocelot.class, target -> target instanceof Ocelot ocelot && ocelot.isTrusting(), 8.0F, 1.0D, 1.3D, livingEntity -> true);
     }
+
+    @Override
+    public boolean canUse() {
+        return this.mob.getRandom().nextInt(reducedTickDelay(10)) == 0 && super.canUse();
+    }
 }

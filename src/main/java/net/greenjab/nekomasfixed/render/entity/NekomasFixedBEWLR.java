@@ -16,12 +16,18 @@ import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 // items opt in via Item#initializeClient -> IClientItemExtensions#getCustomRenderer(); only reached
 // when the item model declares builtin/entity, otherwise it draws as a flat sprite
+@Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class NekomasFixedBEWLR extends BlockEntityWithoutLevelRenderer {
     private static final ResourceLocation TRIDENT_TEXTURE = NekomasFixed.id("textures/entity/wildfire_trident/default.png");
     private static final ResourceLocation SHIELD_TEXTURE = NekomasFixed.id("textures/entity/wildfire_shield/default.png");
@@ -43,6 +49,13 @@ public class NekomasFixedBEWLR extends BlockEntityWithoutLevelRenderer {
             INSTANCE.onResourceManagerReload(mc.getResourceManager());
         }
         return INSTANCE;
+    }
+
+    @SubscribeEvent
+    public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> {
+            if (INSTANCE != null) INSTANCE.onResourceManagerReload(resourceManager);
+        });
     }
 
     @Override

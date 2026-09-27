@@ -1,6 +1,6 @@
 package net.greenjab.nekomasfixed.registry.item;
 
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
+import net.greenjab.nekomasfixed.network.ServerFlags;
 import net.greenjab.nekomasfixed.render.entity.NekomasFixedBEWLR;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.world.InteractionHand;
@@ -34,7 +34,7 @@ public class WildfireShieldItem extends ShieldItem {
     @Override
     public boolean canPerformAction(ItemStack stack, ToolAction toolAction) {
         if (toolAction == ToolActions.SHIELD_BLOCK) {
-            return NekomasFixedConfig.WILDFIRE_SHIELD_BLOCKING.get();
+            return ServerFlags.wildfireShieldBlocking();
         }
         return super.canPerformAction(stack, toolAction);
     }
@@ -42,7 +42,7 @@ public class WildfireShieldItem extends ShieldItem {
     // checked live at use-time, so toggling this config takes effect immediately
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player user, InteractionHand hand) {
-        if (!NekomasFixedConfig.WILDFIRE_SHIELD_BLOCKING.get()) {
+        if (!ServerFlags.wildfireShieldBlocking()) {
             return InteractionResultHolder.pass(user.getItemInHand(hand));
         }
         return super.use(level, user, hand);

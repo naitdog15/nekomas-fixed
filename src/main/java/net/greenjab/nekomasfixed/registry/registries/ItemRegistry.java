@@ -245,9 +245,9 @@ public class ItemRegistry {
     public static final RegistryObject<Item> INDIGO_STAINED_GLASS = register(BlockRegistry.INDIGO_STAINED_GLASS);
     public static final RegistryObject<Item> MAROON_STAINED_GLASS = register(BlockRegistry.MAROON_STAINED_GLASS);
     public static final RegistryObject<Item> AMBER_STAINED_GLASS_PANE = register(BlockRegistry.AMBER_STAINED_GLASS_PANE);
-    public static final RegistryObject<Item> AQUA_STAINED_GLASSS_PANE = register(BlockRegistry.AQUA_STAINED_GLASS_PANE);
-    public static final RegistryObject<Item> INDIGO_STAINED_GLASSS_PANE = register(BlockRegistry.INDIGO_STAINED_GLASS_PANE);
-    public static final RegistryObject<Item> MAROON_STAINED_GLASSS_PANE = register(BlockRegistry.MAROON_STAINED_GLASS_PANE);
+    public static final RegistryObject<Item> AQUA_STAINED_GLASS_PANE = register(BlockRegistry.AQUA_STAINED_GLASS_PANE);
+    public static final RegistryObject<Item> INDIGO_STAINED_GLASS_PANE = register(BlockRegistry.INDIGO_STAINED_GLASS_PANE);
+    public static final RegistryObject<Item> MAROON_STAINED_GLASS_PANE = register(BlockRegistry.MAROON_STAINED_GLASS_PANE);
 
     // no empty-container default needed - same "default = absence of NBT" reasoning as
     // NAUTILUS_BLOCK above

@@ -18,6 +18,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,13 +41,13 @@ public class ModRecipeProvider extends RecipeProvider {
             createRingRecipe(output, RecipeCategory.MISC, ItemDyeMap.DYE.get(colour), Items.BRUSH, ItemDyeMap.BRUSH.get(colour), "dyed_brush", 1)
                     .save(output);
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICKS, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICKS.get(colour).asItem(), "dyed_bricks_dyed", 8)
-                    .save(output, NekomasFixed.id(BlockDyeMap.BRICKS.get(colour).asItem() + "_dyed"));
+                    .save(output, NekomasFixed.id(ForgeRegistries.ITEMS.getKey(BlockDyeMap.BRICKS.get(colour).asItem()).getPath() + "_dyed"));
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICK_SLAB, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICK_SLAB.get(colour).asItem(), "dyed_brick_slab_dyed", 8)
-                    .save(output, NekomasFixed.id(BlockDyeMap.BRICK_SLAB.get(colour).asItem() + "_dyed"));
+                    .save(output, NekomasFixed.id(ForgeRegistries.ITEMS.getKey(BlockDyeMap.BRICK_SLAB.get(colour).asItem()).getPath() + "_dyed"));
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICK_STAIRS, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICK_STAIRS.get(colour).asItem(), "dyed_brick_stairs_dyed", 8)
-                    .save(output, NekomasFixed.id(BlockDyeMap.BRICK_STAIRS.get(colour).asItem() + "_dyed"));
+                    .save(output, NekomasFixed.id(ForgeRegistries.ITEMS.getKey(BlockDyeMap.BRICK_STAIRS.get(colour).asItem()).getPath() + "_dyed"));
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICK_WALL, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICK_WALL.get(colour).asItem(), "dyed_brick_wall_dyed", 8)
-                    .save(output, NekomasFixed.id(BlockDyeMap.BRICK_WALL.get(colour).asItem() + "_dyed"));
+                    .save(output, NekomasFixed.id(ForgeRegistries.ITEMS.getKey(BlockDyeMap.BRICK_WALL.get(colour).asItem()).getPath() + "_dyed"));
             stonecutting(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_SLAB.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem(), 2);
             stonecutting(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_STAIRS.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem(), 1);
             stonecutting(output, RecipeCategory.BUILDING_BLOCKS, BlockDyeMap.BRICK_WALL.get(colour).asItem(), BlockDyeMap.BRICKS.get(colour).asItem(), 1);
@@ -79,7 +80,7 @@ public class ModRecipeProvider extends RecipeProvider {
             shapeless(RecipeCategory.BUILDING_BLOCKS, hollow.getFirst(), 1)
                     .requires(hollow.getSecond())
                     .unlockedBy(getHasName(hollow.getSecond()), has(hollow.getSecond()))
-                    .save(output, NekomasFixed.id(hollow.getFirst() + "_from_hollow_log"));
+                    .save(output, NekomasFixed.id(ForgeRegistries.ITEMS.getKey(hollow.getFirst()).getPath() + "_from_hollow_log"));
         }
 
         shaped(RecipeCategory.TOOLS, ItemRegistry.REDSTONE_STRIKER.get(), 1)

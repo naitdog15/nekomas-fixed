@@ -21,6 +21,8 @@ public final class ServerFlags {
     private static volatile boolean featherFallingSavesCrops = true;
     private static volatile boolean sickleCombo = true;
     private static volatile boolean spearInteractions = true;
+    private static volatile boolean wildfireShieldBlocking = true;
+    private static volatile boolean harnesses = true;
 
     /**
      * set once a REMOTE server has spoken. it only ever guards the fallback path: a server that is
@@ -56,6 +58,14 @@ public final class ServerFlags {
         return spearInteractions;
     }
 
+    public static boolean wildfireShieldBlocking() {
+        return wildfireShieldBlocking;
+    }
+
+    public static boolean harnesses() {
+        return harnesses;
+    }
+
     /** our own file, for a client that is not connected to anything. */
     public static void fromSpec() {
         if (fromServer) {
@@ -80,17 +90,21 @@ public final class ServerFlags {
         featherFallingSavesCrops = NekomasFixedConfig.FEATHER_FALLING_SAVES_CROPS.get();
         sickleCombo = NekomasFixedConfig.SICKLE_COMBO.get();
         spearInteractions = NekomasFixedConfig.SPEAR_INTERACTIONS.get();
+        wildfireShieldBlocking = NekomasFixedConfig.WILDFIRE_SHIELD_BLOCKING.get();
+        harnesses = NekomasFixedConfig.HARNESSES.get();
     }
 
     /** what the server actually sent; overrides the local file for as long as we are connected. */
     public static void fromServer(boolean turtle, boolean offhand, boolean knockback, boolean crops,
-                                  boolean combo, boolean spears) {
+                                  boolean combo, boolean spears, boolean shieldBlocking, boolean harnessesFlag) {
         turtleArmourAbilities = turtle;
         offhandAttack = offhand;
         featherKnockback = knockback;
         featherFallingSavesCrops = crops;
         sickleCombo = combo;
         spearInteractions = spears;
+        wildfireShieldBlocking = shieldBlocking;
+        harnesses = harnessesFlag;
         // set last so a reader that sees the latch also sees every value behind it
         fromServer = true;
     }
@@ -108,6 +122,8 @@ public final class ServerFlags {
                 NekomasFixedConfig.FEATHER_KNOCKBACK.get(),
                 NekomasFixedConfig.FEATHER_FALLING_SAVES_CROPS.get(),
                 NekomasFixedConfig.SICKLE_COMBO.get(),
-                NekomasFixedConfig.SPEAR_INTERACTIONS.get());
+                NekomasFixedConfig.SPEAR_INTERACTIONS.get(),
+                NekomasFixedConfig.WILDFIRE_SHIELD_BLOCKING.get(),
+                NekomasFixedConfig.HARNESSES.get());
     }
 }

@@ -8,6 +8,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -49,6 +50,26 @@ public class SlingshotProjectile extends ThrowableItemProjectile {
     @Override
     protected Item getDefaultItem() {
         return Items.AIR;
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag compoundTag) {
+        super.addAdditionalSaveData(compoundTag);
+        compoundTag.putBoolean("Shatter", this.shatter);
+        compoundTag.putInt("TicksStuck", this.ticksStuck);
+        if (!this.weapon.isEmpty()) {
+            compoundTag.put("Weapon", this.weapon.save(new CompoundTag()));
+        }
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag compoundTag) {
+        super.readAdditionalSaveData(compoundTag);
+        this.shatter = compoundTag.getBoolean("Shatter");
+        this.ticksStuck = compoundTag.getInt("TicksStuck");
+        if (compoundTag.contains("Weapon", 10)) {
+            this.weapon = ItemStack.of(compoundTag.getCompound("Weapon"));
+        }
     }
 
     private ParticleOptions getParticleParameters() {

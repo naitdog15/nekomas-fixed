@@ -26,11 +26,10 @@ public class DolphinMixin {
     @Inject(method = "mobInteract", at = @At("HEAD"))
     private void interactMob(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
         if (!NekomasFixedConfig.DOLPHINS_SEEK_CORAL_REEFS.get()) return;
-        ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
+        ItemStack stack = player.getItemInHand(hand);
         if(stack.is(Items.TROPICAL_FISH)){
             Dolphin dolphin = (Dolphin)(Object)this;
             dolphin.getEntityData().set(OtherRegistry.IS_TROPICAL_FISH_FED, true);
-            stack.shrink(1);
         }
     }
 

@@ -73,15 +73,17 @@ public class PlayerMixin {
                 PE.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.DOLPHINS_GRACE, 200, 0, false, false, true));
             }
         }
-        if (PE.level().getBiome(PE.blockPosition()).is(BiomeTags.IS_NETHER)) {
-            if (!PE.isCreative()&&!PE.isSpectator() && NekomasFixedConfig.NETHER_FOOD_ROTTING.get()){
-                this.checkForEdibles(PE);
+        if (!PE.level().isClientSide()) {
+            if (PE.level().getBiome(PE.blockPosition()).is(BiomeTags.IS_NETHER)) {
+                if (!PE.isCreative()&&!PE.isSpectator() && NekomasFixedConfig.NETHER_FOOD_ROTTING.get()){
+                    this.checkForEdibles(PE);
+                }
             }
-        }
-        if (ModData.combos.containsKey(PE.getUUID())){
-            int comboTimer = ModData.combos.get(PE.getUUID())-1;
-            if (comboTimer<=0) ModData.combos.remove(PE.getUUID());
-            else ModData.combos.put(PE.getUUID(), comboTimer);
+            if (ModData.combos.containsKey(PE.getUUID())){
+                int comboTimer = ModData.combos.get(PE.getUUID())-1;
+                if (comboTimer<=0) ModData.combos.remove(PE.getUUID());
+                else ModData.combos.put(PE.getUUID(), comboTimer);
+            }
         }
     }
 
@@ -107,11 +109,9 @@ public class PlayerMixin {
                         net.minecraft.util.Mth.sin(PE.getYRot() * ((float)Math.PI / 180F)),
                         (-net.minecraft.util.Mth.cos(PE.getYRot() * ((float)Math.PI / 180F)))
                 );
+                return true;
             }
-            return true;
-        }
-
-        if (ServerFlags.offhandAttack() && PE.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && PE.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) target.invulnerableTime = 10;
+        } else if (ServerFlags.offhandAttack() && PE.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && PE.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) target.invulnerableTime = 10;
 
         return original.call(target, source, damage);
     }

@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.Unique;
 public abstract class LevelMixin implements SignalGetter {
     @Unique
     private boolean isStruck(BlockPos pos) {
-        return RedstoneStrikerItem.STRUCK_WIRES.containsKey(GlobalPos.of(((Level)(Object)this).dimension(), pos));
+        return !RedstoneStrikerItem.STRUCK_WIRES.isEmpty() && RedstoneStrikerItem.STRUCK_WIRES.containsKey(GlobalPos.of(((Level)(Object)this).dimension(), pos));
     }
 
     @Override

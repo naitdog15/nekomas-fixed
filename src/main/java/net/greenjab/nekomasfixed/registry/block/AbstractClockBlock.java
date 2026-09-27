@@ -59,7 +59,7 @@ public abstract class AbstractClockBlock extends BaseEntityBlock {
 				if (stack.is(Items.BELL)) {
 					if (!clockBlockEntity.hasBell()) {
 						clockBlockEntity.setBell(true);
-						stack.shrink(1);
+						if (!player.getAbilities().instabuild) stack.shrink(1);
 					}
 					return InteractionResult.SUCCESS;
 				}

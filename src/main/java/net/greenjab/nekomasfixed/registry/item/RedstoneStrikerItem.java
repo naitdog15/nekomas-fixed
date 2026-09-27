@@ -36,8 +36,8 @@ public class RedstoneStrikerItem extends FlintAndSteelItem {
         if (player != null) {
             player.swing(player.getUsedItemHand(), true);
             context.getItemInHand().hurtAndBreak(1, player, p -> p.broadcastBreakEvent(context.getHand()));
-            STRUCK_WIRES.put(Gpos, level.getGameTime() + (player.isShiftKeyDown() ? 1 : 16));
-        } else STRUCK_WIRES.put(Gpos, level.getGameTime() + 16);
+            if (!level.isClientSide()) STRUCK_WIRES.put(Gpos, level.getGameTime() + (player.isShiftKeyDown() ? 1 : 16));
+        } else if (!level.isClientSide()) STRUCK_WIRES.put(Gpos, level.getGameTime() + 16);
         if (state.is(Blocks.OBSERVER) && level instanceof ServerLevel serverLevel && state.getBlock() instanceof ObserverBlock observerBlock) {
             // startSignal is private on ObserverBlock, so nudge it the same way it nudges itself: schedule its pulse if one isn't already queued
             if (!serverLevel.getBlockTicks().hasScheduledTick(pos, observerBlock)) {

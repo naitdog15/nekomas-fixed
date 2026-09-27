@@ -80,7 +80,7 @@ public class FireBomb extends Projectile {
             super.onHitEntity(entityHitResult);
             if (!this.level().isClientSide()) {
                 // A null DamageSource makes Explosion build the standard entity-attributed one itself.
-                this.level().explode(this, null, EXPLOSION_BEHAVIOR, entity.getX(), entity.getY() + 1, entity.getZ(), 1, true, Level.ExplosionInteraction.MOB);
+                this.level().explode(this, null, EXPLOSION_BEHAVIOR, entity.getX(), entity.getY() + 1, entity.getZ(), 1, net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level(), this.getOwner()), Level.ExplosionInteraction.MOB);
                 this.discard();
             }
         }
@@ -89,8 +89,9 @@ public class FireBomb extends Projectile {
     @Override
     protected void onHit(HitResult hitResult) {
         super.onHit(hitResult);
+        if (this.isRemoved()) return;
         if (!this.level().isClientSide()) {
-            this.level().explode(this, null, EXPLOSION_BEHAVIOR, this.getX(), this.getY(), this.getZ(), 1, true, Level.ExplosionInteraction.MOB);
+            this.level().explode(this, null, EXPLOSION_BEHAVIOR, this.getX(), this.getY(), this.getZ(), 1, net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level(), this.getOwner()), Level.ExplosionInteraction.MOB);
             this.discard();
         }
     }
