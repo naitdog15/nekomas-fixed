@@ -2,7 +2,6 @@ package net.greenjab.nekomasfixed.mixin.client;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import net.greenjab.nekomasfixed.NekomasFixed;
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
 import net.greenjab.nekomasfixed.util.MessyBedAccessor;
 import net.minecraft.client.renderer.Sheets;
@@ -39,8 +38,7 @@ public class BedRendererMixin {
         else if (block == BlockRegistry.INDIGO_BED.get()) colour = "indigo";
         else if (block == BlockRegistry.MAROON_BED.get()) colour = "maroon";
 
-        if (state.hasProperty(MessyBedAccessor.MESSY) && state.getValue(MessyBedAccessor.MESSY)
-                && NekomasFixedConfig.MESSY_BEDS.get()) {
+        if (state.hasProperty(MessyBedAccessor.MESSY) && state.getValue(MessyBedAccessor.MESSY)) {
             return nekomasfixed$material((colour != null ? colour : bed.getColor().getName()) + "_messy");
         }
         return colour != null ? nekomasfixed$material(colour) : material;

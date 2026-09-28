@@ -1,7 +1,7 @@
 package net.greenjab.nekomasfixed.registry.registries;
 
-import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.NekomasFixed;
+import net.greenjab.nekomasfixed.network.ServerFlags;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -188,7 +188,7 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.INDIGO_BUNDLE.get());
                         entries.accept(ItemRegistry.MAROON_BUNDLE.get());
 
-                        if (NekomasFixedConfig.HARNESSES.get()) {
+                        if (ServerFlags.harnesses()) {
                             ItemRegistry.AMBER_HARNESS.ifPresent(entries::accept);
                             ItemRegistry.AQUA_HARNESS.ifPresent(entries::accept);
                             ItemRegistry.INDIGO_HARNESS.ifPresent(entries::accept);
