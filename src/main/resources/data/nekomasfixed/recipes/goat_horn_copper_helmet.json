@@ -1,0 +1,25 @@
+{
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "vanillabackport"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "goat_horn",
+  "key": {
+    "#": {
+      "item": "minecraft:goat_horn"
+    },
+    "D": {
+      "item": "minecraft:copper_helmet"
+    }
+  },
+  "pattern": [
+    "#D#"
+  ],
+  "result": {
+    "item": "nekomasfixed:goat_horn_copper_helmet"
+  }
+}

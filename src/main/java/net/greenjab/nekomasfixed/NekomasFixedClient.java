@@ -8,6 +8,9 @@ import net.minecraft.client.color.block.BlockColor;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.BundleItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
@@ -37,6 +40,12 @@ public class NekomasFixedClient {
             // vanilla registers "throwing" for Items.TRIDENT only; the charge-up model swap needs it on ours too
             ItemProperties.register(ItemRegistry.WILDFIRE_TRIDENT.get(), NekomasFixed.id("throwing"),
                     (stack, level, entity, seed) -> entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F);
+            // vanilla registers "filled" for Items.BUNDLE only; the empty/filled model swap needs it on the four extra colours too
+            for (Item bundle : new Item[]{ItemRegistry.AMBER_BUNDLE.get(), ItemRegistry.AQUA_BUNDLE.get(),
+                    ItemRegistry.INDIGO_BUNDLE.get(), ItemRegistry.MAROON_BUNDLE.get()}) {
+                ItemProperties.register(bundle, new ResourceLocation("filled"),
+                        (stack, level, entity, seed) -> BundleItem.getFullnessDisplay(stack));
+            }
         });
     }
 

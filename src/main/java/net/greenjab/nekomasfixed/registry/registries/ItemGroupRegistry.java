@@ -65,6 +65,13 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.DIAMOND_CROWN.get());
                         entries.accept(ItemRegistry.NETHERITE_CROWN.get());
 
+                        entries.accept(ItemRegistry.GOAT_HORN_IRON_HELMET.get());
+                        entries.accept(ItemRegistry.GOAT_HORN_GOLDEN_HELMET.get());
+                        entries.accept(ItemRegistry.GOAT_HORN_COPPER_HELMET.get());
+                        entries.accept(ItemRegistry.GOAT_HORN_DIAMOND_HELMET.get());
+                        entries.accept(ItemRegistry.GOAT_HORN_NETHERITE_HELMET.get());
+                        entries.accept(ItemRegistry.GOAT_HORN_TURTLE_HELMET.get());
+
                         entries.accept(ItemRegistry.SLINGSHOT.get());
                         entries.accept(ItemRegistry.WOODEN_SICKLE.get());
                         entries.accept(ItemRegistry.STONE_SICKLE.get());

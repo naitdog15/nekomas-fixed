@@ -1,0 +1,91 @@
+{
+  "parent": "nekomasfixed:mod/root",
+  "criteria": {
+    "has_trimmed_copper_crown": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:copper_crown"
+            ],
+            "nbt": "{Trim:{pattern:\"nekomasfixed:jewel\"}}"
+          }
+        ]
+      }
+    },
+    "has_trimmed_diamond_crown": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:diamond_crown"
+            ],
+            "nbt": "{Trim:{pattern:\"nekomasfixed:jewel\"}}"
+          }
+        ]
+      }
+    },
+    "has_trimmed_golden_crown": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:golden_crown"
+            ],
+            "nbt": "{Trim:{pattern:\"nekomasfixed:jewel\"}}"
+          }
+        ]
+      }
+    },
+    "has_trimmed_iron_crown": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:iron_crown"
+            ],
+            "nbt": "{Trim:{pattern:\"nekomasfixed:jewel\"}}"
+          }
+        ]
+      }
+    },
+    "has_trimmed_netherite_crown": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:netherite_crown"
+            ],
+            "nbt": "{Trim:{pattern:\"nekomasfixed:jewel\"}}"
+          }
+        ]
+      }
+    }
+  },
+  "display": {
+    "icon": {
+      "item": "nekomasfixed:crown_smithing_template"
+    },
+    "title": {
+      "translate": "advancements.nekomasfixed.i_am_the_ruler.title"
+    },
+    "description": {
+      "translate": "advancements.nekomasfixed.i_am_the_ruler.description"
+    },
+    "frame": "goal"
+  },
+  "requirements": [
+    [
+      "has_trimmed_iron_crown",
+      "has_trimmed_golden_crown",
+      "has_trimmed_diamond_crown",
+      "has_trimmed_copper_crown",
+      "has_trimmed_netherite_crown"
+    ]
+  ]
+}

@@ -25,6 +25,8 @@ import java.lang.reflect.Method;
 @Mod.EventBusSubscriber(modid = NekomasFixed.NAMESPACE, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class GhastHarnessTextures {
 
+    // verified with javap against VB 1.2.1: this class and register(ItemStack, ResourceLocation) exist, but
+    // GhastHarnessHandler is deprecated-for-removal in VB 1.2.1; a later VB may drop it. register() fails soft (one warning, no crash).
     private static final String HANDLER = "com.blackgear.vanillabackport.client.level.entities.layer.GhastHarnessHandler";
     private static final String TEXTURE_PATH = "textures/entity/ghast/harness/";
 

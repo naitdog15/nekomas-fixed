@@ -1,0 +1,83 @@
+{
+  "parent": "nekomasfixed:mod/i_am_the_ruler",
+  "criteria": {
+    "has_trimmed_boots": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "minecraft:netherite_boots"
+            ],
+            "nbt": "{Trim:{pattern:\"nekomasfixed:jewel\"}}"
+          }
+        ]
+      }
+    },
+    "has_trimmed_chestplate": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "minecraft:netherite_chestplate"
+            ],
+            "nbt": "{Trim:{pattern:\"nekomasfixed:jewel\"}}"
+          }
+        ]
+      }
+    },
+    "has_trimmed_helmet": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "minecraft:netherite_helmet"
+            ],
+            "nbt": "{Trim:{pattern:\"nekomasfixed:jewel\"}}"
+          }
+        ]
+      }
+    },
+    "has_trimmed_leggings": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "minecraft:netherite_leggings"
+            ],
+            "nbt": "{Trim:{pattern:\"nekomasfixed:jewel\"}}"
+          }
+        ]
+      }
+    }
+  },
+  "display": {
+    "icon": {
+      "item": "nekomasfixed:jewel_armor_trim_smithing_template"
+    },
+    "title": {
+      "translate": "advancements.nekomasfixed.i_am_on_fire_now.title"
+    },
+    "description": {
+      "translate": "advancements.nekomasfixed.i_am_on_fire_now.description"
+    },
+    "frame": "challenge"
+  },
+  "requirements": [
+    [
+      "has_trimmed_helmet"
+    ],
+    [
+      "has_trimmed_chestplate"
+    ],
+    [
+      "has_trimmed_leggings"
+    ],
+    [
+      "has_trimmed_boots"
+    ]
+  ]
+}

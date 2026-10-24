@@ -58,6 +58,7 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
     private static final VoxelShape SIDE_UP = Block.box(0.0, 14.0, 0.0, 16.0, 16.0, 16.0);
     private static final VoxelShape SIDE_WEST = Block.box(0.0, 0.0, 0.0, 2.0, 16.0, 16.0);
     private static final VoxelShape SIDE_EAST = Block.box(14.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+    private static final VoxelShape SIDE_EAST_Y = Block.box(14.0, 0.0, 0.0, 16.0, 15.0, 16.0);
     private static final VoxelShape SIDE_NORTH = Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 2.0);
     private static final VoxelShape SIDE_SOUTH = Block.box(0.0, 0.0, 14.0, 16.0, 16.0, 16.0);
     /** what a stored block fills the bore with */
@@ -65,7 +66,7 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
 
     private static final Map<Direction.Axis, VoxelShape> SHAPES_BY_AXIS = Maps.newEnumMap(Map.of(
             Direction.Axis.X, Shapes.or(SIDE_DOWN, SIDE_UP, SIDE_NORTH, SIDE_SOUTH),
-            Direction.Axis.Y, Shapes.or(SIDE_WEST, SIDE_EAST, SIDE_NORTH, SIDE_SOUTH),
+            Direction.Axis.Y, Shapes.or(SIDE_WEST, SIDE_EAST_Y, SIDE_NORTH, SIDE_SOUTH),
             Direction.Axis.Z, Shapes.or(SIDE_DOWN, SIDE_UP, SIDE_WEST, SIDE_EAST)
     ));
     private static final Map<Direction.Axis, VoxelShape> SHAPES_BY_AXIS_FILLED = Maps.newEnumMap(Map.of(
@@ -133,7 +134,7 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
     @Override
     public boolean placeLiquid(LevelAccessor level, BlockPos pos, BlockState state, FluidState fluidState) {
         if (level.getBlockEntity(pos) instanceof HollowLogBlockEntity logBE) {
-            if (!(logBE.getStoredBlock()==Blocks.AIR.defaultBlockState()||isGlassLike(logBE.getStoredStack()))) return false;
+            if (!(logBE.getStoredBlock().isAir()||isGlassLike(logBE.getStoredStack()))) return false;
         }
         return SimpleWaterloggedBlock.super.placeLiquid(level, pos, state, fluidState);
     }
@@ -141,7 +142,7 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
     @Override
     public boolean canPlaceLiquid(BlockGetter level, BlockPos pos, BlockState state, Fluid fluid) {
         if (level.getBlockEntity(pos) instanceof HollowLogBlockEntity logBE) {
-            if (!(logBE.getStoredBlock()==Blocks.AIR.defaultBlockState()||isGlassLike(logBE.getStoredStack()))) return false;
+            if (!(logBE.getStoredBlock().isAir()||isGlassLike(logBE.getStoredStack()))) return false;
         }
         return SimpleWaterloggedBlock.super.canPlaceLiquid(level, pos, state, fluid);
     }
@@ -188,8 +189,7 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
                         logBE.setStoredBlock(stack.copyWithCount(1), blockItem.getBlock().defaultBlockState());
                         if (!player.getAbilities().instabuild) stack.shrink(1);
                         level.sendBlockUpdated(pos, state, state, 3);
-                        if (state.getValue(AXIS)== Direction.Axis.Y)
-                            state = state.setValue(SOLID_INSIDE, true);
+                        state = state.setValue(SOLID_INSIDE, true);
                         if (!isGlassLike(stack))
                             state = state.setValue(WATERLOGGED, false);
                         if (blockItem.getBlock().defaultBlockState().getLightEmission() > 0)
@@ -198,9 +198,9 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
 
                         return InteractionResult.SUCCESS;
                     }
-                } else if (stack.getItem() instanceof Item) {
+                } else {
                     if (stack.is(Items.SHEARS)) {
-                        if (logBE.getStoredBlock()!=Blocks.AIR.defaultBlockState())
+                        if (!logBE.getStoredBlock().isAir())
                             stack.hurtAndBreak(1, player, holder -> holder.broadcastBreakEvent(hand));
                         if (logBE.getStoredBlock().is(BlockTags.FLOWER_POTS)&&!logBE.getStoredStack().is(Items.FLOWER_POT)) popResource(serverLevel, pos, Items.FLOWER_POT.getDefaultInstance());
                         popResource(serverLevel, pos, logBE.getStoredStack());

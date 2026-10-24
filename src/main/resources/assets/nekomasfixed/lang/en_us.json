@@ -205,6 +205,13 @@
   "item.nekomasfixed.golden_crown": "Golden Crown",
   "item.nekomasfixed.netherite_crown": "Netherite Crown",
 
+  "item.nekomasfixed.goat_horn_iron_helmet": "Goat Horn Iron Helmet",
+  "item.nekomasfixed.goat_horn_golden_helmet": "Goat Horn Golden Helmet",
+  "item.nekomasfixed.goat_horn_copper_helmet": "Goat Horn Copper Helmet",
+  "item.nekomasfixed.goat_horn_diamond_helmet": "Goat Horn Diamond Helmet",
+  "item.nekomasfixed.goat_horn_netherite_helmet": "Goat Horn Netherite Helmet",
+  "item.nekomasfixed.goat_horn_turtle_helmet": "Goat Horn Turtle Helmet",
+
   "item.nekomasfixed.slingshot": "Slingshot",
   "item.nekomasfixed.iron_sickle": "Iron Sickle",
   "item.nekomasfixed.wooden_sickle": "Wooden Sickle",
@@ -563,6 +570,28 @@
   "item.minecraft.splash_potion.effect.lightning": "Splash Potion of Lightning",
   "item.minecraft.lingering_potion.effect.lightning": "Lingering Potion of Lightning",
   "item.minecraft.tipped_arrow.effect.lightning": "Arrow of Lightning",
+
+  "entity.nekomasfixed.fake_boat": "Fake Boat",
+  "entity.nekomasfixed.fire_bomb": "Fire Bomb",
+  "entity.nekomasfixed.slingshot_projectile": "Slingshot Projectile",
+  "entity.nekomasfixed.slowness_snowball": "Slowness Snowball",
+  "entity.nekomasfixed.spear": "Spear",
+  "entity.nekomasfixed.wildfire_trident": "Wildfire Trident",
+
+  "nekoma": "Nekoma's",
+  "fixed": "Fixed",
+
+  "advancements.nekomasfixed.root.description": "Track your progress in the mod!",
+  "advancements.nekomasfixed.turtle_master.title": "A True Turtle Master!",
+  "advancements.nekomasfixed.turtle_master.description": "Collect a full set of turtle armor",
+  "advancements.nekomasfixed.rainbow_spotted_wool.title": "Dotted Rainbow!",
+  "advancements.nekomasfixed.rainbow_spotted_wool.description": "Collect all 20 blocks of spotted wool",
+  "advancements.nekomasfixed.ship_of_thesus.title": "Ship of Thesus!",
+  "advancements.nekomasfixed.ship_of_thesus.description": "Craft a huge boat",
+  "advancements.nekomasfixed.i_am_the_ruler.title": "I am the Ruler!",
+  "advancements.nekomasfixed.i_am_the_ruler.description": "Trim a crown with jewel armor trim",
+  "advancements.nekomasfixed.i_am_on_fire_now.title": "Look who's on Fire Now!",
+  "advancements.nekomasfixed.i_am_on_fire_now.description": "Trim a full set of netherite armor with jewel armor trim",
 
   "option.namefield.optionA": "CyberMODDER",
   "option.namefield.optionB": "Akshaj"

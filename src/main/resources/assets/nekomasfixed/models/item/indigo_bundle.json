@@ -1,6 +1,14 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "nekomasfixed:item/indigo_bundle"
-  }
+    "layer0": "nekomasfixed:item/indigo_bundle_open"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "filled": 1e-07
+      },
+      "model": "nekomasfixed:item/indigo_bundle_filled"
+    }
+  ]
 }

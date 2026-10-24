@@ -141,7 +141,16 @@ public class ItemRegistry {
     public static final RegistryObject<Item> IRON_CROWN = register("iron_crown", settings -> new ArmorItem(ArmorMaterials.IRON, ArmorItem.Type.HELMET, settings), new Item.Properties());
     public static final RegistryObject<Item> GOLDEN_CROWN = register("golden_crown", settings -> new ArmorItem(ArmorMaterials.GOLD, ArmorItem.Type.HELMET, settings), new Item.Properties());
     public static final RegistryObject<Item> DIAMOND_CROWN = register("diamond_crown", settings -> new ArmorItem(ArmorMaterials.DIAMOND, ArmorItem.Type.HELMET, settings), new Item.Properties());
-    public static final RegistryObject<Item> NETHERITE_CROWN = register("netherite_crown", settings -> new ArmorItem(ArmorMaterials.NETHERITE, ArmorItem.Type.HELMET, settings), new Item.Properties());
+    public static final RegistryObject<Item> NETHERITE_CROWN = register("netherite_crown", settings -> new ArmorItem(ArmorMaterials.NETHERITE, ArmorItem.Type.HELMET, settings), new Item.Properties().fireResistant());
+
+    // goat horn helmets: plain ArmorItems like the crowns. no chainmail tier (removed upstream).
+    // worn art is upstream's 32x32 equipment sheet, not a 1.20.1 armour layer, so no render branch yet.
+    public static final RegistryObject<Item> GOAT_HORN_IRON_HELMET = register("goat_horn_iron_helmet", settings -> new ArmorItem(ArmorMaterials.IRON, ArmorItem.Type.HELMET, settings), new Item.Properties());
+    public static final RegistryObject<Item> GOAT_HORN_GOLDEN_HELMET = register("goat_horn_golden_helmet", settings -> new ArmorItem(ArmorMaterials.GOLD, ArmorItem.Type.HELMET, settings), new Item.Properties());
+    public static final RegistryObject<Item> GOAT_HORN_COPPER_HELMET = register("goat_horn_copper_helmet", settings -> new ArmorItem(ModArmorMaterials.COPPER, ArmorItem.Type.HELMET, settings), new Item.Properties());
+    public static final RegistryObject<Item> GOAT_HORN_DIAMOND_HELMET = register("goat_horn_diamond_helmet", settings -> new ArmorItem(ArmorMaterials.DIAMOND, ArmorItem.Type.HELMET, settings), new Item.Properties());
+    public static final RegistryObject<Item> GOAT_HORN_NETHERITE_HELMET = register("goat_horn_netherite_helmet", settings -> new ArmorItem(ArmorMaterials.NETHERITE, ArmorItem.Type.HELMET, settings), new Item.Properties().fireResistant());
+    public static final RegistryObject<Item> GOAT_HORN_TURTLE_HELMET = register("goat_horn_turtle_helmet", settings -> new ArmorItem(ArmorMaterials.TURTLE, ArmorItem.Type.HELMET, settings), new Item.Properties());
 
     public static final RegistryObject<Item> SLINGSHOT = register("slingshot", SlingshotItem::new, new Item.Properties().durability(384));
     public static final RegistryObject<Item> WOODEN_SICKLE = register("wooden_sickle", settings -> new SickleItem(Tiers.WOOD, settings), ModItemSettings.sickle(Tiers.WOOD, SickleItem.SPEED));

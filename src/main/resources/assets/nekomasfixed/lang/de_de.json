@@ -39,6 +39,8 @@
   "block.nekomasfixed.glow_wall_torch": "Leuchtwandfackel",
 
   "item.nekomasfixed.target_dummy": "Trainingspuppe",
+  "block.nekomasfixed.corrupted_beacon": "Verseuchtes Leuchtfeuer",
+  "item.nekomasfixed.corrupted_beacon": "Verseuchtes Leuchtfeuer",
   "entity.nekomasfixed.target_dummy": "Trainingspuppe",
   "item.nekomasfixed.turtle_chestplate": "Schildkrötenpanzer",
   "item.nekomasfixed.turtle_leggings": "Schildkröten-Knieschoner",

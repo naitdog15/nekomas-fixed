@@ -79,7 +79,7 @@ public class PlayerMixin {
                     this.checkForEdibles(PE);
                 }
             }
-            if (ModData.combos.containsKey(PE.getUUID())){
+            if (!PE.level().isClientSide() && ModData.combos.containsKey(PE.getUUID())){
                 int comboTimer = ModData.combos.get(PE.getUUID())-1;
                 if (comboTimer<=0) ModData.combos.remove(PE.getUUID());
                 else ModData.combos.put(PE.getUUID(), comboTimer);
@@ -111,7 +111,8 @@ public class PlayerMixin {
                 );
                 return true;
             }
-        } else if (ServerFlags.offhandAttack() && PE.getItemInHand(InteractionHand.MAIN_HAND).is(ModTags.SICKLES) && PE.getItemInHand(InteractionHand.OFF_HAND).is(ModTags.SICKLES)) target.invulnerableTime = 10;
+        }
+        // this line was causing the sickle issue
 
         return original.call(target, source, damage);
     }

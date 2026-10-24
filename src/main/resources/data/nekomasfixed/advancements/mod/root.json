@@ -1,0 +1,46 @@
+{
+  "criteria": {
+    "crafting_table": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "minecraft:crafting_table"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "display": {
+    "icon": {
+      "item": "nekomasfixed:target_dummy"
+    },
+    "title": {
+      "extra": [
+        {
+          "color": "red",
+          "translate": "nekoma"
+        },
+        " ",
+        {
+          "color": "white",
+          "translate": "fixed"
+        }
+      ],
+      "text": ""
+    },
+    "description": {
+      "translate": "advancements.nekomasfixed.root.description"
+    },
+    "background": "minecraft:textures/gui/advancements/backgrounds/stone.png",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "requirements": [
+    [
+      "crafting_table"
+    ]
+  ]
+}

@@ -14,6 +14,7 @@ public final class NekomasFixedConfig {
     public static final ForgeConfigSpec.BooleanValue GEYSER_GENERATION;
     public static final ForgeConfigSpec.BooleanValue TERMITE_MOUND_GENERATION;
     public static final ForgeConfigSpec.BooleanValue NATURAL_MOB_SPAWNS;
+    public static final ForgeConfigSpec.BooleanValue ENDERMAN_HEAD_ACTIVATES;
 
     public static final ForgeConfigSpec.BooleanValue SICKLE_COMBO;
     public static final ForgeConfigSpec.BooleanValue OFFHAND_ATTACK;
@@ -217,6 +218,10 @@ public final class NekomasFixedConfig {
         TERMITE_CHEW_TICKS = BUILDER
                 .comment("How many ticks a termite spends chewing before a log turns hollow.")
                 .defineInRange("termiteChewTicks", 120, 20, 1200);
+
+        ENDERMAN_HEAD_ACTIVATES = BUILDER
+                .comment("Looking at an enderman head powers it.")
+                .define("endermanHeadActivates", true);
 
         BUILDER.pop();
 
