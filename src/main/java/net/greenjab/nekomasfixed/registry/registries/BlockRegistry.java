@@ -84,6 +84,8 @@ public class BlockRegistry {
             )
     );
 
+    public static final RegistryObject<Block> GOLD_CHAIN = register("gold_chain", ChainBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.GOLD).forceSolidOn().requiresCorrectToolForDrops().strength(5.0F, 6.0F).sound(SoundType.CHAIN).noOcclusion());
+
     public static final RegistryObject<Block> SWEETBERRY_CAKE = register("sweetberry_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
     public static final RegistryObject<Block> PAN_CAKE = register("pan_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
     public static final RegistryObject<Block> GLOWBERRY_CAKE = register("glowberry_cake", StackedCakeBlock::new, BlockBehaviour.Properties.of().strength(0.5F).sound(SoundType.WOOL).lightLevel(state -> state.getValue(StackedCakeBlock.LIT)?3:0));
@@ -109,6 +111,17 @@ public class BlockRegistry {
     public static final RegistryObject<Block> HOLLOW_BAMBOO_BLOCK = register("hollow_bamboo_block", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.BAMBOO_BLOCK).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
     public static final RegistryObject<Block> HOLLOW_CRIMSON_STEM = register("hollow_crimson_stem", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.CRIMSON_HYPHAE).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
     public static final RegistryObject<Block> HOLLOW_WARPED_STEM = register("hollow_warped_stem", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.WARPED_HYPHAE).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_OAK_LOG = register("stripped_hollow_oak_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_SPRUCE_LOG = register("stripped_hollow_spruce_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_SPRUCE_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_BIRCH_LOG = register("stripped_hollow_birch_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_BIRCH_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_JUNGLE_LOG = register("stripped_hollow_jungle_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_JUNGLE_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_ACACIA_LOG = register("stripped_hollow_acacia_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_ACACIA_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_DARK_OAK_LOG = register("stripped_hollow_dark_oak_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_DARK_OAK_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_MANGROVE_LOG = register("stripped_hollow_mangrove_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_MANGROVE_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_CHERRY_LOG = register("stripped_hollow_cherry_log", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_CHERRY_LOG).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_BAMBOO_BLOCK = register("stripped_hollow_bamboo_block", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_BAMBOO_BLOCK).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_CRIMSON_STEM = register("stripped_hollow_crimson_stem", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_CRIMSON_HYPHAE).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
+    public static final RegistryObject<Block> STRIPPED_HOLLOW_WARPED_STEM = register("stripped_hollow_warped_stem", HollowLogBlock::new , BlockBehaviour.Properties.copy(Blocks.STRIPPED_WARPED_HYPHAE).lightLevel(state -> state.getValue(HollowLogBlock.LIGHT_LEVEL)));
 
 
     public static final RegistryObject<Block> GOAT_HORN = register("horn", GoatHornBlock::new, BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GRAY).lightLevel(state -> state.getValue(GoatHornBlock.TORCH).getLight()).strength(0.2F).sound(SoundType.TUFF).pushReaction(PushReaction.DESTROY));

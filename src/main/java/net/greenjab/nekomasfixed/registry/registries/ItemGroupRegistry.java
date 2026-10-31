@@ -41,6 +41,7 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.ENDERMAN_HEAD.get());
                         entries.accept(ItemRegistry.REDSTONE_STRIKER.get());
                         entries.accept(ItemRegistry.GLOW_TORCH.get());
+                        entries.accept(ItemRegistry.GOLD_CHAIN.get());
                         entries.accept(ItemRegistry.TARGET_DUMMY.get());
                         entries.accept(ItemRegistry.TURTLE_CHESTPLATE.get());
                         entries.accept(ItemRegistry.TURTLE_LEGGINGS.get());
@@ -73,6 +74,8 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.GOAT_HORN_TURTLE_HELMET.get());
 
                         entries.accept(ItemRegistry.SLINGSHOT.get());
+                        entries.accept(ItemRegistry.QUIVER.get());
+                        entries.accept(ItemRegistry.TIPPED_ARROW_CUSTOM.get());
                         entries.accept(ItemRegistry.WOODEN_SICKLE.get());
                         entries.accept(ItemRegistry.STONE_SICKLE.get());
                         entries.accept(ItemRegistry.COPPER_SICKLE.get());
@@ -105,6 +108,17 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.HOLLOW_BAMBOO_BLOCK.get());
                         entries.accept(ItemRegistry.HOLLOW_CRIMSON_STEM.get());
                         entries.accept(ItemRegistry.HOLLOW_WARPED_STEM.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_OAK_LOG.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_SPRUCE_LOG.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_BIRCH_LOG.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_JUNGLE_LOG.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_ACACIA_LOG.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_DARK_OAK_LOG.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_MANGROVE_LOG.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_CHERRY_LOG.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_BAMBOO_BLOCK.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_CRIMSON_STEM.get());
+                        entries.accept(ItemRegistry.STRIPPED_HOLLOW_WARPED_STEM.get());
 
                         entries.accept(ItemRegistry.BOAT_UPGRADE_TEMPLATE.get());
                         entries.accept(ItemRegistry.BIG_OAK_BOAT.get());
@@ -373,5 +387,37 @@ public class ItemGroupRegistry {
                         entries.accept(ItemRegistry.AQUA_SPOTTED_CARPET.get());
                         entries.accept(ItemRegistry.INDIGO_SPOTTED_CARPET.get());
                         entries.accept(ItemRegistry.MAROON_SPOTTED_CARPET.get());
+
+                        entries.accept(ItemRegistry.WHITE_PRISM.get());
+                        entries.accept(ItemRegistry.LIGHT_GRAY_PRISM.get());
+                        entries.accept(ItemRegistry.GRAY_PRISM.get());
+                        entries.accept(ItemRegistry.BLACK_PRISM.get());
+                        entries.accept(ItemRegistry.BROWN_PRISM.get());
+                        entries.accept(ItemRegistry.RED_PRISM.get());
+                        entries.accept(ItemRegistry.ORANGE_PRISM.get());
+                        entries.accept(ItemRegistry.YELLOW_PRISM.get());
+                        entries.accept(ItemRegistry.LIME_PRISM.get());
+                        entries.accept(ItemRegistry.GREEN_PRISM.get());
+                        entries.accept(ItemRegistry.CYAN_PRISM.get());
+                        entries.accept(ItemRegistry.LIGHT_BLUE_PRISM.get());
+                        entries.accept(ItemRegistry.BLUE_PRISM.get());
+                        entries.accept(ItemRegistry.PURPLE_PRISM.get());
+                        entries.accept(ItemRegistry.MAGENTA_PRISM.get());
+                        entries.accept(ItemRegistry.PINK_PRISM.get());
+                        entries.accept(ItemRegistry.AMBER_PRISM.get());
+                        entries.accept(ItemRegistry.AQUA_PRISM.get());
+                        entries.accept(ItemRegistry.INDIGO_PRISM.get());
+                        entries.accept(ItemRegistry.MAROON_PRISM.get());
+
+                        entries.accept(ItemRegistry.WATER_PRISM.get());
+                        entries.accept(ItemRegistry.FIRE_PRISM.get());
+                        entries.accept(ItemRegistry.ENDER_PRISM.get());
+                        entries.accept(ItemRegistry.RAINBOW_PRISM.get());
+                        entries.accept(ItemRegistry.FROSTFIRE_PRISM.get());
+                        entries.accept(ItemRegistry.JUNGLE_PRISM.get());
+                        entries.accept(ItemRegistry.VOID_PRISM.get());
+                        entries.accept(ItemRegistry.SKY_PRISM.get());
+                        entries.accept(ItemRegistry.ANCIENT_PRISM.get());
+                        entries.accept(ItemRegistry.SCULK_PRISM.get());
                     }).build());
 }

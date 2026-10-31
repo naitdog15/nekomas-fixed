@@ -2,6 +2,7 @@ package net.greenjab.nekomasfixed.registry.item;
 
 import java.util.HashMap;
 import java.util.Map;
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.server.level.ServerLevel;
@@ -27,6 +28,7 @@ public class RedstoneStrikerItem extends FlintAndSteelItem {
 
     @Override
     public InteractionResult useOn(UseOnContext context) {
+        if (!NekomasFixedConfig.REDSTONE_STRIKER.get()) return InteractionResult.PASS;
         Player player = context.getPlayer();
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();

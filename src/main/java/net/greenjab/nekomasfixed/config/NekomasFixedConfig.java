@@ -15,6 +15,16 @@ public final class NekomasFixedConfig {
     public static final ForgeConfigSpec.BooleanValue TERMITE_MOUND_GENERATION;
     public static final ForgeConfigSpec.BooleanValue NATURAL_MOB_SPAWNS;
     public static final ForgeConfigSpec.BooleanValue ENDERMAN_HEAD_ACTIVATES;
+    public static final ForgeConfigSpec.BooleanValue SPAWN_SUSPICIOUS_SPIDER;
+    public static final ForgeConfigSpec.BooleanValue SPAWN_MOOBLOOM;
+    public static final ForgeConfigSpec.BooleanValue SPAWN_TERMITE;
+    public static final ForgeConfigSpec.BooleanValue SPAWN_RIME;
+    public static final ForgeConfigSpec.BooleanValue SPAWN_DERELICT;
+    public static final ForgeConfigSpec.BooleanValue SPAWN_DRENCHED;
+    public static final ForgeConfigSpec.BooleanValue SPAWN_WILDFIRE;
+    public static final ForgeConfigSpec.BooleanValue STACKED_CAKES;
+    public static final ForgeConfigSpec.IntValue CAKE_SIZE;
+    public static final ForgeConfigSpec.BooleanValue DYED_BRUSH_RECIPES;
 
     public static final ForgeConfigSpec.BooleanValue SICKLE_COMBO;
     public static final ForgeConfigSpec.BooleanValue OFFHAND_ATTACK;
@@ -57,6 +67,21 @@ public final class NekomasFixedConfig {
     private NekomasFixedConfig() {
     }
 
+    public static boolean naturalSpawnEnabled(net.minecraft.world.entity.EntityType<?> type) {
+        net.minecraft.resources.ResourceLocation key = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKey(type);
+        if (key == null) return true;
+        return switch (key.getPath()) {
+            case "suspicious_spider" -> SPAWN_SUSPICIOUS_SPIDER.get();
+            case "moobloom" -> SPAWN_MOOBLOOM.get();
+            case "termite" -> SPAWN_TERMITE.get();
+            case "rime" -> SPAWN_RIME.get();
+            case "derelict" -> SPAWN_DERELICT.get();
+            case "drenched" -> SPAWN_DRENCHED.get();
+            case "wildfire" -> SPAWN_WILDFIRE.get();
+            default -> true;
+        };
+    }
+
     static {
         BUILDER.comment("Changes to how the Nether treats what you carry into it.").push("nether_features");
 
@@ -96,6 +121,39 @@ public final class NekomasFixedConfig {
                 .comment("Let this mod's mobs spawn on their own in the biomes they belong to.",
                          "Spawn eggs and the /summon command still work with this off.")
                 .define("naturalMobSpawns", true);
+
+        BUILDER.comment("Per-mob switches. A mob only spawns on its own when both naturalMobSpawns and its own switch are on.")
+               .push("natural_spawns");
+
+        SPAWN_SUSPICIOUS_SPIDER = BUILDER
+                .comment("Let suspicious spiders spawn on their own.")
+                .define("spawnSuspiciousSpider", true);
+
+        SPAWN_MOOBLOOM = BUILDER
+                .comment("Let mooblooms spawn on their own.")
+                .define("spawnMoobloom", true);
+
+        SPAWN_TERMITE = BUILDER
+                .comment("Let termites spawn on their own.")
+                .define("spawnTermite", true);
+
+        SPAWN_RIME = BUILDER
+                .comment("Let rimes spawn on their own.")
+                .define("spawnRime", true);
+
+        SPAWN_DERELICT = BUILDER
+                .comment("Let derelicts spawn on their own.")
+                .define("spawnDerelict", true);
+
+        SPAWN_DRENCHED = BUILDER
+                .comment("Let drenched spawn on their own.")
+                .define("spawnDrenched", true);
+
+        SPAWN_WILDFIRE = BUILDER
+                .comment("Let wildfires spawn on their own.")
+                .define("spawnWildfire", true);
+
+        BUILDER.pop();
 
         BUILDER.pop();
 
@@ -222,6 +280,19 @@ public final class NekomasFixedConfig {
         ENDERMAN_HEAD_ACTIVATES = BUILDER
                 .comment("Looking at an enderman head powers it.")
                 .define("endermanHeadActivates", true);
+
+        STACKED_CAKES = BUILDER
+                .comment("Stack cake layers on top of each other.")
+                .define("stackedCakes", true);
+
+        CAKE_SIZE = BUILDER
+                .comment("How many layers a stacked cake can grow to; candles go on the top layer.")
+                .defineInRange("cakeSize", 3, 1, 3);
+
+        DYED_BRUSH_RECIPES = BUILDER
+                .comment("The 20 dyed-brush crafting recipes exist; read when recipes load, so needs",
+                         "/reload or re-entering the world.")
+                .define("dyedBrushRecipes", true);
 
         BUILDER.pop();
 

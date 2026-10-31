@@ -1,6 +1,8 @@
 package net.greenjab.nekomasfixed.mixin;
 
 import net.greenjab.nekomasfixed.config.NekomasFixedClientConfig;
+import net.greenjab.nekomasfixed.registry.item.quiver.QuiverDraw;
+import net.greenjab.nekomasfixed.registry.item.quiver.QuiverItem;
 import net.greenjab.nekomasfixed.registry.other.AnimalTooltipData;
 import net.greenjab.nekomasfixed.registry.other.ContainerTooltipData;
 import net.greenjab.nekomasfixed.registry.other.StoredTimeComponent;
@@ -24,6 +26,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
@@ -43,6 +46,13 @@ public class ItemStackMixin {
 	@Inject(method = "getTooltipImage", at = @At("HEAD"), cancellable = true)
 	private void modTooltipImage(CallbackInfoReturnable<Optional<TooltipComponent>> cir) {
 		ItemStack stack = (ItemStack)(Object)this;
+		if (stack.getItem() instanceof QuiverItem) {
+			List<ItemStack> arrows = StackData.readQuiver(stack);
+			if (!arrows.isEmpty()) {
+				cir.setReturnValue(Optional.of(new ContainerTooltipData(arrows.subList(0, Math.min(arrows.size(), 27)))));
+				return;
+			}
+		}
 		List<ItemStack> contents = containerContents(stack);
 		if (NekomasFixedClientConfig.enabled(NekomasFixedClientConfig.CONTAINER_GRID_TOOLTIPS) && !contents.isEmpty()) {
 			cir.setReturnValue(Optional.of(new ContainerTooltipData(contents)));
@@ -101,6 +111,12 @@ public class ItemStackMixin {
 			}
 			player.swing(hand);
 		}
+	}
+
+	// ItemStack.split() goes through shrink, so a quiver draw by Bow or Crossbow lands here
+	@Inject(method = "shrink", at = @At("HEAD"))
+	private void quiverShrink(int n, CallbackInfo ci) {
+		QuiverDraw.onShrink((ItemStack)(Object)this, n);
 	}
 
 	@Inject(method = "hasFoil", at = @At("HEAD"), cancellable = true)

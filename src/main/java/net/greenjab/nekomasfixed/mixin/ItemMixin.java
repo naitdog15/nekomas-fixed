@@ -1,6 +1,8 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.greenjab.nekomasfixed.registry.other.PrismGlint;
 import net.greenjab.nekomasfixed.util.StackData;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -41,6 +43,11 @@ public class ItemMixin {
 		}
 		if (stack.is(Items.CLOCK) && StackData.contains(stack, StackData.KEY_STORED_TIME)) {
 			tooltip.add(StackData.readStoredTime(stack).tooltipLine());
+		}
+		PrismGlint glint = PrismGlint.fromStack(stack);
+		if (glint != null) {
+			tooltip.add(Component.translatable("tooltip_component.nekomasfixed.glint").withStyle(ChatFormatting.GRAY));
+			tooltip.add(Component.literal(" ").append(glint.description()));
 		}
 	}
 

@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.registry.block;
 
+import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
 import net.greenjab.nekomasfixed.registry.block.entity.StackedCakeBlockEntity;
 import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.core.BlockPos;
@@ -46,6 +47,25 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
     public static final BooleanProperty CANDLE = BooleanProperty.create("candle");
     private static final Map<Integer, VoxelShape[]> SHAPES_BY_BITES_AND_LAYER = new HashMap<>();
     private static final Map<Integer, VoxelShape> CANDLE_SHAPES = new HashMap<>();
+
+    private static final int SLICES_PER_LAYER = 7;
+    private static final int MAX_LAYERS = 3;
+
+    private static int getLayer(int slices) { return (slices - 1) / SLICES_PER_LAYER; }
+    private static int layerCount(int slices) { return getLayer(slices) + 1; }
+    private static boolean isFullLayer(int slices) { return slices % SLICES_PER_LAYER == 0; }
+    private static int configuredCakeSize() { return Math.max(1, Math.min(NekomasFixedConfig.CAKE_SIZE.get(), MAX_LAYERS)); }
+
+    private static boolean canStack(BlockState state) {
+        int slices = state.getValue(SLICES);
+        return NekomasFixedConfig.STACKED_CAKES.get() && !state.getValue(CANDLE) && isFullLayer(slices) && layerCount(slices) < configuredCakeSize();
+    }
+
+    // deviation from upstream: with stacking off, a candle goes on any full layer instead of being impossible when size > 1
+    private static boolean canCandle(BlockState state) {
+        int slices = state.getValue(SLICES);
+        return !state.getValue(CANDLE) && isFullLayer(slices) && (!NekomasFixedConfig.STACKED_CAKES.get() || layerCount(slices) >= configuredCakeSize());
+    }
 
     public StackedCakeBlock(Properties settings) {
         super(settings);
@@ -175,37 +195,27 @@ public class StackedCakeBlock extends AbstractCandleBlock implements EntityBlock
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide()) return InteractionResult.SUCCESS;
         else if (level.getBlockEntity(pos) instanceof StackedCakeBlockEntity stackedCakeBlockEntity){
-            if (state.getValue(SLICES) == 7 || state.getValue(SLICES) == 14 || state.getValue(SLICES) == 21) {
-                if (player.getMainHandItem().is(ModTags.STACKED_CAKES) && state.getValue(SLICES) != 21) {
-                    this.addCakeLayer(stack, stackedCakeBlockEntity, state);
-                    level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(SLICES, state.getValue(SLICES)+7));
-                    level.playSound(null, player, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 1.0F, 1.0F);
-                    if (!player.getAbilities().instabuild) stack.shrink(1);
-                    return InteractionResult.SUCCESS;
-                } else if (player.getMainHandItem().is(ItemTags.CANDLES)) {
-                    if (!state.getValue(CANDLE)) {
-                        if (stack.getItem() instanceof BlockItem blockItem) {
-                            BlockState candleState = blockItem.getBlock().defaultBlockState();
-                            stackedCakeBlockEntity.CANDLE_STATE = candleState.setValue(CandleBlock.LIT, false);
-                            level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(CANDLE, true).setValue(CandleBlock.LIT, false));
-                            level.playSound(null, player, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 1.0F, 1.0F);
-                            if (!player.getAbilities().instabuild) stack.shrink(1);
-                            return InteractionResult.SUCCESS;
-                        }
-                    }
-                } else if (stack.is(Items.FLINT_AND_STEEL)) {
-                    if (state.getValue(CANDLE)) {
-                        BlockState candleState = stackedCakeBlockEntity.CANDLE_STATE;
-                        if (!candleState.getValue(CandleBlock.LIT)) {
-                            stackedCakeBlockEntity.CANDLE_STATE = candleState.setValue(CandleBlock.LIT, true);
-                            stackedCakeBlockEntity.setChanged();
-                            level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(LIT, true));
-                            stack.hurtAndBreak(1, player, holder -> holder.broadcastBreakEvent(hand));
-                            level.playSound(null, player, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
-                            return InteractionResult.SUCCESS;
-                        }
-                    }
-                }
+            if (stack.is(ModTags.STACKED_CAKES) && stack.getItem() instanceof BlockItem && canStack(state)) {
+                this.addCakeLayer(stack, stackedCakeBlockEntity, state);
+                level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(SLICES, state.getValue(SLICES)+7));
+                level.playSound(null, player, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 1.0F, 1.0F);
+                if (!player.getAbilities().instabuild) stack.shrink(1);
+                return InteractionResult.SUCCESS;
+            } else if (stack.is(ItemTags.CANDLES) && stack.getItem() instanceof BlockItem blockItem && canCandle(state)) {
+                BlockState candleState = blockItem.getBlock().defaultBlockState();
+                stackedCakeBlockEntity.CANDLE_STATE = candleState.setValue(CandleBlock.LIT, false);
+                stackedCakeBlockEntity.setChanged();
+                level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(CANDLE, true).setValue(CandleBlock.LIT, false));
+                level.playSound(null, player, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 1.0F, 1.0F);
+                if (!player.getAbilities().instabuild) stack.shrink(1);
+                return InteractionResult.SUCCESS;
+            } else if (stack.is(Items.FLINT_AND_STEEL) && state.getValue(CANDLE) && !state.getValue(LIT) && stackedCakeBlockEntity.CANDLE_STATE.hasProperty(CandleBlock.LIT)) {
+                stackedCakeBlockEntity.CANDLE_STATE = stackedCakeBlockEntity.CANDLE_STATE.setValue(CandleBlock.LIT, true);
+                stackedCakeBlockEntity.setChanged();
+                level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(LIT, true));
+                stack.hurtAndBreak(1, player, holder -> holder.broadcastBreakEvent(hand));
+                level.playSound(null, player, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
+                return InteractionResult.SUCCESS;
             }
             return tryEat(level, pos, state, player);
         }

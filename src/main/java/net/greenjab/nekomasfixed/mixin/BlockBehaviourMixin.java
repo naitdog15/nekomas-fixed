@@ -65,10 +65,10 @@ public class BlockBehaviourMixin {
                         .setValue(HorizontalDirectionalBlock.FACING, facing)
                         .setValue(GoatHornBlock.WATERLOGGED, fluidState.getType() == Fluids.WATER);
 
-                if (level.getBlockState(placePos).is(BlockTags.REPLACEABLE) && state.isFaceSturdy(level, pos, hitResult.getDirection())) {
+                if (level.getBlockState(placePos).is(BlockTags.REPLACEABLE) && state.isFaceSturdy(level, pos, direction)) {
                     level.setBlockAndUpdate(placePos, newState);
-                    level.playSound(null, pos, SoundEvents.STONE_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                    itemStack.shrink(1);
+                    level.playSound(null, placePos, SoundEvents.STONE_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                    if (!player.getAbilities().instabuild) itemStack.shrink(1);
                     cir.setReturnValue(InteractionResult.SUCCESS);
                 }
             }

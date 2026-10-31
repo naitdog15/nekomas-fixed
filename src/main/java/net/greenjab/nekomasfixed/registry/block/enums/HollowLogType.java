@@ -6,6 +6,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -23,7 +24,18 @@ public enum HollowLogType {
     CHERRY(Blocks.CHERRY_LOG, BlockRegistry.HOLLOW_CHERRY_LOG),
     BAMBOO(Blocks.BAMBOO_BLOCK, BlockRegistry.HOLLOW_BAMBOO_BLOCK),
     CRIMSON(Blocks.CRIMSON_HYPHAE, BlockRegistry.HOLLOW_CRIMSON_STEM),
-    WARPED(Blocks.WARPED_HYPHAE, BlockRegistry.HOLLOW_WARPED_STEM);
+    WARPED(Blocks.WARPED_HYPHAE, BlockRegistry.HOLLOW_WARPED_STEM),
+    STRIPPED_OAK(Blocks.STRIPPED_OAK_LOG, BlockRegistry.STRIPPED_HOLLOW_OAK_LOG),
+    STRIPPED_SPRUCE(Blocks.STRIPPED_SPRUCE_LOG, BlockRegistry.STRIPPED_HOLLOW_SPRUCE_LOG),
+    STRIPPED_BIRCH(Blocks.STRIPPED_BIRCH_LOG, BlockRegistry.STRIPPED_HOLLOW_BIRCH_LOG),
+    STRIPPED_JUNGLE(Blocks.STRIPPED_JUNGLE_LOG, BlockRegistry.STRIPPED_HOLLOW_JUNGLE_LOG),
+    STRIPPED_ACACIA(Blocks.STRIPPED_ACACIA_LOG, BlockRegistry.STRIPPED_HOLLOW_ACACIA_LOG),
+    STRIPPED_DARK_OAK(Blocks.STRIPPED_DARK_OAK_LOG, BlockRegistry.STRIPPED_HOLLOW_DARK_OAK_LOG),
+    STRIPPED_MANGROVE(Blocks.STRIPPED_MANGROVE_LOG, BlockRegistry.STRIPPED_HOLLOW_MANGROVE_LOG),
+    STRIPPED_CHERRY(Blocks.STRIPPED_CHERRY_LOG, BlockRegistry.STRIPPED_HOLLOW_CHERRY_LOG),
+    STRIPPED_BAMBOO(Blocks.STRIPPED_BAMBOO_BLOCK, BlockRegistry.STRIPPED_HOLLOW_BAMBOO_BLOCK),
+    STRIPPED_CRIMSON(Blocks.STRIPPED_CRIMSON_HYPHAE, BlockRegistry.STRIPPED_HOLLOW_CRIMSON_STEM),
+    STRIPPED_WARPED(Blocks.STRIPPED_WARPED_HYPHAE, BlockRegistry.STRIPPED_HOLLOW_WARPED_STEM);
 
     private final Supplier<Block> baseLog;
     private final Supplier<Block> hollowLog;
@@ -49,6 +61,33 @@ public enum HollowLogType {
             baseToHollow = map;
         }
         return baseToHollow;
+    }
+
+    private static Map<Block, Block> hollowToStripped;
+
+    private static Map<Block, Block> hollowToStripped() {
+        if (hollowToStripped == null) {
+            Map<Block, Block> map = new HashMap<>();
+            map.put(BlockRegistry.HOLLOW_OAK_LOG.get(), BlockRegistry.STRIPPED_HOLLOW_OAK_LOG.get());
+            map.put(BlockRegistry.HOLLOW_SPRUCE_LOG.get(), BlockRegistry.STRIPPED_HOLLOW_SPRUCE_LOG.get());
+            map.put(BlockRegistry.HOLLOW_BIRCH_LOG.get(), BlockRegistry.STRIPPED_HOLLOW_BIRCH_LOG.get());
+            map.put(BlockRegistry.HOLLOW_JUNGLE_LOG.get(), BlockRegistry.STRIPPED_HOLLOW_JUNGLE_LOG.get());
+            map.put(BlockRegistry.HOLLOW_ACACIA_LOG.get(), BlockRegistry.STRIPPED_HOLLOW_ACACIA_LOG.get());
+            map.put(BlockRegistry.HOLLOW_DARK_OAK_LOG.get(), BlockRegistry.STRIPPED_HOLLOW_DARK_OAK_LOG.get());
+            map.put(BlockRegistry.HOLLOW_MANGROVE_LOG.get(), BlockRegistry.STRIPPED_HOLLOW_MANGROVE_LOG.get());
+            map.put(BlockRegistry.HOLLOW_CHERRY_LOG.get(), BlockRegistry.STRIPPED_HOLLOW_CHERRY_LOG.get());
+            map.put(BlockRegistry.HOLLOW_BAMBOO_BLOCK.get(), BlockRegistry.STRIPPED_HOLLOW_BAMBOO_BLOCK.get());
+            map.put(BlockRegistry.HOLLOW_CRIMSON_STEM.get(), BlockRegistry.STRIPPED_HOLLOW_CRIMSON_STEM.get());
+            map.put(BlockRegistry.HOLLOW_WARPED_STEM.get(), BlockRegistry.STRIPPED_HOLLOW_WARPED_STEM.get());
+            hollowToStripped = map;
+        }
+        return hollowToStripped;
+    }
+
+    /** The stripped hollow log a hollow log turns into under an axe, or null when it is not one. */
+    @Nullable
+    public static Block getStrippedBlock(Block hollow) {
+        return hollowToStripped().get(hollow);
     }
 
     public static Block getHollowBlock(Block baseLog) {

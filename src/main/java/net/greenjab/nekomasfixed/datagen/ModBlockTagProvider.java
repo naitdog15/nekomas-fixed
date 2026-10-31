@@ -4,11 +4,8 @@ import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.util.BlockDyeMap;
 import net.greenjab.nekomasfixed.util.ModTags;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.data.PackOutput;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.data.BlockTagsProvider;
 import net.minecraftforge.common.data.ExistingFileHelper;
@@ -63,8 +60,8 @@ public class ModBlockTagProvider extends BlockTagsProvider {
                 .addOptionalTag(BlockTags.WOOL)
                 .addOptionalTag(BlockTags.WOOL_CARPETS)
                 .addOptionalTag(BlockTags.CANDLES)
-                // no BlockTags.CONCRETE_POWDER constant on 1.20.1 - built by hand instead.
-                .addOptionalTag(TagKey.create(Registries.BLOCK, ResourceLocation.withDefaultNamespace("concrete_powder")))
+                .addTag(ModTags.CONCRETES)
+                .addTag(ModTags.CONCRETE_POWDERS)
                 .addTag(ModTags.FROGLIGHTS)
                 .addOptionalTag(BlockTags.SHULKER_BOXES)
                 .addOptionalTag(BlockTags.BEDS);

@@ -8,6 +8,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraft.server.MinecraftServer;
 import net.greenjab.nekomasfixed.registry.block.cauldron.CauldronBehaviour;
+import net.greenjab.nekomasfixed.registry.item.CustomArrowItem;
 import net.greenjab.nekomasfixed.registry.other.DyedBrushBehaviour;
 import net.greenjab.nekomasfixed.util.AllDyes;
 import net.greenjab.nekomasfixed.util.ItemDyeMap;
@@ -65,6 +66,7 @@ public final class ModBusEvents {
         event.enqueueWork(() -> {
             CauldronBehaviour.register();
             registerDyedBrushDispenserBehaviour();
+            CustomArrowItem.registerDispenserBehaviour();
         });
     }
 

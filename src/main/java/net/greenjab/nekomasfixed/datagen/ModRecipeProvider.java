@@ -1,6 +1,9 @@
 package net.greenjab.nekomasfixed.datagen;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.mojang.datafixers.util.Pair;
+import net.greenjab.nekomasfixed.config.RecipeConfigCondition;
 import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.util.AllDyes;
@@ -16,7 +19,10 @@ import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraft.world.level.ItemLike;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -35,11 +41,57 @@ public class ModRecipeProvider extends RecipeProvider {
         super(output);
     }
 
+    private static Consumer<FinishedRecipe> whenDyedBrushEnabled(Consumer<FinishedRecipe> out) {
+        return r -> out.accept(new ConditionedRecipe(r));
+    }
+
+    private static final class ConditionedRecipe implements FinishedRecipe {
+        private final FinishedRecipe delegate;
+
+        private ConditionedRecipe(FinishedRecipe delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public JsonObject serializeRecipe() {
+            JsonObject json = delegate.serializeRecipe();
+            JsonArray arr = new JsonArray();
+            arr.add(CraftingHelper.serialize(new RecipeConfigCondition("dyedBrushRecipes")));
+            json.add("conditions", arr);
+            return json;
+        }
+
+        @Override
+        public void serializeRecipeData(JsonObject json) {
+            delegate.serializeRecipeData(json);
+        }
+
+        @Override
+        public ResourceLocation getId() {
+            return delegate.getId();
+        }
+
+        @Override
+        public RecipeSerializer<?> getType() {
+            return delegate.getType();
+        }
+
+        @Override
+        public JsonObject serializeAdvancement() {
+            return delegate.serializeAdvancement();
+        }
+
+        @Override
+        public ResourceLocation getAdvancementId() {
+            return delegate.getAdvancementId();
+        }
+    }
+
     @Override
     protected void buildRecipes(Consumer<FinishedRecipe> output) {
         for (AllDyes colour : AllDyes.values()) {
             createRingRecipe(output, RecipeCategory.MISC, ItemDyeMap.DYE.get(colour), Items.BRUSH, ItemDyeMap.BRUSH.get(colour), "dyed_brush", 1)
-                    .save(output);
+                    .save(whenDyedBrushEnabled(output));
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICKS, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICKS.get(colour).asItem(), "dyed_bricks_dyed", 8)
                     .save(output, NekomasFixed.id(ForgeRegistries.ITEMS.getKey(BlockDyeMap.BRICKS.get(colour).asItem()).getPath() + "_dyed"));
             createRingRecipe(output, RecipeCategory.BUILDING_BLOCKS, Items.BRICK_SLAB, ItemDyeMap.DYE.get(colour), BlockDyeMap.BRICK_SLAB.get(colour).asItem(), "dyed_brick_slab_dyed", 8)

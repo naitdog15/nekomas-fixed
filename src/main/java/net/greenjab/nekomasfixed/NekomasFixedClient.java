@@ -46,6 +46,8 @@ public class NekomasFixedClient {
                 ItemProperties.register(bundle, new ResourceLocation("filled"),
                         (stack, level, entity, seed) -> BundleItem.getFullnessDisplay(stack));
             }
+            ItemProperties.register(ItemRegistry.QUIVER.get(), new ResourceLocation("filled"),
+                    (stack, level, entity, seed) -> net.greenjab.nekomasfixed.registry.item.quiver.QuiverItem.getFullness(stack));
         });
     }
 

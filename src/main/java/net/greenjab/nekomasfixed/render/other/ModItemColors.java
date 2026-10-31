@@ -4,6 +4,11 @@ import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.item.alchemy.Potion;
+import net.greenjab.nekomasfixed.util.ColorMerger;
+import net.greenjab.nekomasfixed.util.StackData;
+import net.minecraft.world.item.alchemy.PotionUtils;
+import java.util.List;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -29,5 +34,13 @@ public final class ModItemColors {
                     ? display.getInt("color")
                     : UNSEASONED;
         }, ItemRegistry.SPECIAL_STEW.get());
+        // layer1 (the head) takes tintindex 1; layer0 is the plain shaft
+        event.register((stack, tintIndex) -> {
+            if (tintIndex == 0) return -1;
+            List<Potion> potions = StackData.readTippedPotions(stack);
+            int[] colors = new int[potions.size()];
+            for (int i = 0; i < colors.length; i++) colors[i] = PotionUtils.getColor(potions.get(i));
+            return 0xFF000000 | ColorMerger.mix(colors);
+        }, ItemRegistry.TIPPED_ARROW_CUSTOM.get());
     }
 }

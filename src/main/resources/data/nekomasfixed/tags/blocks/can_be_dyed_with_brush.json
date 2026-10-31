@@ -23,14 +23,8 @@
       "id": "#minecraft:candles",
       "required": false
     },
-    {
-      "id": "#minecraft:concrete",
-      "required": false
-    },
-    {
-      "id": "#minecraft:concrete_powders",
-      "required": false
-    },
+    "#nekomasfixed:concretes",
+    "#nekomasfixed:concrete_powders",
     "#nekomasfixed:froglights",
     {
       "id": "#minecraft:shulker_boxes",

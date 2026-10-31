@@ -1,6 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
   "category": "misc",
+  "conditions": [
+    {
+      "type": "nekomasfixed:config",
+      "option": "dyedBrushRecipes"
+    }
+  ],
   "group": "dyed_brush",
   "key": {
     "#": {

@@ -4,6 +4,12 @@ import net.greenjab.nekomasfixed.registry.block.entity.HollowLogBlockEntity;
 import com.google.common.collect.Maps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.greenjab.nekomasfixed.registry.block.enums.HollowLogType;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Containers;
+import net.minecraftforge.common.ToolAction;
+import net.minecraftforge.common.ToolActions;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.FlowerPotBlock;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -18,6 +24,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -166,6 +173,7 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         ItemStack stack = player.getItemInHand(hand);
+        // axe-stripping is left to AxeItem#useOn through getToolModifiedState below, so Forge's tool-modification event can veto it
         if (level instanceof ServerLevel serverLevel) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof HollowLogBlockEntity logBE) {
@@ -218,6 +226,28 @@ public class HollowLogBlock extends BaseEntityBlock implements EntityBlock, Simp
             return InteractionResult.SUCCESS;
         }
         return super.use(state, level, pos, player, hand, hit);
+    }
+
+    // AxeItem#useOn asks this hook for both sneaking and plain right-clicks (use() passes an axe through).
+    @Override
+    public BlockState getToolModifiedState(BlockState state, UseOnContext context, ToolAction toolAction, boolean simulate) {
+        if (toolAction == ToolActions.AXE_STRIP) {
+            Block stripped = HollowLogType.getStrippedBlock(state.getBlock());
+            if (stripped != null && context.getItemInHand().canPerformAction(toolAction)) {
+                return stripped.defaultBlockState().setValue(AXIS, state.getValue(AXIS)).setValue(WATERLOGGED, state.getValue(WATERLOGGED)).setValue(SOLID_INSIDE, state.getValue(SOLID_INSIDE)).setValue(LIGHT_LEVEL, state.getValue(LIGHT_LEVEL));
+            }
+        }
+        return super.getToolModifiedState(state, context, toolAction, simulate);
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        // axe-strip and same-block state changes keep the block entity, so the contents stay put
+        if (newState.getBlock() instanceof HollowLogBlock) return;
+        if (!level.isClientSide && level.getBlockEntity(pos) instanceof HollowLogBlockEntity be && !be.getStoredStack().isEmpty()) {
+            Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), be.getStoredStack().copy());
+        }
+        super.onRemove(state, level, pos, newState, moved);
     }
 
     @Override

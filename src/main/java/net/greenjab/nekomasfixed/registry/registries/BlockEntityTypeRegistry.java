@@ -53,7 +53,18 @@ public class BlockEntityTypeRegistry {
                     BlockRegistry.HOLLOW_PALE_OAK_LOG.get(),
                     BlockRegistry.HOLLOW_BAMBOO_BLOCK.get(),
                     BlockRegistry.HOLLOW_CRIMSON_STEM.get(),
-                    BlockRegistry.HOLLOW_WARPED_STEM.get()
+                    BlockRegistry.HOLLOW_WARPED_STEM.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_OAK_LOG.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_SPRUCE_LOG.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_BIRCH_LOG.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_JUNGLE_LOG.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_ACACIA_LOG.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_DARK_OAK_LOG.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_MANGROVE_LOG.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_CHERRY_LOG.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_BAMBOO_BLOCK.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_CRIMSON_STEM.get(),
+                    BlockRegistry.STRIPPED_HOLLOW_WARPED_STEM.get()
             ).build(null));
 
     public static final RegistryObject<BlockEntityType<StackedCakeBlockEntity>> STACKED_CAKE_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("cake",

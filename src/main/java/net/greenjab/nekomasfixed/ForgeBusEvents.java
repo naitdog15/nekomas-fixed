@@ -127,13 +127,15 @@ public final class ForgeBusEvents {
     }
 
     /**
-     * only mobs spawning on their own are stopped - spawn eggs, spawners, reinforcements and
+     * only natural and chunk-generation spawns are stopped (globally or per mob) - spawn eggs, spawners, reinforcements and
      * {@code /summon} all take other paths and are left alone, matching what a player expects.
      */
     @SubscribeEvent
     public static void onSpawnPlacementCheck(MobSpawnEvent.SpawnPlacementCheck event) {
-        if (event.getSpawnType() != MobSpawnType.NATURAL) return;
-        if (NekomasFixedConfig.NATURAL_MOB_SPAWNS.get()) return;
+        MobSpawnType spawnType = event.getSpawnType();
+        // CHUNK_GENERATION is how vanilla seeds passive mobs (moobloom) while a chunk is first generated
+        if (spawnType != MobSpawnType.NATURAL && spawnType != MobSpawnType.CHUNK_GENERATION) return;
+        if (NekomasFixedConfig.NATURAL_MOB_SPAWNS.get() && NekomasFixedConfig.naturalSpawnEnabled(event.getEntityType())) return;
 
         ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(event.getEntityType());
         if (id != null && NekomasFixed.NAMESPACE.equals(id.getNamespace())) {

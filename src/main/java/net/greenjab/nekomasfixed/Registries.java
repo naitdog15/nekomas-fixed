@@ -1,6 +1,7 @@
 package net.greenjab.nekomasfixed;
 
 import net.greenjab.nekomasfixed.registry.entity.Termite;
+import net.greenjab.nekomasfixed.registry.loottable.LootConditionRegistry;
 import net.greenjab.nekomasfixed.registry.entity.WildFire.WildfireRegistrations;
 import net.greenjab.nekomasfixed.registry.registries.BlockEntityTypeRegistry;
 import net.greenjab.nekomasfixed.registry.registries.BlockRegistry;
@@ -63,6 +64,7 @@ public final class Registries {
         ItemGroupRegistry.TABS.register(modBus);
         OtherRegistry.SENSOR_TYPES.register(modBus);
         SoundRegistry.SOUND_EVENTS.register(modBus);
+        LootConditionRegistry.LOOT_CONDITIONS.register(modBus);
 
         // entities/AI/worldgen
         WildfireRegistrations.MEMORY_MODULE_TYPES.register(modBus);

@@ -36,4 +36,6 @@ public class ModTags {
     public static final TagKey<Item> SLINGSHOT_PROJECTILES = TagKey.create(Registries.ITEM, NekomasFixed.id("slingshot_projectiles"));
     public static final TagKey<Item> BLAST_AND_FIRE_PROOF = TagKey.create(Registries.ITEM, NekomasFixed.id("blast_and_fire_proof"));
     public static final TagKey<Item> COPPER_ARMOUR = TagKey.create(Registries.ITEM, NekomasFixed.id("copper_armour"));
+    public static final TagKey<Item> PRISMS = TagKey.create(Registries.ITEM, NekomasFixed.id("prisms"));
+    public static final TagKey<Item> TREASURE_PRISMS = TagKey.create(Registries.ITEM, NekomasFixed.id("treasure_prisms"));
 }

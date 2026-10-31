@@ -39,9 +39,11 @@ public class BedBlockMixin implements MessyBedAccessor {
     @Inject(method =  "use", at = @At("HEAD"), cancellable = true)
         protected void onUse(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
         if(!level.isClientSide()){
+            if (!NekomasFixedConfig.MESSY_BEDS.get() || !state.hasProperty(MessyBedAccessor.MESSY)) return;
             BlockPos otherPos = state.getValue(BedBlock.PART) == BedPart.FOOT ? pos.relative(state.getValue(BedBlock.FACING)) :pos.relative(state.getValue(BedBlock.FACING).getOpposite()) ;
             if(player.isShiftKeyDown() && player.getMainHandItem().isEmpty() && state.getValue(MessyBedAccessor.MESSY)){
                 BlockState otherState = level.getBlockState(otherPos);
+                if (!otherState.hasProperty(MessyBedAccessor.MESSY)) return;
                 level.setBlockAndUpdate(pos, state.setValue(MessyBedAccessor.MESSY, false));
                 level.setBlockAndUpdate(otherPos, otherState.setValue(MessyBedAccessor.MESSY, false));
                 player.swing(InteractionHand.MAIN_HAND, true);
@@ -53,10 +55,12 @@ public class BedBlockMixin implements MessyBedAccessor {
 
     @Inject(method = "use", at = @At("TAIL"))
     private void onUseTail(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
-        if(!level.isClientSide() && NekomasFixedConfig.MESSY_BEDS.get() && level.isNight() && player.isSleeping() && !state.getValue(MessyBedAccessor.MESSY)){
+        if(!level.isClientSide() && NekomasFixedConfig.MESSY_BEDS.get() && player.isSleeping() && state.hasProperty(MessyBedAccessor.MESSY) && !state.getValue(MessyBedAccessor.MESSY)){
             BlockPos otherPos = state.getValue(BedBlock.PART) == BedPart.FOOT ? pos.relative(state.getValue(BedBlock.FACING)) :pos.relative(state.getValue(BedBlock.FACING).getOpposite()) ;
             BlockState otherState = level.getBlockState(otherPos);
-            level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(MessyBedAccessor.MESSY, true));
+            BlockState cur = level.getBlockState(pos);
+            if (!otherState.hasProperty(MessyBedAccessor.MESSY) || !cur.hasProperty(MessyBedAccessor.MESSY)) return;
+            level.setBlockAndUpdate(pos, cur.setValue(MessyBedAccessor.MESSY, true));
             level.setBlockAndUpdate(otherPos, otherState.setValue(MessyBedAccessor.MESSY, true));
         }
     }

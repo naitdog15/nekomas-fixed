@@ -1,0 +1,469 @@
+{
+  "parent": "nekomasfixed:mod/root",
+  "criteria": {
+    "obtained_amber_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:amber_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_ancient_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:ancient_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_aqua_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:aqua_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_black_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:black_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_blue_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:blue_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_brown_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:brown_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_cyan_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:cyan_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_ender_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:ender_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_fire_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:fire_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_frostfire_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:frostfire_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_gray_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:gray_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_green_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:green_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_indigo_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:indigo_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_jungle_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:jungle_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_light_blue_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:light_blue_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_light_gray_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:light_gray_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_lime_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:lime_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_magenta_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:magenta_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_maroon_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:maroon_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_orange_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:orange_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_pink_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:pink_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_purple_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:purple_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_rainbow_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:rainbow_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_red_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:red_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_sculk_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:sculk_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_sky_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:sky_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_void_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:void_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_water_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:water_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_white_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:white_prism"
+            ]
+          }
+        ]
+      }
+    },
+    "obtained_yellow_prism": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "nekomasfixed:yellow_prism"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "display": {
+    "icon": {
+      "item": "nekomasfixed:red_prism"
+    },
+    "title": {
+      "translate": "advancements.nekomasfixed.prismaniac.title"
+    },
+    "description": {
+      "translate": "advancements.nekomasfixed.prismaniac.description"
+    },
+    "frame": "challenge"
+  },
+  "requirements": [
+    [
+      "obtained_white_prism"
+    ],
+    [
+      "obtained_light_gray_prism"
+    ],
+    [
+      "obtained_gray_prism"
+    ],
+    [
+      "obtained_black_prism"
+    ],
+    [
+      "obtained_brown_prism"
+    ],
+    [
+      "obtained_red_prism"
+    ],
+    [
+      "obtained_orange_prism"
+    ],
+    [
+      "obtained_yellow_prism"
+    ],
+    [
+      "obtained_lime_prism"
+    ],
+    [
+      "obtained_green_prism"
+    ],
+    [
+      "obtained_cyan_prism"
+    ],
+    [
+      "obtained_light_blue_prism"
+    ],
+    [
+      "obtained_blue_prism"
+    ],
+    [
+      "obtained_purple_prism"
+    ],
+    [
+      "obtained_magenta_prism"
+    ],
+    [
+      "obtained_pink_prism"
+    ],
+    [
+      "obtained_amber_prism"
+    ],
+    [
+      "obtained_aqua_prism"
+    ],
+    [
+      "obtained_indigo_prism"
+    ],
+    [
+      "obtained_maroon_prism"
+    ],
+    [
+      "obtained_water_prism"
+    ],
+    [
+      "obtained_fire_prism"
+    ],
+    [
+      "obtained_ender_prism"
+    ],
+    [
+      "obtained_rainbow_prism"
+    ],
+    [
+      "obtained_frostfire_prism"
+    ],
+    [
+      "obtained_jungle_prism"
+    ],
+    [
+      "obtained_void_prism"
+    ],
+    [
+      "obtained_sky_prism"
+    ],
+    [
+      "obtained_ancient_prism"
+    ],
+    [
+      "obtained_sculk_prism"
+    ]
+  ]
+}

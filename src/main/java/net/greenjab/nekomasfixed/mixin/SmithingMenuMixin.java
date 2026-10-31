@@ -1,5 +1,6 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import net.greenjab.nekomasfixed.registry.item.PrismItem;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ContainerLevelAccess;
@@ -26,6 +27,7 @@ public abstract class SmithingMenuMixin extends ItemCombinerMenu {
     @Inject(method = "createResult", at = @At("HEAD"), cancellable = true)
     private void nekomasfixed$noTurtleUpgrade(CallbackInfo ci) {
         ItemStack gear = this.inputSlots.getItem(1);
+        if (this.inputSlots.getItem(0).getItem() instanceof PrismItem) return; // glint recipe, not an upgrade
         if (gear.is(ItemRegistry.TURTLE_CHESTPLATE.get()) || gear.is(ItemRegistry.TURTLE_LEGGINGS.get())
                 || gear.is(ItemRegistry.TURTLE_BOOTS.get())) {
             this.resultSlots.setItem(0, ItemStack.EMPTY);

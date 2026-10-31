@@ -3,6 +3,8 @@ package net.greenjab.nekomasfixed.registry.registries;
 import net.greenjab.nekomasfixed.NekomasFixed;
 import net.greenjab.nekomasfixed.compat.CompatMods;
 import net.greenjab.nekomasfixed.registry.item.*;
+import net.greenjab.nekomasfixed.registry.item.quiver.QuiverItem;
+import net.greenjab.nekomasfixed.registry.other.PrismGlint;
 import net.greenjab.nekomasfixed.util.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -20,6 +22,7 @@ import net.minecraft.world.item.BundleItem;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemNameBlockItem;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.SmithingTemplateItem;
@@ -152,6 +155,9 @@ public class ItemRegistry {
     public static final RegistryObject<Item> GOAT_HORN_NETHERITE_HELMET = register("goat_horn_netherite_helmet", settings -> new ArmorItem(ArmorMaterials.NETHERITE, ArmorItem.Type.HELMET, settings), new Item.Properties().fireResistant());
     public static final RegistryObject<Item> GOAT_HORN_TURTLE_HELMET = register("goat_horn_turtle_helmet", settings -> new ArmorItem(ArmorMaterials.TURTLE, ArmorItem.Type.HELMET, settings), new Item.Properties());
 
+    public static final RegistryObject<Item> QUIVER = register("quiver", QuiverItem::new, new Item.Properties().stacksTo(1));
+    public static final RegistryObject<Item> TIPPED_ARROW_CUSTOM = register("tipped_arrow_custom", CustomArrowItem::new, new Item.Properties());
+    public static final RegistryObject<Item> GOLD_CHAIN = register(BlockRegistry.GOLD_CHAIN);
     public static final RegistryObject<Item> SLINGSHOT = register("slingshot", SlingshotItem::new, new Item.Properties().durability(384));
     public static final RegistryObject<Item> WOODEN_SICKLE = register("wooden_sickle", settings -> new SickleItem(Tiers.WOOD, settings), ModItemSettings.sickle(Tiers.WOOD, SickleItem.SPEED));
     public static final RegistryObject<Item> STONE_SICKLE = register("stone_sickle", settings -> new SickleItem(Tiers.STONE, settings), ModItemSettings.sickle(Tiers.STONE, SickleItem.SPEED));
@@ -185,6 +191,17 @@ public class ItemRegistry {
     public static final RegistryObject<Item> HOLLOW_BAMBOO_BLOCK = register(BlockRegistry.HOLLOW_BAMBOO_BLOCK);
     public static final RegistryObject<Item> HOLLOW_WARPED_STEM = register(BlockRegistry.HOLLOW_WARPED_STEM);
     public static final RegistryObject<Item> HOLLOW_CRIMSON_STEM = register(BlockRegistry.HOLLOW_CRIMSON_STEM);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_OAK_LOG = register(BlockRegistry.STRIPPED_HOLLOW_OAK_LOG);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_SPRUCE_LOG = register(BlockRegistry.STRIPPED_HOLLOW_SPRUCE_LOG);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_BIRCH_LOG = register(BlockRegistry.STRIPPED_HOLLOW_BIRCH_LOG);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_JUNGLE_LOG = register(BlockRegistry.STRIPPED_HOLLOW_JUNGLE_LOG);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_ACACIA_LOG = register(BlockRegistry.STRIPPED_HOLLOW_ACACIA_LOG);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_DARK_OAK_LOG = register(BlockRegistry.STRIPPED_HOLLOW_DARK_OAK_LOG);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_MANGROVE_LOG = register(BlockRegistry.STRIPPED_HOLLOW_MANGROVE_LOG);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_CHERRY_LOG = register(BlockRegistry.STRIPPED_HOLLOW_CHERRY_LOG);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_BAMBOO_BLOCK = register(BlockRegistry.STRIPPED_HOLLOW_BAMBOO_BLOCK);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_CRIMSON_STEM = register(BlockRegistry.STRIPPED_HOLLOW_CRIMSON_STEM);
+    public static final RegistryObject<Item> STRIPPED_HOLLOW_WARPED_STEM = register(BlockRegistry.STRIPPED_HOLLOW_WARPED_STEM);
 
     public static final RegistryObject<Item> BOAT_UPGRADE_TEMPLATE = register("boat_upgrade_template", () ->
             new SmithingTemplateItem(Component.translatable(Util.makeDescriptionId("item", NekomasFixed.id("boat")))
@@ -317,6 +334,38 @@ public class ItemRegistry {
     public static final RegistryObject<Item> AQUA_DYED_BRUSH = register("aqua_dyed_brush", (settings) -> new DyedBrushItem(AllDyes.AQUA, settings), new Item.Properties().stacksTo(1).durability(64));
     public static final RegistryObject<Item> INDIGO_DYED_BRUSH = register("indigo_dyed_brush", (settings) -> new DyedBrushItem(AllDyes.INDIGO, settings), new Item.Properties().stacksTo(1).durability(64));
     public static final RegistryObject<Item> MAROON_DYED_BRUSH = register("maroon_dyed_brush", (settings) -> new DyedBrushItem(AllDyes.MAROON, settings), new Item.Properties().stacksTo(1).durability(64));
+
+    public static final RegistryObject<Item> WHITE_PRISM = register("white_prism", settings -> new PrismItem(PrismGlint.byId("white"), settings), new Item.Properties());
+    public static final RegistryObject<Item> LIGHT_GRAY_PRISM = register("light_gray_prism", settings -> new PrismItem(PrismGlint.byId("light_gray"), settings), new Item.Properties());
+    public static final RegistryObject<Item> GRAY_PRISM = register("gray_prism", settings -> new PrismItem(PrismGlint.byId("gray"), settings), new Item.Properties());
+    public static final RegistryObject<Item> BLACK_PRISM = register("black_prism", settings -> new PrismItem(PrismGlint.byId("black"), settings), new Item.Properties());
+    public static final RegistryObject<Item> BROWN_PRISM = register("brown_prism", settings -> new PrismItem(PrismGlint.byId("brown"), settings), new Item.Properties());
+    public static final RegistryObject<Item> RED_PRISM = register("red_prism", settings -> new PrismItem(PrismGlint.byId("red"), settings), new Item.Properties());
+    public static final RegistryObject<Item> ORANGE_PRISM = register("orange_prism", settings -> new PrismItem(PrismGlint.byId("orange"), settings), new Item.Properties());
+    public static final RegistryObject<Item> YELLOW_PRISM = register("yellow_prism", settings -> new PrismItem(PrismGlint.byId("yellow"), settings), new Item.Properties());
+    public static final RegistryObject<Item> LIME_PRISM = register("lime_prism", settings -> new PrismItem(PrismGlint.byId("lime"), settings), new Item.Properties());
+    public static final RegistryObject<Item> GREEN_PRISM = register("green_prism", settings -> new PrismItem(PrismGlint.byId("green"), settings), new Item.Properties());
+    public static final RegistryObject<Item> CYAN_PRISM = register("cyan_prism", settings -> new PrismItem(PrismGlint.byId("cyan"), settings), new Item.Properties());
+    public static final RegistryObject<Item> LIGHT_BLUE_PRISM = register("light_blue_prism", settings -> new PrismItem(PrismGlint.byId("light_blue"), settings), new Item.Properties());
+    public static final RegistryObject<Item> BLUE_PRISM = register("blue_prism", settings -> new PrismItem(PrismGlint.byId("blue"), settings), new Item.Properties());
+    public static final RegistryObject<Item> PURPLE_PRISM = register("purple_prism", settings -> new PrismItem(PrismGlint.byId("purple"), settings), new Item.Properties());
+    public static final RegistryObject<Item> MAGENTA_PRISM = register("magenta_prism", settings -> new PrismItem(PrismGlint.byId("magenta"), settings), new Item.Properties());
+    public static final RegistryObject<Item> PINK_PRISM = register("pink_prism", settings -> new PrismItem(PrismGlint.byId("pink"), settings), new Item.Properties());
+    public static final RegistryObject<Item> AMBER_PRISM = register("amber_prism", settings -> new PrismItem(PrismGlint.byId("amber"), settings), new Item.Properties());
+    public static final RegistryObject<Item> AQUA_PRISM = register("aqua_prism", settings -> new PrismItem(PrismGlint.byId("aqua"), settings), new Item.Properties());
+    public static final RegistryObject<Item> INDIGO_PRISM = register("indigo_prism", settings -> new PrismItem(PrismGlint.byId("indigo"), settings), new Item.Properties());
+    public static final RegistryObject<Item> MAROON_PRISM = register("maroon_prism", settings -> new PrismItem(PrismGlint.byId("maroon"), settings), new Item.Properties());
+
+    public static final RegistryObject<Item> WATER_PRISM = register("water_prism", settings -> new PrismItem(PrismGlint.byId("water"), settings), new Item.Properties().rarity(Rarity.EPIC));
+    public static final RegistryObject<Item> FIRE_PRISM = register("fire_prism", settings -> new PrismItem(PrismGlint.byId("fire"), settings), new Item.Properties().rarity(Rarity.EPIC));
+    public static final RegistryObject<Item> ENDER_PRISM = register("ender_prism", settings -> new PrismItem(PrismGlint.byId("ender"), settings), new Item.Properties().rarity(Rarity.EPIC));
+    public static final RegistryObject<Item> RAINBOW_PRISM = register("rainbow_prism", settings -> new PrismItem(PrismGlint.byId("rainbow"), settings), new Item.Properties().rarity(Rarity.EPIC));
+    public static final RegistryObject<Item> FROSTFIRE_PRISM = register("frostfire_prism", settings -> new PrismItem(PrismGlint.byId("frostfire"), settings), new Item.Properties().rarity(Rarity.EPIC));
+    public static final RegistryObject<Item> JUNGLE_PRISM = register("jungle_prism", settings -> new PrismItem(PrismGlint.byId("jungle"), settings), new Item.Properties().rarity(Rarity.EPIC));
+    public static final RegistryObject<Item> VOID_PRISM = register("void_prism", settings -> new PrismItem(PrismGlint.byId("void"), settings), new Item.Properties().rarity(Rarity.EPIC));
+    public static final RegistryObject<Item> SKY_PRISM = register("sky_prism", settings -> new PrismItem(PrismGlint.byId("sky"), settings), new Item.Properties().rarity(Rarity.EPIC));
+    public static final RegistryObject<Item> ANCIENT_PRISM = register("ancient_prism", settings -> new PrismItem(PrismGlint.byId("ancient"), settings), new Item.Properties().rarity(Rarity.EPIC));
+    public static final RegistryObject<Item> SCULK_PRISM = register("sculk_prism", settings -> new PrismItem(PrismGlint.byId("sculk"), settings), new Item.Properties().rarity(Rarity.EPIC));
 
     public static final RegistryObject<Item> WHITE_BRICKS = register(BlockRegistry.WHITE_BRICKS);
     public static final RegistryObject<Item> LIGHT_GRAY_BRICKS = register(BlockRegistry.LIGHT_GRAY_BRICKS);

@@ -1,5 +1,5 @@
 {
-  "parent": "minecraft:block/template_torch_unlit",
+  "parent": "minecraft:block/template_torch",
   "render_type": "minecraft:cutout",
   "textures": {
     "torch": "nekomasfixed:block/glow_torch_off"

@@ -40,7 +40,7 @@ public class ConfigTrial {
         heading(category, entryBuilder, "nether_improvements", 0xBA2720);
 
         toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.NETHER_FOOD_ROTTING, 1);
-        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.MAGMA_BREAKS_TO_LAVA, 1);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.MAGMA_BREAKS_TO_LAVA, 2);
     }
 
     private static void world(ConfigBuilder builder, ConfigEntryBuilder entryBuilder) {
@@ -52,6 +52,13 @@ public class ConfigTrial {
         toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.GEYSER_GENERATION, 1);
         toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.TERMITE_MOUND_GENERATION, 1);
         toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.NATURAL_MOB_SPAWNS, 2);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.SPAWN_SUSPICIOUS_SPIDER, 1);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.SPAWN_MOOBLOOM, 1);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.SPAWN_TERMITE, 1);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.SPAWN_RIME, 1);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.SPAWN_DERELICT, 1);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.SPAWN_DRENCHED, 1);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.SPAWN_WILDFIRE, 1);
     }
 
     private static void combat(ConfigBuilder builder, ConfigEntryBuilder entryBuilder) {
@@ -89,6 +96,12 @@ public class ConfigTrial {
         toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.SNIFFER_FINDS_MOD_SEEDS, 1);
         toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.REDSTONE_STRIKER, 2);
         toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.LIGHTNING_IN_A_BOTTLE, 2);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.ENDERMAN_HEAD_ACTIVATES, 1);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.TERMITES_EAT_LOGS, 1);
+        intSlider(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.TERMITE_CHEW_TICKS, 20, 1200, 1);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.STACKED_CAKES, 1);
+        intSlider(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.CAKE_SIZE, 1, 3, 2);
+        toggle(category, entryBuilder, NekomasFixedConfig.SPEC, NekomasFixedConfig.DYED_BRUSH_RECIPES, 2);
     }
 
     private static void display(ConfigBuilder builder, ConfigEntryBuilder entryBuilder) {
@@ -143,6 +156,25 @@ public class ConfigTrial {
                 .setDefaultValue(option.getDefault())
                 .setTooltip(lines)
                 .setSaveConsumer(saved -> write(spec, option, saved))
+                .build());
+    }
+
+    private static void intSlider(ConfigCategory category, ConfigEntryBuilder entryBuilder,
+                                  ForgeConfigSpec spec, ForgeConfigSpec.IntValue option, int min, int max, int tooltipLines) {
+        String key = option.getPath().get(option.getPath().size() - 1);
+        Component[] lines = new Component[tooltipLines];
+        for (int i = 0; i < tooltipLines; i++) {
+            lines[i] = Component.translatable("config.nekomasfixed." + key + ".tooltip." + i);
+        }
+        category.addEntry(entryBuilder.startIntSlider(Component.translatable("config.nekomasfixed." + key + ".label"),
+                        spec.isLoaded() ? option.get() : option.getDefault(), min, max)
+                .setDefaultValue(option.getDefault())
+                .setTooltip(lines)
+                .setSaveConsumer(saved -> {
+                    if (spec.isLoaded()) {
+                        option.set(saved);
+                    }
+                })
                 .build());
     }
 

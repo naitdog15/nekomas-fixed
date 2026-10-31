@@ -5,6 +5,10 @@
       "bonus_rolls": 0.0,
       "conditions": [
         {
+          "condition": "nekomasfixed:config",
+          "option": "magmaBreaksToLava"
+        },
+        {
           "condition": "minecraft:match_tool",
           "predicate": {
             "enchantments": [
@@ -16,6 +20,28 @@
               }
             ]
           }
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:magma_block"
+        }
+      ],
+      "rolls": 1.0
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "nekomasfixed:config",
+            "option": "magmaBreaksToLava"
+          }
+        },
+        {
+          "condition": "minecraft:survives_explosion"
         }
       ],
       "entries": [

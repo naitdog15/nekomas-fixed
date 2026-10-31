@@ -1,6 +1,7 @@
 {
-    "replace": false,
-    "values": [
-        "nekomasfixed:slingshot_projectile"
-    ]
+  "replace": false,
+  "values": [
+    "nekomasfixed:slingshot_projectile",
+    "nekomasfixed:custom_arrow"
+  ]
 }

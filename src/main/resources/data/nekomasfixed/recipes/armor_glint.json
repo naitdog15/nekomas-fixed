@@ -1,0 +1,9 @@
+{
+  "type": "nekomasfixed:armor_glint",
+  "template": {
+    "tag": "nekomasfixed:prisms"
+  },
+  "addition": {
+    "item": "minecraft:lapis_lazuli"
+  }
+}

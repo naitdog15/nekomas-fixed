@@ -411,5 +411,11 @@
   "advancements.husbandry.all_froglights.title": "Überladen!",
 
   "option.namefield.optionA": "CyberMODDER",
+  "item.nekomasfixed.goat_horn_iron_helmet": "Bockshorn-Eisenhelm",
+  "item.nekomasfixed.goat_horn_golden_helmet": "Bockshorn-Goldhelm",
+  "item.nekomasfixed.goat_horn_diamond_helmet": "Bockshorn-Diamanthelm",
+  "item.nekomasfixed.goat_horn_netherite_helmet": "Bockshorn-Netherithelm",
+  "item.nekomasfixed.goat_horn_turtle_helmet": "Bockshorn-Schildkrötenkopfschmuck",
+  "item.nekomasfixed.goat_horn_copper_helmet": "Bockshorn-Kupferhelm",
   "option.namefield.optionB": "Akshaj"
 }

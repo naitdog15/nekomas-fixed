@@ -7,6 +7,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.greenjab.nekomasfixed.compat.CompatMods;
 import net.greenjab.nekomasfixed.registry.item.SickleItem;
+import net.greenjab.nekomasfixed.registry.item.quiver.QuiverDraw;
 import net.greenjab.nekomasfixed.registry.other.ComboComponent;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.config.NekomasFixedConfig;
@@ -84,6 +85,16 @@ public class PlayerMixin {
                 if (comboTimer<=0) ModData.combos.remove(PE.getUUID());
                 else ModData.combos.put(PE.getUUID(), comboTimer);
             }
+        }
+    }
+
+    // quiver arrows only come into play when nothing is held; vanilla handles every other case
+    @Inject(method = "getProjectile", at = @At("HEAD"), cancellable = true)
+    private void quiverProjectile(ItemStack weapon, CallbackInfoReturnable<ItemStack> cir) {
+        Player PE = (Player)(Object)this;
+        ItemStack drawn = QuiverDraw.tryDraw(PE, weapon);
+        if (!drawn.isEmpty()) {
+            cir.setReturnValue(net.minecraftforge.common.ForgeHooks.getProjectile(PE, weapon, drawn));
         }
     }
 

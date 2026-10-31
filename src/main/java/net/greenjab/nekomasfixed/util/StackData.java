@@ -9,9 +9,14 @@ import net.greenjab.nekomasfixed.registry.other.TermitesComponent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.alchemy.Potion;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -20,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * all item data lives in one sub-compound of the stack tag, read/written only through this class.
- * reserved keys: stored_time, combo_multiplier, clam_state, animal, termites, ingredients (declared
+ * reserved keys: stored_time, combo_multiplier, clam_state, animal, termites, armor_glint, quiver, tipped_potions, ingredients (declared
  * on SpecialSoupItem) - don't claim a name here without adding it to this list.
  * no packet needed - the stack tag already syncs to the client as part of the stack itself.
  * never-write-defaults: a value equal to its default is pruned, not written, so an emptied stack
@@ -40,8 +45,28 @@ public final class StackData {
     public static final String KEY_CLAM_STATE = "clam_state";
     public static final String KEY_ANIMAL = "animal";
     public static final String KEY_TERMITES = "termites";
+    public static final String KEY_ARMOR_GLINT = "armor_glint";
+    public static final String KEY_QUIVER = "quiver";
+    public static final String KEY_TIPPED_POTIONS = "tipped_potions";
 
     private static final Codec<Integer> CLAM_STATE_CODEC = ExtraCodecs.intRange(0, 3);
+
+    private static final Codec<List<ItemStack>> STACK_LIST_CODEC = CompoundTag.CODEC.listOf().xmap(
+            tags -> {
+                List<ItemStack> out = new ArrayList<>();
+                for (CompoundTag tag : tags) {
+                    ItemStack stack = ItemStack.of(tag);
+                    if (!stack.isEmpty()) out.add(stack);
+                }
+                return out;
+            },
+            stacks -> {
+                List<CompoundTag> out = new ArrayList<>();
+                for (ItemStack stack : stacks) out.add(stack.save(new CompoundTag()));
+                return out;
+            });
+
+    private static final Codec<List<String>> NAME_LIST_CODEC = Codec.STRING.listOf();
 
     // generic core - any consumer may call these directly with its own codec, as SpecialSoupItem
     // does for the stew's ingredient list.
@@ -151,5 +176,30 @@ public final class StackData {
 
     public static boolean writeTermites(ItemStack stack, TermitesComponent value) {
         return writeOrRemove(stack, KEY_TERMITES, TermitesComponent.CODEC, value, TermitesComponent.DEFAULT);
+    }
+
+    /** arrow stacks held by a quiver, newest first. */
+    public static List<ItemStack> readQuiver(ItemStack stack) {
+        return read(stack, KEY_QUIVER, STACK_LIST_CODEC, List.of());
+    }
+
+    public static boolean writeQuiver(ItemStack stack, List<ItemStack> value) {
+        return writeOrRemove(stack, KEY_QUIVER, STACK_LIST_CODEC, value, List.of());
+    }
+
+    /** potions baked into a custom tipped arrow, in crafting-slot order; unknown ids are skipped. */
+    public static List<Potion> readTippedPotions(ItemStack stack) {
+        List<Potion> out = new ArrayList<>();
+        for (String name : read(stack, KEY_TIPPED_POTIONS, NAME_LIST_CODEC, List.of())) {
+            ResourceLocation id = ResourceLocation.tryParse(name);
+            if (id != null && BuiltInRegistries.POTION.containsKey(id)) out.add(BuiltInRegistries.POTION.get(id));
+        }
+        return out;
+    }
+
+    public static boolean writeTippedPotions(ItemStack stack, List<Potion> value) {
+        List<String> names = new ArrayList<>();
+        for (Potion potion : value) names.add(BuiltInRegistries.POTION.getKey(potion).toString());
+        return writeOrRemove(stack, KEY_TIPPED_POTIONS, NAME_LIST_CODEC, names, List.of());
     }
 }

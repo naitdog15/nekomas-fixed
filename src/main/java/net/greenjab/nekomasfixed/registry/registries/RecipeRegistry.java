@@ -1,11 +1,14 @@
 package net.greenjab.nekomasfixed.registry.registries;
 
 import net.greenjab.nekomasfixed.NekomasFixed;
+import net.greenjab.nekomasfixed.registry.recipe.ArmorGlintRecipe;
+import net.greenjab.nekomasfixed.registry.recipe.CustomTippedArrowRecipe;
 import net.greenjab.nekomasfixed.registry.recipe.KilnRecipe;
 import net.greenjab.nekomasfixed.registry.recipe.TransmuteRecipe;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -33,4 +36,10 @@ public class RecipeRegistry {
 
     public static final RegistryObject<RecipeSerializer<TransmuteRecipe>> CRAFTING_TRANSMUTE =
             RECIPE_SERIALIZERS.register("crafting_transmute", () -> TransmuteRecipe.SERIALIZER);
+
+    public static final RegistryObject<RecipeSerializer<ArmorGlintRecipe>> ARMOR_GLINT =
+            RECIPE_SERIALIZERS.register("armor_glint", () -> ArmorGlintRecipe.SERIALIZER);
+
+    public static final RegistryObject<RecipeSerializer<CustomTippedArrowRecipe>> CUSTOM_TIPPED_ARROW =
+            RECIPE_SERIALIZERS.register("tipped_custom_arrow", () -> new SimpleCraftingRecipeSerializer<>(CustomTippedArrowRecipe::new));
 }

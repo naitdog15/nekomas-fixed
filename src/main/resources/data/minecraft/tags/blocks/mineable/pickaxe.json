@@ -1,6 +1,7 @@
 {
     "replace": false,
     "values": [
+        "nekomasfixed:gold_chain",
         "nekomasfixed:pearl_block",
         "nekomasfixed:kiln",
         "nekomasfixed:amber_concrete",

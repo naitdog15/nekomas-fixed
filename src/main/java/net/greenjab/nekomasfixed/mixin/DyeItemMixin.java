@@ -1,5 +1,7 @@
 package net.greenjab.nekomasfixed.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.greenjab.nekomasfixed.registry.registries.ItemRegistry;
 import net.greenjab.nekomasfixed.util.ModDyeItems;
 import net.minecraft.network.chat.Component;
@@ -16,7 +18,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
@@ -32,10 +33,10 @@ public class DyeItemMixin {
     // the four extra dyes borrow a vanilla DyeColor, and every DyeItem files itself into byColor on
     // construction - letting them would leave DyeItem.byColor(YELLOW) answering "amber", which a bred
     // sheep's colour lookup and the shepherd's dye trade both read. mod dyes skip the map instead.
-    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", remap = false))
-    private Object keepVanillaDyeForBorrowedColor(Map<DyeColor, DyeItem> itemByColor, Object color, Object dye) {
+    @WrapOperation(method = "<init>", at = @At(value = "INVOKE", target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", remap = false))
+    private Object keepVanillaDyeForBorrowedColor(Map<DyeColor, DyeItem> itemByColor, Object color, Object dye, Operation<Object> original) {
         if (dye instanceof ModDyeItems) return null;
-        return itemByColor.put((DyeColor) color, (DyeItem) dye);
+        return original.call(itemByColor, color, dye);
     }
 
     @Inject(method = "tryApplyToSign", at = @At("RETURN"), cancellable = true)

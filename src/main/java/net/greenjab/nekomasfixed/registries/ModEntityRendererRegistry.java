@@ -43,6 +43,7 @@ public class ModEntityRendererRegistry {
         event.registerEntityRenderer(EntityTypeRegistry.FIRE_BOMB.get(), FireBombRenderer::new);
         event.registerEntityRenderer(EntityTypeRegistry.SLINGSHOT_PROJECTILE.get(), ThrownItemRenderer::new);
         event.registerEntityRenderer(EntityTypeRegistry.SLOWNESS_SNOWBALL.get(), ThrownItemRenderer::new);
+        event.registerEntityRenderer(EntityTypeRegistry.CUSTOM_ARROW.get(), net.minecraft.client.renderer.entity.TippableArrowRenderer::new);
 
         event.registerEntityRenderer(EntityTypeRegistry.WILDFIRE.get(), WildfireRenderer::new);
         event.registerEntityRenderer(EntityTypeRegistry.TERMITE.get(), TermiteRenderer::new);

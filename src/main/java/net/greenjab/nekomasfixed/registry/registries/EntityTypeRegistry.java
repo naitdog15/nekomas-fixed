@@ -79,6 +79,10 @@ public class EntityTypeRegistry {
             EntityType.Builder.<SlingshotProjectile>of(SlingshotProjectile::new, MobCategory.MISC)
                     .sized(0.25F, 0.25F).clientTrackingRange(4).updateInterval(10));
 
+    public static final RegistryObject<EntityType<CustomArrow>> CUSTOM_ARROW = register("custom_arrow",
+            EntityType.Builder.<CustomArrow>of(CustomArrow::new, MobCategory.MISC)
+                    .sized(0.5F, 0.5F).clientTrackingRange(4).updateInterval(20));
+
     public static final RegistryObject<EntityType<FireBomb>> FIRE_BOMB = register("fire_bomb",
             EntityType.Builder.<FireBomb>of(FireBomb::new, MobCategory.MISC)
                     .sized(0.25F, 0.25F) .clientTrackingRange(4).updateInterval(10));
