@@ -20,6 +20,8 @@ group   = mod_group_id
 base { archivesName = mod_id }
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 jarJar.enable()
+// the -all jar is the one that ships, so it must be reobfuscated (SRG names) like the plain jar
+reobf { jarJar {} }
 
 minecraft {
     mappings channel: mapping_channel, version: mapping_version
